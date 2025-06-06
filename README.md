@@ -20,3 +20,17 @@ Uma aplicação desktop simples para gerenciar tarefas, com suporte a múltiplos
 
 ## 📁 Estrutura do Projeto
 
+gerenciador_de_tarefas/
+├── assets/
+│   └── idiomas/
+├── src/
+├── requirements.txt
+├── LICENSE
+└── README.md
+## 📦 Instalação
+
+```bash
+git clone https://github.com/Raoc1987/gerenciador_de_tarefas.git
+cd gerenciador_de_tarefas
+pip install -r requirements.txt
+python src/main.py

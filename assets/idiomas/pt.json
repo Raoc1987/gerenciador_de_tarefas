@@ -1,0 +1,10 @@
+{
+  "titulo": "Gerenciador de Tarefas",
+  "adicionar_tarefa": "Adicionar Tarefa",
+  "remover_tarefa": "Remover Tarefa",
+  "calendario": "Calendário",
+  "idioma": "Idioma",
+  "selecione_uma_tarefa": "Selecione uma tarefa para remover",
+  "confirmar": "Confirmar",
+  "cancelar": "Cancelar"
+}

@@ -1,2 +1,11 @@
 __pycache__/
-tarefas.db
+*.pyc
+*.pyo
+*.pyd
+.env
+*.sqlite3
+*.db
+.vscode/
+.idea/
+.DS_Store
+

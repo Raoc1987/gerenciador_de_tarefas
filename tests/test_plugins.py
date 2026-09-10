@@ -624,12 +624,21 @@ def test_downgrade_e_recusado(gerenciador, zip_valido):
     assert gerenciador.versao_instalada("demo") == "2.0.0"
 
 
-def test_atualizacao_desativa_o_plugin_em_execucao(gerenciador, zip_valido):
+def test_atualizacao_troca_o_modulo_em_execucao(gerenciador, zip_valido):
+    """O plugin é descarregado antes de os arquivos serem substituídos."""
     gerenciador.instalar_zip(zip_valido("demo"))
     gerenciador.ativar("demo")
-    gerenciador.instalar_zip(zip_valido("demo", version="2.0.0", nome="v2.zip"))
-    assert PREFIXO_MODULO + "demo" not in sys.modules
-    assert gerenciador.obter("demo").estado == EstadoPlugin.INSTALADO
+    antigo = sys.modules[PREFIXO_MODULO + "demo"]
+
+    gerenciador.instalar_zip(
+        zip_valido(
+            "demo", version="2.0.0", corpo=CORPO_OK + "\nMARCA = 2\n", nome="v2.zip"
+        )
+    )
+    novo = sys.modules[PREFIXO_MODULO + "demo"]
+    assert novo is not antigo
+    assert antigo.eventos == ["inicializar", "ativar", "desativar", "finalizar"]
+    assert hasattr(novo, "MARCA")
 
 
 def test_rollback_repoe_a_versao_anterior(gerenciador, zip_valido, monkeypatch):
@@ -910,3 +919,38 @@ def test_textos_do_plugin_sao_esquecidos_ao_descarregar(gerenciador, criar_plugi
 
     gerenciador.descarregar("registador")
     assert lm.carregar_texto_plugin("registador", "ola") == "ola"
+
+
+def test_atualizacao_reativa_plugin_que_estava_ativo(gerenciador, zip_valido):
+    gerenciador.instalar_zip(zip_valido("demo", version="1.0.0"))
+    gerenciador.ativar("demo")
+
+    resultado = gerenciador.instalar_zip(
+        zip_valido("demo", version="2.0.0", corpo=CORPO_OK + "\nMARCA = 2\n", nome="v2.zip")
+    )
+    assert resultado.sucesso
+    registro = gerenciador.obter("demo")
+    assert registro.ativo
+    assert registro.versao == "2.0.0"
+    # correndo a partir do código novo
+    assert hasattr(sys.modules[PREFIXO_MODULO + "demo"], "MARCA")
+
+
+def test_atualizacao_nao_ativa_plugin_que_estava_parado(gerenciador, zip_valido):
+    gerenciador.instalar_zip(zip_valido("demo", version="1.0.0"))
+    gerenciador.instalar_zip(zip_valido("demo", version="2.0.0", nome="v2.zip"))
+    assert not gerenciador.obter("demo").ativo
+
+
+def test_atualizacao_com_versao_nova_que_falha_ao_ativar(gerenciador, zip_valido):
+    """A atualização conclui; a falha do plugin novo é reportada, não fatal."""
+    gerenciador.instalar_zip(zip_valido("demo", version="1.0.0"))
+    gerenciador.ativar("demo")
+
+    resultado = gerenciador.instalar_zip(
+        zip_valido("demo", version="2.0.0", corpo=CORPO_FALHA_ATIVAR, nome="v2.zip")
+    )
+    assert resultado.sucesso
+    assert "falha proposital" in resultado.detalhes
+    assert gerenciador.obter("demo").estado == EstadoPlugin.ERRO
+    assert gerenciador.versao_instalada("demo") == "2.0.0"

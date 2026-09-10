@@ -1,12 +1,50 @@
 """Fixtures partilhadas pelos testes do sistema de plugins."""
 
 import json
+import time
+import tkinter as tk
 import zipfile
 from pathlib import Path
 
 import pytest
 
 from core.plugin_manager import PluginManager
+
+
+def _sondar_tkinter(tentativas: int = 3) -> bool:
+    """Verifica se e possivel criar uma janela Tk.
+
+    Repete algumas vezes: em Windows, criar e destruir muitos interpretadores
+    Tk no mesmo processo faz o Tcl falhar esporadicamente a ler os seus
+    proprios arquivos. Sem a repeticao, os testes de interface seriam
+    silenciosamente ignorados por causa dessa intermitencia.
+    """
+    for tentativa in range(tentativas):
+        try:
+            raiz = tk.Tk()
+            raiz.destroy()
+            return True
+        except tk.TclError:  # pragma: no cover - depende do ambiente
+            time.sleep(0.3)
+        except Exception:  # pragma: no cover - sem servidor grafico
+            return False
+    return False  # pragma: no cover
+
+
+#: ``True`` quando o ambiente tem interface grafica utilizavel.
+TKINTER_DISPONIVEL = _sondar_tkinter()
+
+
+def criar_janela_com_retentativa(fabrica, tentativas: int = 4):
+    """Cria uma janela repetindo perante falhas esporadicas do Tcl."""
+    for tentativa in range(tentativas):
+        try:
+            return fabrica()
+        except tk.TclError:  # pragma: no cover - depende do ambiente
+            if tentativa == tentativas - 1:
+                raise
+            time.sleep(0.3)
+
 
 #: Plugin mínimo que regista os eventos do ciclo de vida numa lista do módulo.
 CORPO_OK = '''

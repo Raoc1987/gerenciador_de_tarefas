@@ -11,16 +11,10 @@ from tkinter import ttk
 
 import pytest
 
+from conftest import TKINTER_DISPONIVEL, criar_janela_com_retentativa
 from core.plugin_api import EstadoPlugin
 from core.plugin_manager import PREFIXO_MODULO
 from tools.empacotar_plugin import empacotar
-
-tkinter_disponivel = True
-try:  # pragma: no cover - depende do ambiente
-    _raiz = tk.Tk()
-    _raiz.destroy()
-except Exception:  # pragma: no cover
-    tkinter_disponivel = False
 
 
 @pytest.fixture
@@ -126,7 +120,7 @@ def test_remover_o_plugin_real(gerenciador, zip_calendar):
 # ------------------------------------------------------------------- na GUI
 
 
-@pytest.mark.skipif(not tkinter_disponivel, reason="ambiente sem interface gráfica")
+@pytest.mark.skipif(not TKINTER_DISPONIVEL, reason="ambiente sem interface gráfica")
 def test_plugin_real_na_janela(pasta_plugins, zip_calendar, monkeypatch):
     """Percurso completo: instalar o zip, ativar e usar a aba do calendário."""
     from tkinter import messagebox
@@ -142,7 +136,7 @@ def test_plugin_real_na_janela(pasta_plugins, zip_calendar, monkeypatch):
     database.criar_tabela()
     database.adicionar_tarefa("Reunião de equipa", "2026-06-15")
 
-    app = gui.criar_janela()
+    app = criar_janela_com_retentativa(gui.criar_janela)
     try:
         gerenciador = app.gerenciador_de_plugins
         assert gerenciador.instalar_zip(zip_calendar).sucesso

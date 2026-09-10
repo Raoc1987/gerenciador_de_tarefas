@@ -542,6 +542,7 @@ class PluginManager:
         destino = self.diretorio / manifesto.id
         existente = self._plugins.get(manifesto.id)
         versao_anterior = existente.versao if existente and existente.manifesto else None
+        estava_ativo = bool(existente and existente.ativo)
         atualizacao = destino.exists()
 
         if atualizacao and versao_anterior:
@@ -595,6 +596,20 @@ class PluginManager:
             manifesto.versao,
             f" (anterior: {versao_anterior})" if versao_anterior else "",
         )
+
+        # Um plugin que estava a correr volta a correr na versão nova.
+        if estava_ativo:
+            reativacao = self.ativar(manifesto.id, persistir=False)
+            if not reativacao.sucesso:
+                logger.warning(
+                    "Plugin %s atualizado, mas não reativou: %s",
+                    manifesto.id,
+                    reativacao.detalhes,
+                )
+                return ResultadoOperacao(
+                    True, chave, manifesto.id, reativacao.detalhes
+                )
+
         return ResultadoOperacao(True, chave, manifesto.id)
 
     def inspecionar_zip(self, caminho_zip: Path) -> ManifestoPlugin:

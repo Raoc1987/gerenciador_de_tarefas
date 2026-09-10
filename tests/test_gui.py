@@ -6,23 +6,20 @@ Se o ambiente não tiver um servidor gráfico, os testes são ignorados.
 """
 
 import json
-import time
 import tkinter as tk
 from tkinter import ttk
 
 import pytest
 
-from conftest import CORPO_FALHA_ATIVAR, manifesto_valido
-
-tkinter_disponivel = True
-try:  # pragma: no cover - depende do ambiente
-    _raiz = tk.Tk()
-    _raiz.destroy()
-except Exception:  # pragma: no cover
-    tkinter_disponivel = False
+from conftest import (
+    CORPO_FALHA_ATIVAR,
+    TKINTER_DISPONIVEL,
+    criar_janela_com_retentativa,
+    manifesto_valido,
+)
 
 pytestmark = pytest.mark.skipif(
-    not tkinter_disponivel, reason="ambiente sem interface gráfica"
+    not TKINTER_DISPONIVEL, reason="ambiente sem interface gráfica"
 )
 
 
@@ -60,23 +57,6 @@ def dialogos(monkeypatch):
     monkeypatch.setattr(plugin_ui, "messagebox", messagebox)
     monkeypatch.setattr(plugin_ui, "filedialog", filedialog)
     return registo
-
-
-def criar_janela_com_retentativa(fabrica, tentativas: int = 4):
-    """Cria uma janela, repetindo se o Tcl falhar a carregar-se a si próprio.
-
-    Criar e destruir dezenas de interpretadores Tk no mesmo processo faz o Tcl
-    falhar esporadicamente a ler os seus próprios ``.tcl`` (ENOENT num arquivo
-    que existe). É uma limitação do ambiente, não da aplicação — que cria um
-    único interpretador por execução.
-    """
-    for tentativa in range(tentativas):
-        try:
-            return fabrica()
-        except tk.TclError:  # pragma: no cover - depende do ambiente
-            if tentativa == tentativas - 1:
-                raise
-            time.sleep(0.3)
 
 
 @pytest.fixture

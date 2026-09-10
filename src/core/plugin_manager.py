@@ -14,16 +14,19 @@ from __future__ import annotations
 import importlib.util
 import shutil
 import sys
+import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 from types import ModuleType
 from typing import Dict, List, Optional
 
 from core import config as config_app
+from core import plugin_package
 from core.log import obter_logger
 from core.paths import (
     diretorio_dados_plugin,
     diretorio_plugins_instalados,
+    diretorio_plugins_temp,
 )
 from core.plugin_api import (
     CarregamentoPluginError,
@@ -33,10 +36,11 @@ from core.plugin_api import (
     ManifestoInvalidoError,
     ManifestoPlugin,
     Plugin,
+    PluginError,
     ServicoTarefas,
     encontrar_classe_plugin,
 )
-from core.version import APP_VERSION
+from core.version import APP_VERSION, comparar_versoes
 
 logger = obter_logger(__name__)
 
@@ -469,6 +473,101 @@ class PluginManager:
         for registro in list(self._plugins.values()):
             if registro.instancia is not None:
                 self.descarregar(registro.id)
+
+    # --------------------------------------------------- INSTALL / UPDATE
+
+    def instalar_zip(
+        self,
+        caminho_zip: Path,
+        permitir_atualizacao: bool = True,
+    ) -> ResultadoOperacao:
+        """Instala (ou atualiza) um plugin a partir de um arquivo ``.zip``.
+
+        O ZIP é sempre tratado como não confiável: é inspecionado e validado
+        antes de qualquer arquivo ser escrito, extraído para uma área
+        temporária, revalidado, e só então promovido a plugin instalado.
+        Nenhum código do plugin é executado durante a instalação.
+
+        Em atualização, a versão anterior é guardada e reposta se algo falhar,
+        de modo a nunca deixar um plugin meio-atualizado. A configuração e os
+        dados do plugin vivem fora da sua pasta e são preservados.
+        """
+        caminho_zip = Path(caminho_zip)
+        try:
+            pacote = plugin_package.inspecionar(caminho_zip)
+            pacote.manifesto.verificar_compatibilidade(self.app_version)
+        except PluginError as erro:
+            logger.warning("Instalação recusada (%s): %s", caminho_zip.name, erro)
+            return ResultadoOperacao(False, erro.chave_mensagem, None, str(erro))
+
+        manifesto = pacote.manifesto
+        destino = self.diretorio / manifesto.id
+        existente = self._plugins.get(manifesto.id)
+        versao_anterior = existente.versao if existente and existente.manifesto else None
+        atualizacao = destino.exists()
+
+        if atualizacao and versao_anterior:
+            comparacao = comparar_versoes(manifesto.versao, versao_anterior)
+            if comparacao <= 0 or not permitir_atualizacao:
+                chave = "plugin_ja_instalado"
+                detalhes = (
+                    f"Versão instalada: {versao_anterior}; "
+                    f"versão do pacote: {manifesto.versao}."
+                )
+                logger.info("Instalação recusada para %s: %s", manifesto.id, detalhes)
+                return ResultadoOperacao(False, chave, manifesto.id, detalhes)
+
+        temporario = Path(tempfile.mkdtemp(prefix=f"{manifesto.id}_", dir=diretorio_plugins_temp()))
+        backup: Optional[Path] = None
+        try:
+            extraido = plugin_package.extrair(pacote, temporario / "conteudo")
+            plugin_package.validar_instalacao(extraido, manifesto)
+
+            if atualizacao:
+                self.descarregar(manifesto.id)
+                backup = temporario / "backup"
+                shutil.move(str(destino), str(backup))
+
+            shutil.move(str(extraido), str(destino))
+            plugin_package.validar_instalacao(destino, manifesto)
+        except Exception as erro:
+            logger.exception("Falha ao instalar o plugin %s.", manifesto.id)
+            # Reposição: se a nova versão chegou a entrar, é descartada.
+            if backup is not None and backup.exists():
+                if destino.exists():
+                    shutil.rmtree(destino, ignore_errors=True)
+                try:
+                    shutil.move(str(backup), str(destino))
+                    logger.info("Versão anterior de %s reposta.", manifesto.id)
+                except OSError:  # pragma: no cover - defensivo
+                    logger.exception("Falha ao repor a versão anterior de %s.", manifesto.id)
+            chave = erro.chave_mensagem if isinstance(erro, PluginError) else "plugin_erro_instalar"
+            self.descobrir()
+            return ResultadoOperacao(False, chave, manifesto.id, str(erro))
+        finally:
+            shutil.rmtree(temporario, ignore_errors=True)
+
+        self._registro.registrar(manifesto, habilitado=False)
+        self.descobrir()
+        chave = "plugin_atualizado" if atualizacao else "plugin_instalado"
+        logger.info(
+            "Plugin %s: %s v%s%s",
+            "atualizado" if atualizacao else "instalado",
+            manifesto.id,
+            manifesto.versao,
+            f" (anterior: {versao_anterior})" if versao_anterior else "",
+        )
+        return ResultadoOperacao(True, chave, manifesto.id)
+
+    def inspecionar_zip(self, caminho_zip: Path) -> ManifestoPlugin:
+        """Lê o manifesto de um ``.zip`` sem instalar nada.
+
+        Útil para a interface confirmar com o utilizador antes de instalar.
+
+        Raises:
+            PluginError: se o pacote for inválido ou inseguro.
+        """
+        return plugin_package.inspecionar(Path(caminho_zip)).manifesto
 
     # ---------------------------------------------------------------- REMOVE
 

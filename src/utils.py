@@ -33,15 +33,33 @@ def validar_data_iso(data_str: Optional[str]) -> bool:
 def atualizar_relógio(label, formato: str = "%d/%m/%Y %H:%M:%S") -> None:
     """Mantém ``label`` a mostrar a hora corrente, atualizando a cada segundo.
 
-    O agendamento pára sozinho quando o widget deixa de existir (fecho da
-    janela), evitando exceções do Tk durante o encerramento.
+    O agendamento é cancelado quando o widget é destruído: um temporizador
+    pendente de uma janela já fechada dispararia mais tarde contra um
+    interpretador Tk inexistente.
     """
+
+    def cancelar(_evento=None) -> None:
+        identificador = getattr(label, "_agendamento_relogio", None)
+        if identificador:
+            label._agendamento_relogio = None
+            try:
+                label.after_cancel(identificador)
+            except Exception:
+                pass
+
+    def tique() -> None:
+        try:
+            label.config(text=datetime.now().strftime(formato))
+            label._agendamento_relogio = label.after(1000, tique)
+        except Exception:
+            # Widget destruído — nada a fazer.
+            return
+
     try:
-        label.config(text=datetime.now().strftime(formato))
-        label.after(1000, lambda: atualizar_relógio(label, formato))
+        label.bind("<Destroy>", cancelar, add="+")
     except Exception:
-        # Widget destruído — nada a fazer.
-        return
+        pass
+    tique()
 
 
 # Alias sem acento, conveniente para código novo.

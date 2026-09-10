@@ -1,0 +1,196 @@
+"""Testes do plugin real Calendar Integration, do ``.zip`` até à aba na janela.
+
+Estes testes usam a pasta ``plugins/available/calendar`` do repositório — não
+um plugin fabricado — de modo a provar o percurso completo:
+empacotar -> instalar -> validar -> registar -> carregar -> ativar -> usar.
+"""
+
+import sys
+import tkinter as tk
+from tkinter import ttk
+
+import pytest
+
+from core.plugin_api import EstadoPlugin
+from core.plugin_manager import PREFIXO_MODULO
+from tools.empacotar_plugin import empacotar
+
+tkinter_disponivel = True
+try:  # pragma: no cover - depende do ambiente
+    _raiz = tk.Tk()
+    _raiz.destroy()
+except Exception:  # pragma: no cover
+    tkinter_disponivel = False
+
+
+@pytest.fixture
+def pasta_do_plugin(raiz_projeto):
+    """Pasta do plugin Calendar Integration no repositório."""
+    pasta = raiz_projeto / "plugins" / "available" / "calendar"
+    assert pasta.is_dir(), "o plugin calendar deve existir no repositório"
+    return pasta
+
+
+@pytest.fixture
+def zip_calendar(pasta_do_plugin, tmp_path):
+    """Empacota o plugin real num ``.zip`` temporário."""
+    return empacotar(pasta_do_plugin, tmp_path / "pacotes")
+
+
+# ------------------------------------------------------------ empacotamento
+
+
+def test_pacote_tem_a_estrutura_esperada(zip_calendar):
+    import zipfile
+
+    with zipfile.ZipFile(zip_calendar) as pacote:
+        nomes = pacote.namelist()
+    assert "calendar/plugin.json" in nomes
+    assert "calendar/plugin.py" in nomes
+    assert "calendar/idiomas/pt.json" in nomes
+    assert not any("__pycache__" in nome for nome in nomes)
+
+
+def test_nome_do_pacote_usa_id_e_versao(zip_calendar):
+    assert zip_calendar.name == "calendar-1.0.0.zip"
+
+
+# --------------------------------------------------------------- instalação
+
+
+def test_instalar_o_plugin_real(gerenciador, zip_calendar):
+    resultado = gerenciador.instalar_zip(zip_calendar)
+    assert resultado.sucesso, resultado.detalhes
+    assert resultado.plugin_id == "calendar"
+
+    registro = gerenciador.obter("calendar")
+    assert registro.estado == EstadoPlugin.INSTALADO
+    assert registro.nome == "Calendar Integration"
+    assert registro.versao == "1.0.0"
+    assert (gerenciador.diretorio / "calendar" / "idiomas" / "pt.json").is_file()
+
+
+def test_carregar_o_plugin_real_sem_interface(gerenciador, zip_calendar):
+    """Sem GUI o plugin ativa na mesma, apenas sem registar a aba."""
+    gerenciador.instalar_zip(zip_calendar)
+    resultado = gerenciador.ativar("calendar")
+    assert resultado.sucesso, resultado.detalhes
+    assert gerenciador.obter("calendar").ativo
+
+
+def test_idiomas_do_plugin_real(gerenciador, zip_calendar):
+    import language_manager as lm
+
+    gerenciador.instalar_zip(zip_calendar)
+    gerenciador.ativar("calendar")
+
+    lm.definir_idioma("pt", persistir=False)
+    assert lm.carregar_texto_plugin("calendar", "aba") == "Calendário"
+    lm.definir_idioma("en", persistir=False)
+    assert lm.carregar_texto_plugin("calendar", "aba") == "Calendar"
+    lm.definir_idioma("es", persistir=False)
+    assert lm.carregar_texto_plugin("calendar", "aba") == "Calendario"
+
+
+def test_atualizacao_do_plugin_real(gerenciador, pasta_do_plugin, tmp_path, monkeypatch):
+    """Instala a v1.0.0 e atualiza para uma v1.1.0 empacotada na hora."""
+    import json
+    import shutil
+
+    gerenciador.instalar_zip(empacotar(pasta_do_plugin, tmp_path / "v1"))
+    gerenciador.ativar("calendar")
+
+    copia = tmp_path / "fonte_v11"
+    shutil.copytree(pasta_do_plugin, copia)
+    manifesto = json.loads((copia / "plugin.json").read_text(encoding="utf-8"))
+    manifesto["version"] = "1.1.0"
+    (copia / "plugin.json").write_text(json.dumps(manifesto), encoding="utf-8")
+
+    resultado = gerenciador.instalar_zip(empacotar(copia, tmp_path / "v11"))
+    assert resultado.sucesso
+    assert resultado.chave_mensagem == "plugin_atualizado"
+    assert gerenciador.versao_instalada("calendar") == "1.1.0"
+
+    # Continua utilizável depois da atualização.
+    assert gerenciador.ativar("calendar").sucesso
+
+
+def test_remover_o_plugin_real(gerenciador, zip_calendar):
+    gerenciador.instalar_zip(zip_calendar)
+    gerenciador.ativar("calendar")
+    assert gerenciador.remover("calendar").sucesso
+    assert not (gerenciador.diretorio / "calendar").exists()
+    assert gerenciador.obter("calendar") is None
+
+
+# ------------------------------------------------------------------- na GUI
+
+
+@pytest.mark.skipif(not tkinter_disponivel, reason="ambiente sem interface gráfica")
+def test_plugin_real_na_janela(pasta_plugins, zip_calendar, monkeypatch):
+    """Percurso completo: instalar o zip, ativar e usar a aba do calendário."""
+    from tkinter import messagebox
+
+    import core.plugin_manager as pm_modulo
+    import database
+    import gui
+
+    monkeypatch.setattr(messagebox, "showinfo", lambda *a, **k: None)
+    monkeypatch.setattr(messagebox, "showwarning", lambda *a, **k: None)
+    monkeypatch.setattr(pm_modulo, "diretorio_plugins_instalados", lambda: pasta_plugins)
+
+    database.criar_tabela()
+    database.adicionar_tarefa("Reunião de equipa", "2026-06-15")
+
+    app = gui.criar_janela()
+    try:
+        gerenciador = app.gerenciador_de_plugins
+        assert gerenciador.instalar_zip(zip_calendar).sucesso
+        assert gerenciador.ativar("calendar").sucesso
+        app.update()
+
+        notebook = next(
+            w for w in _todos(app) if isinstance(w, ttk.Notebook)
+        )
+        titulos = [notebook.tab(i, "text") for i in range(notebook.index("end"))]
+        assert titulos == ["Tarefas", "Calendário"]
+
+        # O painel do plugin mostra as tarefas do dia selecionado.
+        modulo = sys.modules[PREFIXO_MODULO + "calendar"]
+        painel = next(w for w in _todos(app) if isinstance(w, modulo.PainelCalendario))
+        painel.mostrar_dia("2026-06-15")
+        app.update()
+        lista = next(w for w in _todos(painel) if isinstance(w, tk.Listbox))
+        assert "Reunião de equipa" in lista.get(0)
+
+        painel.mostrar_dia("2026-06-16")
+        assert lista.get(0) == "Nenhuma tarefa nesta data."
+
+        # Criar uma tarefa pela aba do plugin chega ao banco da aplicação.
+        entrada = next(w for w in _todos(painel) if isinstance(w, ttk.Entry))
+        entrada.insert(0, "Tarefa criada no calendário")
+        next(
+            w
+            for w in _todos(painel)
+            if isinstance(w, ttk.Button) and str(w.cget("text")) == "Adicionar"
+        ).invoke()
+        app.update()
+
+        descricoes = [t[1] for t in database.tarefas_por_data("2026-06-16")]
+        assert descricoes == ["Tarefa criada no calendário"]
+        assert "Tarefa criada no calendário" in lista.get(0)
+
+        # Desativar remove a aba, sem tocar nas tarefas.
+        gerenciador.desativar("calendar")
+        app.update()
+        assert notebook.index("end") == 1
+        assert len(database.buscar_tarefas()) == 2
+    finally:
+        app.gerenciador_de_plugins.desativar_todos()
+        app.destroy()
+
+
+def _todos(widget):
+    for filho in widget.winfo_children():
+        yield filho
+        yield from _todos(filho)

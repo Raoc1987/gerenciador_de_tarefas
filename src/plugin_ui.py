@@ -61,35 +61,56 @@ class AnfitriaoGUI:
     def __init__(self, notebook: ttk.Notebook) -> None:
         self._notebook = notebook
         self._abas: Dict[str, List[ttk.Frame]] = {}
-        self._titulos: Dict[str, List[tuple]] = {}
+        self._titulos: Dict[ttk.Frame, Any] = {}
+
+    @staticmethod
+    def _resolver_titulo(titulo: Any) -> str:
+        """Aceita um texto fixo ou uma função que devolve o texto traduzido."""
+        if callable(titulo):
+            try:
+                return str(titulo())
+            except Exception:  # pragma: no cover - defensivo
+                logger.exception("Falha ao obter o título traduzido de uma aba.")
+                return ""
+        return str(titulo)
 
     def registrar_aba(
-        self, plugin_id: str, titulo: str, construtor: Callable[[Any], Any]
+        self, plugin_id: str, titulo: Any, construtor: Callable[[Any], Any]
     ) -> None:
         """Adiciona à janela principal uma aba construída pelo plugin.
 
-        ``construtor`` recebe o widget pai e devolve o widget da aba. Uma
-        exceção aqui propaga para o gerenciador, que marca o plugin como em
-        erro sem afetar a aplicação.
+        ``construtor`` recebe o widget pai e devolve o widget da aba.
+        ``titulo`` pode ser um texto fixo ou uma função sem argumentos — nesse
+        caso é reavaliada sempre que o idioma muda. Uma exceção aqui propaga
+        para o gerenciador, que marca o plugin como em erro sem afetar a
+        aplicação.
         """
         moldura = ttk.Frame(self._notebook)
         conteudo = construtor(moldura)
         if isinstance(conteudo, (tk.Widget, ttk.Widget)) and conteudo.master is moldura:
             conteudo.pack(fill=tk.BOTH, expand=True)
-        self._notebook.add(moldura, text=titulo)
+        self._notebook.add(moldura, text=self._resolver_titulo(titulo))
         self._abas.setdefault(plugin_id, []).append(moldura)
-        self._titulos.setdefault(plugin_id, []).append((moldura, titulo))
-        logger.info("Aba registada pelo plugin %s: %s", plugin_id, titulo)
+        self._titulos[moldura] = titulo
+        logger.info("Aba registada pelo plugin %s: %s", plugin_id, self._resolver_titulo(titulo))
+
+    def atualizar_traducoes(self) -> None:
+        """Reaplica os títulos das abas dos plugins no idioma atual."""
+        for moldura, titulo in list(self._titulos.items()):
+            try:
+                self._notebook.tab(moldura, text=self._resolver_titulo(titulo))
+            except tk.TclError:  # pragma: no cover - aba já removida
+                self._titulos.pop(moldura, None)
 
     def remover_abas(self, plugin_id: str) -> None:
         """Remove todas as abas criadas por um plugin."""
         for moldura in self._abas.pop(plugin_id, []):
+            self._titulos.pop(moldura, None)
             try:
                 self._notebook.forget(moldura)
                 moldura.destroy()
             except tk.TclError:  # pragma: no cover - aba já removida
                 pass
-        self._titulos.pop(plugin_id, None)
         logger.info("Abas do plugin %s removidas.", plugin_id)
 
     def notificar(self, mensagem: str) -> None:

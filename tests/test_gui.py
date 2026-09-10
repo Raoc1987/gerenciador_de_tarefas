@@ -414,3 +414,43 @@ def test_id_divergente_e_reportado(janela, criar_plugin):
     textos = [str(w.cget("text")) for w in descendentes(tela) if isinstance(w, ttk.Label)]
     assert any("não corresponde" in t for t in textos)
     tela.destroy()
+
+
+CORPO_ABA_TRADUZIDA = '''
+from core.plugin_api import Plugin
+
+
+class PluginAbaTraduzida(Plugin):
+    def ativar(self):
+        from tkinter import ttk
+
+        self.contexto.ui.registrar_aba(
+            self.id,
+            lambda: self.contexto.traduzir("aba"),
+            lambda pai: ttk.Label(pai, text="x"),
+        )
+'''
+
+
+def test_titulo_da_aba_do_plugin_segue_o_idioma(janela, criar_plugin):
+    pasta = criar_plugin("traduzido", corpo=CORPO_ABA_TRADUZIDA)
+    idiomas = pasta / "idiomas"
+    idiomas.mkdir()
+    (idiomas / "pt.json").write_text(json.dumps({"aba": "Calendário"}), encoding="utf-8")
+    (idiomas / "en.json").write_text(json.dumps({"aba": "Calendar"}), encoding="utf-8")
+
+    tela = abrir_plugins(janela)
+    botoes(tela)["Ativar"].invoke()
+    janela.update()
+    tela.destroy()
+
+    notebook = next(w for w in descendentes(janela) if isinstance(w, ttk.Notebook))
+    assert notebook.tab(1, "text") == "Calendário"
+
+    variavel = next(w for w in descendentes(janela) if isinstance(w, ttk.OptionMenu))
+    menu = janela.nametowidget(variavel.cget("menu"))
+    menu.invoke(menu.index("Inglês 🇺🇸"))
+    janela.update()
+
+    assert notebook.tab(0, "text") == "Tasks"
+    assert notebook.tab(1, "text") == "Calendar"

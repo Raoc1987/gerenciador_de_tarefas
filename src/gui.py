@@ -223,6 +223,7 @@ def criar_janela() -> tk.Tk:
         botao_remover.config(text=carregar_texto("remover"))
         botao_atualizar.config(text=carregar_texto("atualizar_lista"))
         notebook.tab(aba_tarefas, text=carregar_texto("tarefas"))
+        anfitriao.atualizar_traducoes()
         construir_menu()
         recarregar_lista()
 

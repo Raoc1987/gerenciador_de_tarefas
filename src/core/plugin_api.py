@@ -324,6 +324,7 @@ class ContextoPlugin:
     _ler_config: Optional[Callable[[str], Dict[str, Any]]] = None
     _gravar_config: Optional[Callable[[str, Dict[str, Any]], None]] = None
     _traduzir: Optional[Callable[..., str]] = None
+    _registrar_textos: Optional[Callable[[str, Dict[str, Dict[str, str]]], None]] = None
 
     def config(self) -> Dict[str, Any]:
         """Configuração privada do plugin (dicionário vazio se ainda não existir)."""
@@ -337,10 +338,24 @@ class ContextoPlugin:
             self._gravar_config(self.manifesto.id, dados)
 
     def traduzir(self, chave: str, padrao: Optional[str] = None, **formatacao: Any) -> str:
-        """Texto traduzido no idioma atual da aplicação."""
+        """Texto traduzido no idioma atual.
+
+        Procura primeiro nos textos do próprio plugin (ver
+        :meth:`registrar_textos` e a pasta ``idiomas/``) e depois nos da
+        aplicação.
+        """
         if self._traduzir is None:
             return padrao if padrao is not None else chave
         return self._traduzir(chave, padrao, **formatacao)
+
+    def registrar_textos(self, textos_por_idioma: Dict[str, Dict[str, str]]) -> None:
+        """Regista textos próprios do plugin, no formato ``{idioma: {chave: texto}}``.
+
+        Alternativa em código à pasta ``idiomas/`` do plugin, que é carregada
+        automaticamente quando existe.
+        """
+        if self._registrar_textos is not None:
+            self._registrar_textos(self.manifesto.id, textos_por_idioma)
 
 
 # ------------------------------------------------------------ classe base

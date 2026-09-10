@@ -280,6 +280,7 @@ class PluginManager:
             return ResultadoOperacao(False, "plugin_incompativel", plugin_id, registro.erro)
 
         try:
+            self._carregar_idiomas_do_plugin(registro)
             modulo = self._importar(registro)
             classe = encontrar_classe_plugin(modulo)
             contexto = self._criar_contexto(registro)
@@ -329,9 +330,45 @@ class PluginManager:
                     pass
         return modulo
 
+    #: Pasta opcional, dentro do plugin, com os seus arquivos de idioma.
+    PASTA_IDIOMAS = "idiomas"
+
+    def _carregar_idiomas_do_plugin(self, registro: RegistroPlugin) -> None:
+        """Regista os textos de ``<plugin>/idiomas/<código>.json``, se existirem."""
+        import json
+
+        from language_manager import registrar_textos_plugin
+
+        textos: Dict[str, Dict[str, str]] = {}
+        pasta = registro.pasta / self.PASTA_IDIOMAS
+        if pasta.is_dir():
+            for arquivo in sorted(pasta.glob("*.json")):
+                try:
+                    dados = json.loads(arquivo.read_text(encoding="utf-8"))
+                except (OSError, json.JSONDecodeError) as erro:
+                    logger.warning(
+                        "Idioma %s do plugin %s ignorado: %s", arquivo.name, registro.id, erro
+                    )
+                    continue
+                if isinstance(dados, dict):
+                    textos[arquivo.stem] = dados
+
+        # Registado sempre, mesmo vazio: substitui textos de uma versão anterior
+        # do plugin em vez de os deixar pendurados.
+        registrar_textos_plugin(registro.id, textos)
+        if textos:
+            logger.info(
+                "Idiomas do plugin %s registados: %s", registro.id, ", ".join(sorted(textos))
+            )
+
     def _criar_contexto(self, registro: RegistroPlugin) -> ContextoPlugin:
         assert registro.manifesto is not None
-        from language_manager import carregar_texto
+        from language_manager import carregar_texto_plugin, registrar_textos_plugin
+
+        plugin_id = registro.manifesto.id
+
+        def traduzir(chave, padrao=None, **formatacao):
+            return carregar_texto_plugin(plugin_id, chave, padrao, **formatacao)
 
         return ContextoPlugin(
             manifesto=registro.manifesto,
@@ -343,7 +380,8 @@ class PluginManager:
             ui=self._ui,
             _ler_config=config_app.carregar_config_plugin,
             _gravar_config=config_app.guardar_config_plugin,
-            _traduzir=carregar_texto,
+            _traduzir=traduzir,
+            _registrar_textos=registrar_textos_plugin,
         )
 
     # -------------------------------------------------------------- ACTIVATE
@@ -626,4 +664,7 @@ class PluginManager:
 
     @staticmethod
     def _descartar_modulo(plugin_id: str) -> None:
+        from language_manager import remover_textos_plugin
+
         sys.modules.pop(PREFIXO_MODULO + plugin_id, None)
+        remover_textos_plugin(plugin_id)

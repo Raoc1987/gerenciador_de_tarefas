@@ -810,3 +810,103 @@ def test_tabela_de_plugins_nao_afeta_as_tarefas(pasta_plugins, criar_plugin):
     gerenciador.remover("demo", remover_dados=True)
 
     assert database.obter_tarefa(tarefa_id)[1] == "Tarefa importante"
+
+
+# ====================================================== IDIOMAS DOS PLUGINS
+
+
+CORPO_TRADUZIDO = '''
+from core.plugin_api import Plugin
+
+visto = {}
+
+
+class PluginTraduzido(Plugin):
+    def ativar(self):
+        visto["aba"] = self.contexto.traduzir("aba")
+        visto["app"] = self.contexto.traduzir("tarefas")
+        visto["desconhecida"] = self.contexto.traduzir("nao_existe", "reserva")
+'''
+
+CORPO_REGISTA_TEXTOS = '''
+from core.plugin_api import Plugin
+
+visto = {}
+
+
+class PluginQueRegista(Plugin):
+    def inicializar(self):
+        self.contexto.registrar_textos(
+            {"pt": {"ola": "Olá"}, "en": {"ola": "Hello"}}
+        )
+
+    def ativar(self):
+        visto["ola"] = self.contexto.traduzir("ola")
+'''
+
+
+def test_plugin_usa_a_sua_pasta_de_idiomas(gerenciador, criar_plugin):
+    import language_manager as lm
+
+    pasta = criar_plugin("traduzido", corpo=CORPO_TRADUZIDO)
+    idiomas = pasta / "idiomas"
+    idiomas.mkdir()
+    (idiomas / "pt.json").write_text(json.dumps({"aba": "Calendário"}), encoding="utf-8")
+    (idiomas / "en.json").write_text(json.dumps({"aba": "Calendar"}), encoding="utf-8")
+
+    gerenciador.descobrir()
+    lm.definir_idioma("en", persistir=False)
+    assert gerenciador.ativar("traduzido").sucesso
+
+    visto = sys.modules[PREFIXO_MODULO + "traduzido"].visto
+    assert visto["aba"] == "Calendar"
+    # chaves que o plugin não define caem nos textos da aplicação
+    assert visto["app"] == "Tasks"
+    assert visto["desconhecida"] == "reserva"
+
+
+def test_idioma_do_plugin_cai_para_portugues(gerenciador, criar_plugin):
+    import language_manager as lm
+
+    pasta = criar_plugin("traduzido", corpo=CORPO_TRADUZIDO)
+    idiomas = pasta / "idiomas"
+    idiomas.mkdir()
+    (idiomas / "pt.json").write_text(json.dumps({"aba": "Calendário"}), encoding="utf-8")
+
+    gerenciador.descobrir()
+    lm.definir_idioma("es", persistir=False)
+    gerenciador.ativar("traduzido")
+    assert sys.modules[PREFIXO_MODULO + "traduzido"].visto["aba"] == "Calendário"
+
+
+def test_idioma_do_plugin_invalido_e_ignorado(gerenciador, criar_plugin):
+    pasta = criar_plugin("traduzido", corpo=CORPO_TRADUZIDO)
+    idiomas = pasta / "idiomas"
+    idiomas.mkdir()
+    (idiomas / "pt.json").write_text("{ isto não é json", encoding="utf-8")
+
+    gerenciador.descobrir()
+    assert gerenciador.ativar("traduzido").sucesso
+    assert sys.modules[PREFIXO_MODULO + "traduzido"].visto["aba"] == "aba"
+
+
+def test_plugin_pode_registar_textos_em_codigo(gerenciador, criar_plugin):
+    import language_manager as lm
+
+    criar_plugin("registador", corpo=CORPO_REGISTA_TEXTOS)
+    gerenciador.descobrir()
+    lm.definir_idioma("pt", persistir=False)
+    gerenciador.ativar("registador")
+    assert sys.modules[PREFIXO_MODULO + "registador"].visto["ola"] == "Olá"
+
+
+def test_textos_do_plugin_sao_esquecidos_ao_descarregar(gerenciador, criar_plugin):
+    import language_manager as lm
+
+    criar_plugin("registador", corpo=CORPO_REGISTA_TEXTOS)
+    gerenciador.descobrir()
+    gerenciador.ativar("registador")
+    assert lm.carregar_texto_plugin("registador", "ola") == "Olá"
+
+    gerenciador.descarregar("registador")
+    assert lm.carregar_texto_plugin("registador", "ola") == "ola"

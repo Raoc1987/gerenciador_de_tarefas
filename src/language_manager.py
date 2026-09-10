@@ -113,5 +113,54 @@ def carregar_texto(chave: str, padrao: str | None = None, **formatacao: Any) -> 
 
 
 def limpar_cache() -> None:
-    """Descarta os idiomas em memória (usado pelos testes)."""
+    """Descarta os idiomas em memória, incluindo os dos plugins."""
     _cache.clear()
+    _textos_plugins.clear()
+
+
+# --------------------------------------------------- textos fornecidos por plugins
+
+#: ``plugin_id -> código de idioma -> {chave: texto}``
+_textos_plugins: Dict[str, Dict[str, Dict[str, str]]] = {}
+
+
+def registrar_textos_plugin(plugin_id: str, textos_por_idioma: Dict[str, Dict[str, str]]) -> None:
+    """Regista os textos de um plugin, por idioma.
+
+    Os textos do plugin vivem num espaço próprio: nunca sobrepõem os da
+    aplicação nem colidem com os de outro plugin.
+    """
+    normalizados: Dict[str, Dict[str, str]] = {}
+    for codigo, textos in (textos_por_idioma or {}).items():
+        if isinstance(textos, dict):
+            normalizados[str(codigo)] = {str(k): str(v) for k, v in textos.items()}
+    _textos_plugins[plugin_id] = normalizados
+    logger.debug("Textos registados para o plugin %s: %s", plugin_id, list(normalizados))
+
+
+def remover_textos_plugin(plugin_id: str) -> None:
+    """Esquece os textos de um plugin (ao descarregá-lo ou removê-lo)."""
+    _textos_plugins.pop(plugin_id, None)
+
+
+def carregar_texto_plugin(
+    plugin_id: str, chave: str, padrao: str | None = None, **formatacao: Any
+) -> str:
+    """Texto de um plugin no idioma atual, com recurso aos textos da aplicação.
+
+    Ordem de procura: idioma atual do plugin, idioma padrão do plugin, textos
+    da aplicação, ``padrao``, e por fim a própria chave.
+    """
+    do_plugin = _textos_plugins.get(plugin_id, {})
+    valor = do_plugin.get(_idioma_atual, {}).get(chave)
+    if valor is None:
+        valor = do_plugin.get(IDIOMA_PADRAO, {}).get(chave)
+    if valor is None:
+        return carregar_texto(chave, padrao, **formatacao)
+
+    if formatacao:
+        try:
+            return valor.format(**formatacao)
+        except (KeyError, IndexError, ValueError):
+            logger.warning("Falha ao formatar o texto %r do plugin %s.", chave, plugin_id)
+    return valor

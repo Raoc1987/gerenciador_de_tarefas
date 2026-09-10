@@ -35,6 +35,18 @@ _MIGRACOES: List[Sequence[str]] = [
         )
         """,
     ),
+    # v2 — registo dos plugins instalados (aditiva: não toca em `tarefas`)
+    (
+        """
+        CREATE TABLE IF NOT EXISTS plugins (
+            id            TEXT    PRIMARY KEY,
+            version       TEXT    NOT NULL,
+            enabled       INTEGER NOT NULL DEFAULT 0,
+            installed_at  TEXT    NOT NULL,
+            updated_at    TEXT    NOT NULL
+        )
+        """,
+    ),
 ]
 
 

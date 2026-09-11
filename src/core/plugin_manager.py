@@ -39,6 +39,7 @@ from core.plugin_api import (
     Plugin,
     PluginError,
     ServicoTarefas,
+    TarefasComPermissoes,
     encontrar_classe_plugin,
 )
 from core.plugin_sources import FontePlugins
@@ -378,7 +379,11 @@ class PluginManager:
             diretorio_plugin=registro.pasta,
             diretorio_dados=diretorio_dados_plugin(registro.id),
             logger=obter_logger(f"plugin.{registro.id}"),
-            tarefas=self._tarefas,
+            tarefas=(
+                TarefasComPermissoes(self._tarefas, registro.manifesto.permissoes)
+                if self._tarefas is not None
+                else None
+            ),
             ui=self._ui,
             _subscrever_evento=eventos.subscrever,
             _publicar_evento=eventos.publicar,

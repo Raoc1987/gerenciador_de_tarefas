@@ -175,5 +175,15 @@
   "so_as_minhas": "Only mine",
   "tarefa_de_outro": "This task belongs to someone else and cannot be changed by you.",
   "meses": "January,February,March,April,May,June,July,August,September,October,November,December",
-  "dias_semana": "Mon,Tue,Wed,Thu,Fri,Sat,Sun"
+  "dias_semana": "Mon,Tue,Wed,Thu,Fri,Sat,Sun",
+  "plugin_permissoes": "Requested access",
+  "plugin_sem_permissoes": "None — this plugin does not access your data.",
+  "plugin_permissao_nao_declarada": "The plugin tried to do something it did not request permission for.",
+  "permissao_tarefas.ler": "see your tasks",
+  "permissao_tarefas.escrever": "create and change tasks",
+  "permissao_tarefas.ver_todas": "see everyone's tasks",
+  "permissao_analytics.ler": "see metrics",
+  "permissao_relatorios.ler": "see reports",
+  "permissao_relatorios.exportar": "export reports to files",
+  "plugin_ativar_acesso": "This plugin requests access to: {acesso}"
 }

@@ -26,8 +26,19 @@ from abc import ABC
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Protocol, Sequence
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    FrozenSet,
+    Iterable,
+    List,
+    Optional,
+    Protocol,
+    Sequence,
+)
 
+from core.permissoes import Permissao
 from core.version import (
     APP_VERSION,
     VersaoInvalidaError,
@@ -42,6 +53,23 @@ _PADRAO_ID = re.compile(r"^[a-z0-9][a-z0-9_-]{1,63}$")
 # Versão do próprio contrato de plugins. Incrementar apenas em mudanças
 # incompatíveis da API oferecida aos plugins.
 PLUGIN_API_VERSION = "1.0"
+
+#: Permissões que um plugin **nunca** pode pedir.
+#:
+#: Gerir plugins, contas ou o sistema não são capacidades de negócio: são as
+#: chaves da casa. Um plugin que instala plugins deixa de ter fronteira, e um
+#: que cria contas concede-se a si próprio o que quiser. Estas ficam do lado
+#: de cá, com o utilizador.
+PERMISSOES_NEGADAS_A_PLUGINS = frozenset(
+    {
+        Permissao.PLUGINS_GERIR,
+        Permissao.UTILIZADORES_GERIR,
+        Permissao.SISTEMA_ADMIN,
+    }
+)
+
+#: O que um plugin pode declarar no ``plugin.json``.
+PERMISSOES_CONCEDIVEIS = frozenset(Permissao) - PERMISSOES_NEGADAS_A_PLUGINS
 
 
 # --------------------------------------------------------------------- erros
@@ -90,6 +118,22 @@ class AtivacaoPluginError(PluginError):
     chave_mensagem = "plugin_erro_ativar"
 
 
+class PermissaoNaoDeclaradaError(PluginError):
+    """O plugin tentou fazer algo que não pediu no manifesto.
+
+    Não é o mesmo que :class:`~core.permissoes.PermissaoNegadaError`: aqui a
+    sessão até podia ter o direito — foi o plugin que não o declarou.
+    """
+
+    chave_mensagem = "plugin_permissao_nao_declarada"
+
+    def __init__(self, permissao: Permissao) -> None:
+        super().__init__(
+            f"O plugin não declarou a permissão {permissao.value!r} no manifesto."
+        )
+        self.permissao = permissao
+
+
 # --------------------------------------------------------------------- estado
 
 
@@ -125,6 +169,11 @@ class ManifestoPlugin:
     max_app_version: Optional[str] = None
     autor: str = ""
     descricao: str = ""
+    permissoes: FrozenSet[Permissao] = frozenset()
+    """O que o plugin declarou precisar. Declarar não concede: limita.
+
+    O plugin recebe a interseção disto com o que a sessão pode fazer.
+    """
     extras: Dict[str, Any] = field(default_factory=dict, compare=False)
 
     _OBRIGATORIOS = ("id", "name", "version", "entry_point", "min_app_version")
@@ -184,9 +233,11 @@ class ManifestoPlugin:
             if campo in dados and not isinstance(dados[campo], str):
                 raise ManifestoInvalidoError(f"Campo {campo!r} deve ser uma string.")
 
+        permissoes = cls._permissoes_pedidas(dados.get("permissions", []))
+
         conhecidos = {
             "id", "name", "version", "entry_point", "min_app_version",
-            "max_app_version", "author", "description",
+            "max_app_version", "author", "description", "permissions",
         }
         extras = {c: v for c, v in dados.items() if c not in conhecidos}
 
@@ -199,8 +250,38 @@ class ManifestoPlugin:
             max_app_version=maxima.strip() if maxima else None,
             autor=str(dados.get("author", "")).strip(),
             descricao=str(dados.get("description", "")).strip(),
+            permissoes=permissoes,
             extras=extras,
         )
+
+    @staticmethod
+    def _permissoes_pedidas(pedidas: Any) -> FrozenSet[Permissao]:
+        """Valida o campo ``permissions`` do manifesto.
+
+        Raises:
+            ManifestoInvalidoError: se não for uma lista de nomes conhecidos,
+                ou se o plugin pedir uma permissão que nenhum plugin pode ter.
+        """
+        if not isinstance(pedidas, list):
+            raise ManifestoInvalidoError("permissions deve ser uma lista.")
+
+        permissoes = set()
+        for nome in pedidas:
+            if not isinstance(nome, str):
+                raise ManifestoInvalidoError("permissions deve conter apenas strings.")
+            try:
+                permissao = Permissao(nome.strip())
+            except ValueError as erro:
+                conhecidas = ", ".join(sorted(p.value for p in PERMISSOES_CONCEDIVEIS))
+                raise ManifestoInvalidoError(
+                    f"Permissão desconhecida: {nome!r}. Disponíveis: {conhecidas}."
+                ) from erro
+            if permissao not in PERMISSOES_CONCEDIVEIS:
+                raise ManifestoInvalidoError(
+                    f"Nenhum plugin pode pedir {permissao.value!r}."
+                )
+            permissoes.add(permissao)
+        return frozenset(permissoes)
 
     @staticmethod
     def _entry_point_seguro(entry_point: str) -> bool:
@@ -250,6 +331,8 @@ class ManifestoPlugin:
             "min_app_version": self.min_app_version,
             "entry_point": self.entry_point,
         }
+        if self.permissoes:
+            dados["permissions"] = sorted(p.value for p in self.permissoes)
         if self.max_app_version:
             dados["max_app_version"] = self.max_app_version
         dados.update(self.extras)
@@ -283,6 +366,39 @@ class ServicoTarefas(Protocol):
     def listar_por_data(self, data_iso: str) -> List[tuple]: ...
 
     def adicionar(self, descricao: str, data_vencimento: Optional[str] = None) -> int: ...
+
+
+class TarefasComPermissoes:
+    """Limita um :class:`ServicoTarefas` ao que o plugin declarou.
+
+    É a interseção de dois filtros independentes, e ambos têm de deixar passar:
+
+    * este, que exige que o plugin tenha **pedido** a permissão no manifesto;
+    * o :mod:`tarefas_servico` por baixo, que exige que a **sessão** a tenha.
+
+    Um plugin que declare ``tarefas.ver_todas`` não passa a ver tudo: passa a
+    poder ver tudo *se* quem está a usar a aplicação também puder.
+    """
+
+    def __init__(self, servico: ServicoTarefas, permissoes: Iterable[Permissao]) -> None:
+        self._servico = servico
+        self._permissoes = frozenset(permissoes)
+
+    def _exigir(self, permissao: Permissao) -> None:
+        if permissao not in self._permissoes:
+            raise PermissaoNaoDeclaradaError(permissao)
+
+    def listar(self, incluir_concluidas: bool = True) -> List[tuple]:
+        self._exigir(Permissao.TAREFAS_LER)
+        return self._servico.listar(incluir_concluidas=incluir_concluidas)
+
+    def listar_por_data(self, data_iso: str) -> List[tuple]:
+        self._exigir(Permissao.TAREFAS_LER)
+        return self._servico.listar_por_data(data_iso)
+
+    def adicionar(self, descricao: str, data_vencimento: Optional[str] = None) -> int:
+        self._exigir(Permissao.TAREFAS_ESCREVER)
+        return self._servico.adicionar(descricao, data_vencimento)
 
 
 class InterfaceAnfitria(Protocol):
@@ -327,6 +443,23 @@ class ContextoPlugin:
     _gravar_config: Optional[Callable[[str, Dict[str, Any]], None]] = None
     _traduzir: Optional[Callable[..., str]] = None
     _registrar_textos: Optional[Callable[[str, Dict[str, Dict[str, str]]], None]] = None
+
+    @property
+    def permissoes(self) -> FrozenSet[Permissao]:
+        """O que este plugin declarou no manifesto."""
+        return self.manifesto.permissoes
+
+    def pode(self, permissao: Permissao) -> bool:
+        """Se o plugin declarou a permissão **e** a sessão a tem.
+
+        Use isto para esconder um botão em vez de o deixar falhar: perguntar
+        é mais barato do que apanhar a exceção.
+        """
+        if permissao not in self.manifesto.permissoes:
+            return False
+        from core import permissoes as _permissoes
+
+        return _permissoes.pode(permissao)
 
     def config(self) -> Dict[str, Any]:
         """Configuração privada do plugin (dicionário vazio se ainda não existir)."""

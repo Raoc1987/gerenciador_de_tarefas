@@ -5,5 +5,6 @@
   "author": "Gerenciador de Tarefas",
   "description": "Mostra as tarefas num calendário mensal e permite criar tarefas numa data.",
   "min_app_version": "1.0.0",
-  "entry_point": "plugin.py"
+  "entry_point": "plugin.py",
+  "permissions": ["tarefas.ler", "tarefas.escrever"]
 }

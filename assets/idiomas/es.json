@@ -175,5 +175,15 @@
   "so_as_minhas": "Solo las mías",
   "tarefa_de_outro": "Esta tarea es de otra persona y usted no puede modificarla.",
   "meses": "Enero,Febrero,Marzo,Abril,Mayo,Junio,Julio,Agosto,Septiembre,Octubre,Noviembre,Diciembre",
-  "dias_semana": "Lun,Mar,Mié,Jue,Vie,Sáb,Dom"
+  "dias_semana": "Lun,Mar,Mié,Jue,Vie,Sáb,Dom",
+  "plugin_permissoes": "Acceso solicitado",
+  "plugin_sem_permissoes": "Ninguno — este complemento no accede a sus datos.",
+  "plugin_permissao_nao_declarada": "El complemento intentó hacer algo para lo que no pidió permiso.",
+  "permissao_tarefas.ler": "ver sus tareas",
+  "permissao_tarefas.escrever": "crear y modificar tareas",
+  "permissao_tarefas.ver_todas": "ver las tareas de todos",
+  "permissao_analytics.ler": "ver las métricas",
+  "permissao_relatorios.ler": "ver los informes",
+  "permissao_relatorios.exportar": "exportar informes a archivos",
+  "plugin_ativar_acesso": "Este complemento solicita acceso a: {acesso}"
 }

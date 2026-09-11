@@ -264,7 +264,8 @@ meu_plugin/
   "author": "Você",
   "description": "O que o plugin faz.",
   "min_app_version": "1.0.0",
-  "entry_point": "plugin.py"
+  "entry_point": "plugin.py",
+  "permissions": ["tarefas.ler"]
 }
 ```
 
@@ -275,7 +276,41 @@ Regras do manifesto:
 - `version` e `min_app_version`: versão semântica (`1.2.3`);
 - `max_app_version`: opcional, inclusivo;
 - `entry_point`: arquivo `.py` dentro da pasta do plugin (sem `..`, sem
-  caminho absoluto).
+  caminho absoluto);
+- `permissions`: opcional. O acesso de que o plugin precisa. Omitir é pedir
+  nada, não é pedir tudo.
+
+### Permissões declaradas
+
+Um plugin instalado é código de outra pessoa a correr na máquina de quem lhe
+confia os dados. O manifesto tem de declarar de que acesso precisa; o
+utilizador vê essa lista no gestor de plugins e outra vez antes de o ativar.
+
+O que o plugin recebe é a **interseção** de duas coisas, e ambas têm de deixar
+passar:
+
+| | |
+|---|---|
+| o que o plugin **declarou** | senão, `PermissaoNaoDeclaradaError` |
+| o que a **sessão** pode fazer | senão, `PermissaoNegadaError` |
+
+Declarar `tarefas.ver_todas` não faz um plugin ver tudo: faz com que possa ver
+tudo *se* quem está a usar a aplicação também puder.
+
+Um plugin pode pedir: `tarefas.ler`, `tarefas.escrever`, `tarefas.ver_todas`,
+`analytics.ler`, `relatorios.ler`, `relatorios.exportar`.
+
+Nenhum plugin pode pedir `plugins.gerir`, `utilizadores.gerir` ou
+`sistema.admin` — um manifesto que as peça é recusado na instalação. Não são
+capacidades de negócio: um plugin que instala plugins deixa de ter fronteira,
+e um que cria contas concede-se a si próprio o que quiser.
+
+Para esconder um botão em vez de o deixar falhar:
+
+```python
+if self.contexto.pode(Permissao.TAREFAS_ESCREVER):
+    ...
+```
 
 `plugin.py`:
 

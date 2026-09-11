@@ -175,5 +175,15 @@
   "so_as_minhas": "Só as minhas",
   "tarefa_de_outro": "Esta tarefa é de outra pessoa e não pode ser alterada por si.",
   "meses": "Janeiro,Fevereiro,Março,Abril,Maio,Junho,Julho,Agosto,Setembro,Outubro,Novembro,Dezembro",
-  "dias_semana": "Seg,Ter,Qua,Qui,Sex,Sáb,Dom"
+  "dias_semana": "Seg,Ter,Qua,Qui,Sex,Sáb,Dom",
+  "plugin_permissoes": "Acesso pedido",
+  "plugin_sem_permissoes": "Nenhum — este plugin não acede aos seus dados.",
+  "plugin_permissao_nao_declarada": "O plugin tentou fazer algo que não pediu permissão para fazer.",
+  "permissao_tarefas.ler": "ver as suas tarefas",
+  "permissao_tarefas.escrever": "criar e alterar tarefas",
+  "permissao_tarefas.ver_todas": "ver as tarefas de toda a gente",
+  "permissao_analytics.ler": "ver as métricas",
+  "permissao_relatorios.ler": "ver os relatórios",
+  "permissao_relatorios.exportar": "exportar relatórios para ficheiros",
+  "plugin_ativar_acesso": "Este plugin pede acesso a: {acesso}"
 }

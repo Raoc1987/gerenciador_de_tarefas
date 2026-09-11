@@ -145,6 +145,19 @@ def mensagem_resultado(resultado: ResultadoOperacao) -> str:
     return carregar_texto(resultado.chave_mensagem)
 
 
+def texto_permissoes(registro: RegistroPlugin) -> str:
+    """O que o plugin pede, escrito para quem não programa.
+
+    Um plugin que não pede nada diz isso mesmo — é informação, não ausência
+    de informação.
+    """
+    manifesto = registro.manifesto
+    pedidas = sorted(manifesto.permissoes, key=lambda p: p.value) if manifesto else []
+    if not pedidas:
+        return carregar_texto("plugin_sem_permissoes")
+    return ", ".join(carregar_texto(f"permissao_{p.value}") for p in pedidas)
+
+
 class JanelaPlugins(tk.Toplevel):
     """Tela *Configurações → Plugins*.
 
@@ -226,6 +239,12 @@ class JanelaPlugins(tk.Toplevel):
             cartao,
             text=f"{carregar_texto('plugin_status')}: {texto_estado(registro)}",
         ).pack(anchor=tk.W, padx=8, pady=(4, 0))
+
+        ttk.Label(
+            cartao,
+            text=f"{carregar_texto('plugin_permissoes')}: {texto_permissoes(registro)}",
+            wraplength=520,
+        ).pack(anchor=tk.W, padx=8, pady=(2, 0))
 
         if registro.erro:
             ttk.Label(
@@ -318,10 +337,16 @@ class JanelaPlugins(tk.Toplevel):
         registro = self._gerenciador.obter(plugin_id)
         if registro is None or registro.ativo or not registro.estado.utilizavel:
             return False
+        # O acesso pedido aparece antes do "Sim", não depois: é o momento em
+        # que a decisão ainda é do utilizador.
+        pergunta = carregar_texto("plugin_ativar_agora", nome=registro.nome)
+        pergunta += "\n\n" + carregar_texto(
+            "plugin_ativar_acesso", acesso=texto_permissoes(registro)
+        )
         return bool(
             messagebox.askyesno(
                 carregar_texto("plugins"),
-                carregar_texto("plugin_ativar_agora", nome=registro.nome),
+                pergunta,
                 parent=self,
             )
         )

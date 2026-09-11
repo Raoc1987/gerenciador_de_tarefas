@@ -120,7 +120,8 @@ def test_nome_do_instalador(iss):
 
 
 def test_instalador_usa_o_icone_da_aplicacao(iss, raiz_projeto):
-    caminho = diretiva_iss(iss, "SetupIconFile")
+    # O caminho está em notação Windows; normalizar para o teste correr em Linux.
+    caminho = diretiva_iss(iss, "SetupIconFile").replace("\\", "/")
     assert (raiz_projeto / "installer" / caminho).resolve().is_file()
 
 

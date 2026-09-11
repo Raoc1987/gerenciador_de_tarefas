@@ -14,6 +14,7 @@
     "plugin_api.py": "Contrato entre a aplicação e os módulos. É a fronteira que impede o monólito.",
     "plugin_manager.py": "Ciclo de vida dos plugins, com isolamento de falhas.",
     "plugin_package.py": "Validação e extração segura de pacotes. Código não confiável entra por aqui e por mais lado nenhum.",
+    "plugin_dados.py": "Banco privado de cada plugin. Faz parte do contrato, não do domínio: é o que permite a um módulo de negócio guardar dados sem tocar nos da aplicação nem nos de outro plugin.",
     "plugin_registry.py": "Estado instalado/ativo dos plugins, persistido.",
     "plugin_sources.py": "De onde vêm os pacotes (local, embutido, futura loja), separado de como são validados."
   }

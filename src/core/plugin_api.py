@@ -39,6 +39,7 @@ from typing import (
 )
 
 from core.permissoes import Permissao
+from core.plugin_dados import ArmazenamentoPlugin
 from core.version import (
     APP_VERSION,
     VersaoInvalidaError,
@@ -443,6 +444,20 @@ class ContextoPlugin:
     _gravar_config: Optional[Callable[[str, Dict[str, Any]], None]] = None
     _traduzir: Optional[Callable[..., str]] = None
     _registrar_textos: Optional[Callable[[str, Dict[str, Dict[str, str]]], None]] = None
+    _armazenamento: Optional[ArmazenamentoPlugin] = field(default=None, repr=False)
+
+    @property
+    def dados(self) -> ArmazenamentoPlugin:
+        """Banco privado deste plugin.
+
+        É criado no disco na primeira escrita, não aqui: um plugin que nunca
+        guarda nada não deixa ficheiros atrás de si.
+        """
+        if self._armazenamento is None:
+            self._armazenamento = ArmazenamentoPlugin(
+                self.manifesto.id, self.diretorio_dados
+            )
+        return self._armazenamento
 
     @property
     def permissoes(self) -> FrozenSet[Permissao]:

@@ -305,6 +305,42 @@ Nenhum plugin pode pedir `plugins.gerir`, `utilizadores.gerir` ou
 capacidades de negócio: um plugin que instala plugins deixa de ter fronteira,
 e um que cria contas concede-se a si próprio o que quiser.
 
+### Dados próprios
+
+Um módulo de negócio precisa de tabelas. Não as cria no banco da aplicação:
+cada plugin tem o **seu** ficheiro SQLite, na sua área de dados.
+
+```python
+class Estoque(Plugin):
+    def inicializar(self):
+        self.contexto.dados.migrar(
+            1, "CREATE TABLE itens (id INTEGER PRIMARY KEY, nome TEXT)"
+        )
+        self.contexto.dados.migrar(
+            2, "ALTER TABLE itens ADD COLUMN quantidade INTEGER DEFAULT 0"
+        )
+
+    def registar(self, nome, quantidade):
+        self.contexto.dados.executar(
+            "INSERT INTO itens (nome, quantidade) VALUES (?, ?)", (nome, quantidade)
+        )
+```
+
+- `migrar(versao, *sql)` aplica um passo **uma só vez**, por ordem crescente;
+  pode ficar no código para sempre. Um passo corre inteiro ou não corre —
+  incluindo `CREATE`/`ALTER`, para uma migração falhada a meio não deixar o
+  esquema num estado de que nunca mais sai;
+- `executar`, `executar_muitos`, `consultar`, `consultar_um` para o dia a dia,
+  e `conectar()` quando várias escritas têm de acontecer juntas ou nenhuma;
+- o ficheiro só nasce na primeira escrita: um plugin que nada guarda não
+  deixa nada atrás de si;
+- o caminho vem do id do plugin — o plugin não escolhe onde grava, e não
+  alcança os dados da aplicação nem os de outro plugin;
+- remover o plugin **com os dados** leva este ficheiro; removê-lo sem os dados
+  preserva-o para uma reinstalação.
+
+Guardar dados próprios não exige permissão: são os dados do próprio plugin.
+
 Para esconder um botão em vez de o deixar falhar:
 
 ```python

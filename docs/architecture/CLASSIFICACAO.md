@@ -18,6 +18,7 @@ interface) · **Module** (domínio de negócio, como plugin) · **Plugin**
 | Contas e autenticação | Core | `core/utilizadores.py`, `core/seguranca.py` |
 | Auditoria | Core | `core/auditoria.py` |
 | Plugin Engine | Core | `core/plugin_*.py` |
+| SDK: permissões declaradas e dados próprios | Core (contrato) | `core/plugin_api.py`, `core/plugin_dados.py` |
 | Persistência | Infra | `src/database.py` |
 | Regra de quem vê que tarefas | Service | `src/tarefas_servico.py` |
 | Análise (métricas, séries, insights) | Service | `src/analytics/` |
@@ -35,7 +36,6 @@ Ordenado por **valor sobre custo**, não pela ordem em que foi proposto.
 
 | # | Bloco | Categoria | Porquê agora | Depende de |
 |---|---|---|---|---|
-| — | **SDK de dados e permissões para plugins** | Core (contrato) | Sem isto nenhum Module é possível sem furar a arquitetura | — |
 | 2 | Hierarquia empresarial (Empresa → Departamento → Equipa) | **Core** | Permissões, propriedade e multiempresa dependem todas dela. É das poucas coisas que pertence mesmo ao Core | SDK |
 | 3 | ABAC (regras por atributo) | **Core** | "O gestor vê o seu departamento" precisa de atributos; sem hierarquia é impossível | hierarquia |
 | 20 | Backup e restauro | **Core** | Pequeno, alto valor empresarial, e protege tudo o resto. Faz falta antes de haver dados a sério | — |

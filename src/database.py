@@ -58,6 +58,22 @@ _MIGRACOES: List[Sequence[str]] = [
         "CREATE INDEX IF NOT EXISTS idx_tarefas_concluida_em ON tarefas (concluida_em)",
         "CREATE INDEX IF NOT EXISTS idx_tarefas_vencimento ON tarefas (data_vencimento)",
     ),
+    # v4 — trilha de auditoria (aditiva; ver core/auditoria.py)
+    (
+        """
+        CREATE TABLE IF NOT EXISTS auditoria (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            momento     TEXT NOT NULL,
+            evento      TEXT NOT NULL,
+            utilizador  TEXT NOT NULL DEFAULT '',
+            alvo        TEXT NOT NULL DEFAULT '',
+            detalhe     TEXT NOT NULL DEFAULT '',
+            origem      TEXT NOT NULL DEFAULT ''
+        )
+        """,
+        "CREATE INDEX IF NOT EXISTS idx_auditoria_momento ON auditoria (momento)",
+        "CREATE INDEX IF NOT EXISTS idx_auditoria_evento ON auditoria (evento)",
+    ),
 ]
 
 #: Colunas devolvidas por :func:`buscar_tarefas` — contrato estável de que a

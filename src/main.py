@@ -41,6 +41,8 @@ def autoteste(relatorio: Path | None = None) -> int:
     Returns:
         0 se tudo passou, 1 se alguma verificação falhou.
     """
+    from core import auditoria
+
     from core.paths import (
         caminho_banco,
         diretorio_dados_utilizador,
@@ -62,6 +64,8 @@ def autoteste(relatorio: Path | None = None) -> int:
     linhas.append(f"{APP_NAME} {APP_VERSION}")
     linhas.append(f"congelado={esta_congelado()}  recursos={diretorio_recursos()}")
     linhas.append(f"dados do utilizador={diretorio_dados_utilizador()}")
+
+    auditoria.ativar()
 
     # --- banco de dados
     try:

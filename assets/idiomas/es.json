@@ -112,6 +112,15 @@
   "estado_tarefa_concluida": "Completada",
   "estado_tarefa_pendente": "Pendiente",
   "estado_tarefa_atrasada": "Atrasada",
+  "auditoria": "Auditoría",
+  "auditoria_coluna_momento": "Cuándo",
+  "auditoria_coluna_evento": "Evento",
+  "auditoria_coluna_utilizador": "Usuario",
+  "auditoria_coluna_alvo": "Objetivo",
+  "auditoria_coluna_detalhe": "Detalle",
+  "auditoria_filtro_tudo": "Todos los eventos",
+  "auditoria_filtro_aplicacao": "Aplicación",
+  "auditoria_resumo": "Mostrando {mostrados} de {total} registros.",
   "meses": "Enero,Febrero,Marzo,Abril,Mayo,Junio,Julio,Agosto,Septiembre,Octubre,Noviembre,Diciembre",
   "dias_semana": "Lun,Mar,Mié,Jue,Vie,Sáb,Dom"
 }

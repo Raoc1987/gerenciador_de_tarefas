@@ -3,10 +3,13 @@
 import tkinter as tk
 from tkinter import messagebox, ttk
 
+from auditoria_ui import JanelaAuditoria
+from core import auditoria, eventos, permissoes
 from core.log import obter_logger
 from core.paths import caminho_recurso, diretorio_plugins_embutidos
 from core.plugin_manager import PluginManager
 from core.plugin_registry import RegistroEstadoBanco
+from core.permissoes import Permissao
 from core.plugin_sources import FontePastasLocais
 from dashboard_ui import PainelDashboard
 from database import (
@@ -65,6 +68,9 @@ def criar_janela() -> tk.Tk:
     """
     criar_tabela()
     restaurar_idioma_guardado()
+    # A auditoria liga-se ao barramento antes de qualquer coisa acontecer.
+    auditoria.ativar()
+    eventos.publicar(eventos.APP_INICIADA, origem="gui")
 
     app = tk.Tk()
     app.title(carregar_texto("titulo"))
@@ -197,6 +203,9 @@ def criar_janela() -> tk.Tk:
     def abrir_plugins():
         JanelaPlugins(app, gerenciador)
 
+    def abrir_auditoria():
+        JanelaAuditoria(app)
+
     def arrancar_plugins():
         """Semeia os plugins embutidos e ativa os que o utilizador deixou ligados."""
         try:
@@ -228,6 +237,12 @@ def criar_janela() -> tk.Tk:
         configuracoes.add_command(
             label=carregar_texto("plugins") + "...", command=abrir_plugins
         )
+        # A trilha de auditoria é de quem administra a instalação.
+        if permissoes.pode(Permissao.SISTEMA_ADMIN):
+            configuracoes.add_separator()
+            configuracoes.add_command(
+                label=carregar_texto("auditoria") + "...", command=abrir_auditoria
+            )
         barra.add_cascade(label=carregar_texto("configuracoes"), menu=configuracoes)
         app.config(menu=barra)
 
@@ -255,6 +270,7 @@ def criar_janela() -> tk.Tk:
     def ao_fechar():
         """Encerra os plugins antes de fechar a janela."""
         try:
+            eventos.publicar(eventos.APP_ENCERRADA, origem="gui")
             gerenciador.desativar_todos()
         except Exception:  # pragma: no cover - defensivo
             logger.exception("Falha ao encerrar os plugins.")

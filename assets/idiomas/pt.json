@@ -112,6 +112,15 @@
   "estado_tarefa_concluida": "Concluída",
   "estado_tarefa_pendente": "Pendente",
   "estado_tarefa_atrasada": "Atrasada",
+  "auditoria": "Auditoria",
+  "auditoria_coluna_momento": "Quando",
+  "auditoria_coluna_evento": "Evento",
+  "auditoria_coluna_utilizador": "Utilizador",
+  "auditoria_coluna_alvo": "Alvo",
+  "auditoria_coluna_detalhe": "Detalhe",
+  "auditoria_filtro_tudo": "Todos os eventos",
+  "auditoria_filtro_aplicacao": "Aplicação",
+  "auditoria_resumo": "A mostrar {mostrados} de {total} registos.",
   "meses": "Janeiro,Fevereiro,Março,Abril,Maio,Junho,Julho,Agosto,Setembro,Outubro,Novembro,Dezembro",
   "dias_semana": "Seg,Ter,Qua,Qui,Sex,Sáb,Dom"
 }

@@ -522,3 +522,98 @@ def test_semeadura_nao_substitui_o_plugin_do_utilizador(
         assert app.gerenciador_de_plugins.versao_instalada("calendar") == "0.9.0"
     finally:
         app.destroy()
+
+
+# ========================================================== TELA DE AUDITORIA
+
+
+def abrir_auditoria(janela):
+    """Abre Configurações → Auditoria e devolve a janela criada."""
+    from auditoria_ui import JanelaAuditoria
+
+    barra = janela.nametowidget(janela.cget("menu"))
+    submenu = janela.nametowidget(barra.entrycget(0, "menu"))
+    submenu.invoke(submenu.index("end"))
+    janela.update()
+    return next(f for f in janela.winfo_children() if isinstance(f, JanelaAuditoria))
+
+
+def test_menu_tem_auditoria_para_administrador(janela):
+    barra = janela.nametowidget(janela.cget("menu"))
+    submenu = janela.nametowidget(barra.entrycget(0, "menu"))
+    rotulos = [
+        submenu.entrycget(i, "label")
+        for i in range(submenu.index("end") + 1)
+        if submenu.type(i) == "command"
+    ]
+    assert "Auditoria..." in rotulos
+
+
+def test_auditoria_mostra_o_que_aconteceu(janela):
+    import database
+    from core import auditoria
+
+    auditoria.ativar()
+    database.criar_tabela()
+    tarefa_id = database.adicionar_tarefa("Tarefa auditada pela GUI")
+    database.concluir_tarefa(tarefa_id)
+
+    tela = abrir_auditoria(janela)
+    eventos_mostrados = [r.evento for r in tela.registos()]
+    assert "tarefa.criada" in eventos_mostrados
+    assert "tarefa.concluida" in eventos_mostrados
+
+    linhas = tela.tabela.get_children()
+    assert len(linhas) == len(tela.registos())
+    valores = tela.tabela.item(linhas[0], "values")
+    assert valores[1] == "tarefa.concluida", "o mais recente vem primeiro"
+    tela.destroy()
+
+
+def test_auditoria_filtra_por_familia(janela):
+    import database
+    from core import auditoria, eventos as eventos_modulo
+    from core.eventos import Evento
+
+    auditoria.ativar()
+    database.criar_tabela()
+    database.adicionar_tarefa("Uma tarefa")
+    auditoria.registar(
+        Evento(
+            nome=eventos_modulo.PLUGIN_ATIVADO,
+            dados={"id": "calendar"},
+            momento="2026-01-01T10:00:00",
+        )
+    )
+
+    tela = abrir_auditoria(janela)
+    # A janela também regista app.iniciada: por isso se filtra em vez de contar.
+    todos = [r.evento for r in tela.registos()]
+    assert "tarefa.criada" in todos and "plugin.ativado" in todos
+
+    tela._filtro_var.set("Plugins")
+    tela.recarregar()
+    assert [r.evento for r in tela.registos()] == ["plugin.ativado"]
+
+    tela._filtro_var.set("Tarefas")
+    tela.recarregar()
+    assert [r.evento for r in tela.registos()] == ["tarefa.criada"]
+    tela.destroy()
+
+
+def test_auditoria_nao_apaga_nada(janela):
+    """A tela é de leitura: nenhum botão remove registos."""
+    import database
+    from core import auditoria
+
+    auditoria.ativar()
+    database.criar_tabela()
+    database.adicionar_tarefa("Fica registada")
+
+    antes = auditoria.contar()
+    tela = abrir_auditoria(janela)
+    rotulos = set(botoes(tela))
+    assert not {"Remover", "Apagar", "Limpar"} & rotulos
+    assert auditoria.contar() == antes, "abrir a tela não pode mexer na trilha"
+    assert "tarefa.criada" in [r.evento for r in tela.registos()]
+    tela.destroy()

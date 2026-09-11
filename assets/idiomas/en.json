@@ -112,6 +112,15 @@
   "estado_tarefa_concluida": "Completed",
   "estado_tarefa_pendente": "Pending",
   "estado_tarefa_atrasada": "Overdue",
+  "auditoria": "Audit trail",
+  "auditoria_coluna_momento": "When",
+  "auditoria_coluna_evento": "Event",
+  "auditoria_coluna_utilizador": "User",
+  "auditoria_coluna_alvo": "Target",
+  "auditoria_coluna_detalhe": "Details",
+  "auditoria_filtro_tudo": "All events",
+  "auditoria_filtro_aplicacao": "Application",
+  "auditoria_resumo": "Showing {mostrados} of {total} records.",
   "meses": "January,February,March,April,May,June,July,August,September,October,November,December",
   "dias_semana": "Mon,Tue,Wed,Thu,Fri,Sat,Sun"
 }

@@ -220,13 +220,22 @@ def gestao(raiz, com_conta):
         pass
 
 
+def celula(tabela, linha: str, coluna: str) -> str:
+    """Uma célula pelo *nome* da coluna.
+
+    Indexar por posição torna qualquer coluna nova numa falha de teste que não
+    diz nada sobre o que se partiu.
+    """
+    valores = tabela.item(linha, "values")
+    return valores[tabela.cget("columns").index(coluna)]
+
+
 def test_lista_as_contas(gestao):
     assert [c.nome_utilizador for c in gestao.contas()] == ["rodrigo"]
-    linha = gestao.tabela.item("rodrigo", "values")
-    assert linha[0] == "rodrigo"
-    assert linha[1] == "Rodrigo Costa"
-    assert linha[2] == "Administrador"
-    assert linha[3] == "Ativa"
+    assert celula(gestao.tabela, "rodrigo", "utilizador") == "rodrigo"
+    assert celula(gestao.tabela, "rodrigo", "nome") == "Rodrigo Costa"
+    assert celula(gestao.tabela, "rodrigo", "papel") == "Administrador"
+    assert celula(gestao.tabela, "rodrigo", "estado") == "Ativa"
 
 
 def test_criar_conta_pelo_dialogo(gestao, raiz):
@@ -266,7 +275,7 @@ def test_desativar_e_reativar_conta(gestao, raiz):
     gestao.alternar_estado()
     raiz.update()
     assert utilizadores.obter("ana").ativo is False
-    assert gestao.tabela.item("ana", "values")[3] == "Inativa"
+    assert celula(gestao.tabela, "ana", "estado") == "Inativa"
 
     gestao.tabela.selection_set("ana")
     gestao.alternar_estado()

@@ -13,6 +13,7 @@ from core.permissoes import Permissao, PermissaoNegadaError
 from core.plugin_sources import FontePastasLocais
 from dashboard_ui import PainelDashboard
 import tarefas_servico
+from organizacao_ui import JanelaOrganizacao
 from language_manager import (
     IDIOMAS_SUPORTADOS,
     carregar_texto,
@@ -242,6 +243,9 @@ def criar_janela(raiz: tk.Tk | None = None) -> tk.Tk:
     def abrir_utilizadores():
         JanelaUtilizadores(app)
 
+    def abrir_estrutura():
+        JanelaOrganizacao(app)
+
     def arrancar_plugins():
         """Semeia os plugins embutidos e ativa os que o utilizador deixou ligados."""
         try:
@@ -277,9 +281,13 @@ def criar_janela(raiz: tk.Tk | None = None) -> tk.Tk:
             configuracoes.add_command(
                 label=carregar_texto("utilizadores") + "...", command=abrir_utilizadores
             )
-        # A trilha de auditoria é de quem administra a instalação.
+        # A estrutura e a trilha de auditoria são de quem administra a
+        # instalação: mexer na primeira muda o que as outras pessoas veem.
         if permissoes.pode(Permissao.SISTEMA_ADMIN):
             configuracoes.add_separator()
+            configuracoes.add_command(
+                label=carregar_texto("estrutura") + "...", command=abrir_estrutura
+            )
             configuracoes.add_command(
                 label=carregar_texto("auditoria") + "...", command=abrir_auditoria
             )

@@ -17,6 +17,8 @@ interface) · **Module** (domínio de negócio, como plugin) · **Plugin**
 | Permissões (RBAC) | Core | `core/permissoes.py` |
 | Contas e autenticação | Core | `core/utilizadores.py`, `core/seguranca.py` |
 | Auditoria | Core | `core/auditoria.py` |
+| Estrutura da organizacao | Core | `core/organizacao.py` |
+| Visibilidade por unidade | Service | `src/tarefas_servico.py` |
 | Plugin Engine | Core | `core/plugin_*.py` |
 | SDK: permissões declaradas e dados próprios | Core (contrato) | `core/plugin_api.py`, `core/plugin_dados.py` |
 | Persistência | Infra | `src/database.py` |
@@ -36,8 +38,7 @@ Ordenado por **valor sobre custo**, não pela ordem em que foi proposto.
 
 | # | Bloco | Categoria | Porquê agora | Depende de |
 |---|---|---|---|---|
-| 2 | Hierarquia empresarial (Empresa → Departamento → Equipa) | **Core** | Permissões, propriedade e multiempresa dependem todas dela. É das poucas coisas que pertence mesmo ao Core | SDK |
-| 3 | ABAC (regras por atributo) | **Core** | "O gestor vê o seu departamento" precisa de atributos; sem hierarquia é impossível | hierarquia |
+| 3 | ABAC (regras por atributo) | **Core** | O caso que mais pesava — "o gestor vê o seu departamento" — já está feito com a hierarquia. O que falta do ABAC é o caso geral: regras por atributo arbitrário | hierarquia |
 | 20 | Backup e restauro | **Core** | Pequeno, alto valor empresarial, e protege tudo o resto. Faz falta antes de haver dados a sério | — |
 | 21 | Feature flags | **Core** | Minúsculo, e é o que evita `if licenca` espalhado por cem ficheiros | — |
 | 7 | Workflow Engine | **Service** | O diferencial que nomeou, e o barramento de eventos já dá a base. Nada de novo é preciso | eventos |

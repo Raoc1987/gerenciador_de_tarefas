@@ -13,7 +13,7 @@ import tkinter as tk
 from tkinter import messagebox, simpledialog, ttk
 from typing import List, Optional
 
-from core import permissoes, seguranca, utilizadores
+from core import organizacao, permissoes, seguranca, utilizadores
 from core.log import obter_logger
 from core.permissoes import PAPEIS, Permissao
 from core.utilizadores import Utilizador
@@ -140,9 +140,9 @@ class JanelaUtilizadores(tk.Toplevel):
             cabecalho, text="+ " + carregar_texto("novo_utilizador"), command=self.nova_conta
         ).pack(side=tk.RIGHT)
 
-        colunas = ("utilizador", "nome", "papel", "estado", "ultimo_acesso")
+        colunas = ("utilizador", "nome", "papel", "unidade", "estado", "ultimo_acesso")
         self.tabela = ttk.Treeview(self, columns=colunas, show="headings", height=12)
-        larguras = {"utilizador": 130, "nome": 180, "papel": 120, "estado": 90, "ultimo_acesso": 150}
+        larguras = {"utilizador": 120, "nome": 150, "papel": 110, "unidade": 170, "estado": 80, "ultimo_acesso": 140}
         for coluna in colunas:
             self.tabela.heading(
                 coluna, text=carregar_texto(f"coluna_{coluna}"), anchor=tk.W
@@ -154,6 +154,7 @@ class JanelaUtilizadores(tk.Toplevel):
         acoes.pack(fill=tk.X, padx=12, pady=10)
         self._botoes = {
             "papel": ttk.Button(acoes, text=carregar_texto("alterar_papel"), command=self.alterar_papel),
+            "unidade": ttk.Button(acoes, text=carregar_texto("definir_unidade"), command=self.definir_unidade),
             "estado": ttk.Button(acoes, text=carregar_texto("ativar_desativar"), command=self.alternar_estado),
             "senha": ttk.Button(acoes, text=carregar_texto("redefinir_senha"), command=self.redefinir_senha),
             "remover": ttk.Button(acoes, text=carregar_texto("remover"), command=self.remover),
@@ -191,6 +192,7 @@ class JanelaUtilizadores(tk.Toplevel):
                     conta.nome_utilizador,
                     conta.nome,
                     nome_do_papel(conta.papel_nome),
+                    organizacao.caminho(conta.unidade_id) if conta.unidade_id else "",
                     carregar_texto("conta_ativa" if conta.ativo else "conta_inativa_estado"),
                     (conta.ultimo_acesso or "").replace("T", " "),
                 ),
@@ -214,6 +216,53 @@ class JanelaUtilizadores(tk.Toplevel):
         self.wait_window(dialogo)
         if dialogo.resultado is not None:
             self.recarregar()
+
+    def definir_unidade(self) -> None:
+        """Põe a conta selecionada num lugar da estrutura, ou tira-a de lá."""
+        conta = self.selecionada()
+        if conta is None:
+            return
+
+        unidades = organizacao.listar()
+        if not unidades:
+            messagebox.showinfo(
+                carregar_texto("informacao"),
+                carregar_texto("estrutura_vazia"),
+                parent=self,
+            )
+            return
+
+        # A opção de não pertencer a lado nenhum tem de estar na lista: sem
+        # ela, uma pessoa posta numa unidade por engano ficava lá presa.
+        sem = carregar_texto("sem_unidade")
+        por_caminho = {organizacao.caminho(u.id): u.id for u in unidades}
+        escolhido = simpledialog.askstring(
+            carregar_texto("definir_unidade"),
+            carregar_texto("escolher_unidade", utilizador=conta.apresentacao)
+            + "\n"
+            + ", ".join([sem] + sorted(por_caminho)),
+            initialvalue=(
+                organizacao.caminho(conta.unidade_id) if conta.unidade_id else sem
+            ),
+            parent=self,
+        )
+        if escolhido is None:
+            return
+
+        escolhido = escolhido.strip()
+        if escolhido and escolhido != sem and escolhido not in por_caminho:
+            messagebox.showerror(
+                carregar_texto("erro"),
+                carregar_texto("unidade_nao_encontrada"),
+                parent=self,
+            )
+            return
+
+        utilizadores.definir_unidade(
+            conta.nome_utilizador,
+            None if not escolhido or escolhido == sem else por_caminho[escolhido],
+        )
+        self.recarregar()
 
     def alterar_papel(self) -> None:
         """Pede um papel novo para a conta selecionada."""

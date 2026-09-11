@@ -527,26 +527,67 @@ def test_semeadura_nao_substitui_o_plugin_do_utilizador(
 # ========================================================== TELA DE AUDITORIA
 
 
+def invocar_no_menu(janela, chave: str) -> None:
+    """Clica na entrada de Configurações cujo rótulo vem de ``chave``.
+
+    Procurar pelo rótulo e não pela posição: uma entrada nova no menu não
+    devia partir um teste que nada tem a ver com ela.
+    """
+    from language_manager import carregar_texto
+
+    procurado = carregar_texto(chave) + "..."
+    barra = janela.nametowidget(janela.cget("menu"))
+    submenu = janela.nametowidget(barra.entrycget(0, "menu"))
+    for indice in range(submenu.index("end") + 1):
+        if submenu.type(indice) == "command" and submenu.entrycget(indice, "label") == procurado:
+            submenu.invoke(indice)
+            janela.update()
+            return
+    raise AssertionError(f"Não há entrada {procurado!r} no menu Configurações.")
+
+
 def abrir_auditoria(janela):
     """Abre Configurações → Auditoria e devolve a janela criada."""
     from auditoria_ui import JanelaAuditoria
 
-    barra = janela.nametowidget(janela.cget("menu"))
-    submenu = janela.nametowidget(barra.entrycget(0, "menu"))
-    submenu.invoke(submenu.index("end"))
-    janela.update()
+    invocar_no_menu(janela, "auditoria")
     return next(f for f in janela.winfo_children() if isinstance(f, JanelaAuditoria))
 
 
-def test_menu_tem_auditoria_para_administrador(janela):
+def rotulos_do_menu(janela):
+    """Os comandos do menu Configurações."""
     barra = janela.nametowidget(janela.cget("menu"))
     submenu = janela.nametowidget(barra.entrycget(0, "menu"))
-    rotulos = [
+    return [
         submenu.entrycget(i, "label")
         for i in range(submenu.index("end") + 1)
         if submenu.type(i) == "command"
     ]
-    assert "Auditoria..." in rotulos
+
+
+def test_menu_tem_auditoria_para_administrador(janela):
+    assert "Auditoria..." in rotulos_do_menu(janela)
+
+
+def test_menu_tem_estrutura_e_copia_para_administrador(janela):
+    """As duas telas de administração chegam-se pelo mesmo sítio."""
+    rotulos = rotulos_do_menu(janela)
+    assert "Estrutura..." in rotulos
+    assert "Cópia de segurança..." in rotulos
+
+
+def test_abrir_a_copia_de_seguranca_pelo_menu(janela):
+    from backup_ui import JanelaBackup
+
+    invocar_no_menu(janela, "backup")
+    assert any(isinstance(f, JanelaBackup) for f in janela.winfo_children())
+
+
+def test_abrir_a_estrutura_pelo_menu(janela):
+    from organizacao_ui import JanelaOrganizacao
+
+    invocar_no_menu(janela, "estrutura")
+    assert any(isinstance(f, JanelaOrganizacao) for f in janela.winfo_children())
 
 
 def test_auditoria_mostra_o_que_aconteceu(janela):

@@ -209,6 +209,53 @@ def _aplicar_migracoes(conexao: sqlite3.Connection) -> None:
     conexao.commit()
 
 
+#: A versão de esquema que esta build sabe ler e escrever.
+#:
+#: Um banco com uma versão **maior** veio de uma aplicação mais recente e não
+#: pode ser aberto aqui: as migrações só andam para a frente, e ler um esquema
+#: do futuro é ler colunas que não se conhecem.
+VERSAO_ESQUEMA = len(_MIGRACOES)
+
+
+def versao_do_esquema(caminho: Optional[Path] = None) -> int:
+    """Versão de esquema de um banco (``0`` se ainda não existir).
+
+    Args:
+        caminho: outro ficheiro que não o em uso — para inspecionar o banco
+            que vem dentro de uma cópia de segurança antes de lhe tocar.
+    """
+    alvo = Path(caminho) if caminho is not None else caminho_bd()
+    if not alvo.exists():
+        return 0
+    conexao = sqlite3.connect(alvo)
+    try:
+        return int(conexao.execute("PRAGMA user_version").fetchone()[0])
+    finally:
+        conexao.close()
+
+
+def copiar_para(destino: Path) -> Path:
+    """Escreve uma cópia consistente do banco em ``destino``.
+
+    Usa a API de cópia do próprio SQLite em vez de copiar o ficheiro: a cópia
+    do ficheiro pode apanhar uma escrita a meio e produzir um banco que só dá
+    erro no dia em que for preciso.
+    """
+    criar_tabela()
+    destino = Path(destino)
+    destino.parent.mkdir(parents=True, exist_ok=True)
+
+    origem = sqlite3.connect(caminho_bd())
+    copia = sqlite3.connect(destino)
+    try:
+        with copia:
+            origem.backup(copia)
+    finally:
+        copia.close()
+        origem.close()
+    return destino
+
+
 def criar_tabela() -> None:
     """Garante que o banco existe e está no schema mais recente."""
     with conectar() as conexao:

@@ -217,7 +217,35 @@ PLUGINS                                   [+ Instalar Plugin]
 Desativar **não** desinstala, e o estado sobrevive ao reinício.
 
 
-### Plugins incluídos
+### Cópia de segurança
+
+`Configurações → Cópia de segurança` (administradores). Guarda num ZIP as
+tarefas, as contas, a estrutura da empresa, a trilha de auditoria, as
+configurações e os dados dos plugins.
+
+**Uma cópia leva dados, nunca código.** Os plugins instalados ficam de fora de
+propósito: um ficheiro de cópia anda por e-mail e por pen, e se trouxesse
+código, restaurar a cópia de alguém passava a executar o que essa pessoa lá
+pusesse. Os ids e as versões ficam registados no manifesto, para se saber o
+que reinstalar.
+
+Ficam também de fora os registos (`logs/`) — são diagnóstico, não dados.
+
+Restaurar:
+
+1. valida o ficheiro inteiro antes de tocar em nada — caminhos com `..`,
+   absolutos, ligações simbólicas e ficheiros fora dos sítios conhecidos são
+   recusados, tal como nos pacotes de plugins;
+2. recusa uma cópia feita por uma versão **mais recente** da aplicação: ler um
+   esquema do futuro é ler colunas que não se conhecem. Uma cópia mais antiga
+   é aceite e migrada;
+3. confirma que o banco de dentro abre;
+4. **só então** guarda o estado atual em `antes-do-restauro.zip` e substitui.
+
+Se alguma coisa falhar antes do ponto 4, nada foi tocado. Depois de restaurar,
+feche e reabra a aplicação: quem está a correr tem ligações ao banco anterior.
+
+## Plugins incluídos
 
 | Plugin | O que faz | Estado inicial |
 |---|---|---|

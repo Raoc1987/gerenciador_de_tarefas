@@ -211,5 +211,22 @@
   "unidade_nao_encontrada": "That unit no longer exists.",
   "unidade_nome_duplicado": "A unit with that name already exists here.",
   "unidade_estrutura_invalida": "That change would leave the structure invalid.",
-  "unidade_com_conteudo": "The unit has sub-units. Move or remove them first."
+  "unidade_com_conteudo": "The unit has sub-units. Move or remove them first.",
+  "backup": "Backup",
+  "backup_o_que_leva": "A backup keeps tasks, accounts, the company structure, the audit trail, settings and plugin data. It does not keep the plugins themselves: a backup file travels by e-mail and on USB sticks, and restoring must never be a way to install code.",
+  "backup_criar": "Save backup...",
+  "backup_criar_ajuda": "Writes everything to a ZIP file of your choice. Keep it off this machine.",
+  "backup_restaurar": "Restore backup...",
+  "backup_restaurar_ajuda": "Replaces the current data with the backup's. The current state is saved first, so you can go back.",
+  "backup_restaurar_aviso": "This replaces the current data. The current state is saved to an emergency copy before anything is touched. Continue?",
+  "backup_de_quando": "Backup from {data}.",
+  "backup_da_versao": "Made by version {versao}.",
+  "backup_plugins_registados": "Plugins at the time: {plugins} (restoring does not install them).",
+  "backup_criado": "Backup saved to {caminho}",
+  "backup_restaurado": "Data restored. The previous state is in {caminho}",
+  "backup_reiniciar": "Close and reopen the application to work on the restored data.",
+  "backup_falhou": "Could not finish: {erro}",
+  "backup_erro": "The backup operation failed.",
+  "backup_invalido": "This file is not a valid backup.",
+  "backup_incompativel": "This backup was made by a newer version of the application."
 }

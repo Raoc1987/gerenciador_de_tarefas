@@ -211,5 +211,22 @@
   "unidade_nao_encontrada": "Esa unidad ya no existe.",
   "unidade_nome_duplicado": "Ya existe una unidad con ese nombre aquí.",
   "unidade_estrutura_invalida": "Ese cambio dejaría la estructura inválida.",
-  "unidade_com_conteudo": "La unidad tiene subunidades. Muévalas o elimínelas primero."
+  "unidade_com_conteudo": "La unidad tiene subunidades. Muévalas o elimínelas primero.",
+  "backup": "Copia de seguridad",
+  "backup_o_que_leva": "Una copia guarda las tareas, las cuentas, la estructura de la empresa, el registro de auditoría, la configuración y los datos de los complementos. No guarda los complementos en sí: un archivo de copia viaja por correo y en memorias USB, y restaurar nunca debe ser una forma de instalar código.",
+  "backup_criar": "Guardar copia...",
+  "backup_criar_ajuda": "Escribe todo en un archivo ZIP que usted elija. Guárdelo fuera de esta máquina.",
+  "backup_restaurar": "Restaurar copia...",
+  "backup_restaurar_ajuda": "Sustituye los datos actuales por los de la copia. El estado actual se guarda primero, para poder volver atrás.",
+  "backup_restaurar_aviso": "Esto sustituye los datos actuales. El estado actual se guarda en una copia de emergencia antes de tocar nada. ¿Continuar?",
+  "backup_de_quando": "Copia del {data}.",
+  "backup_da_versao": "Hecha por la versión {versao}.",
+  "backup_plugins_registados": "Complementos entonces: {plugins} (restaurar no los instala).",
+  "backup_criado": "Copia guardada en {caminho}",
+  "backup_restaurado": "Datos restaurados. El estado anterior quedó en {caminho}",
+  "backup_reiniciar": "Cierre y vuelva a abrir la aplicación para trabajar sobre los datos restaurados.",
+  "backup_falhou": "No se pudo completar: {erro}",
+  "backup_erro": "La operación de copia de seguridad falló.",
+  "backup_invalido": "Este archivo no es una copia de seguridad válida.",
+  "backup_incompativel": "Esta copia fue hecha por una versión más reciente de la aplicación."
 }

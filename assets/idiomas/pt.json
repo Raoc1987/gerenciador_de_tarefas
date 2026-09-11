@@ -211,5 +211,22 @@
   "unidade_nao_encontrada": "Essa unidade já não existe.",
   "unidade_nome_duplicado": "Já existe uma unidade com esse nome neste sítio.",
   "unidade_estrutura_invalida": "Essa mudança deixaria a estrutura inválida.",
-  "unidade_com_conteudo": "A unidade tem sub-unidades. Mova-as ou remova-as primeiro."
+  "unidade_com_conteudo": "A unidade tem sub-unidades. Mova-as ou remova-as primeiro.",
+  "backup": "Cópia de segurança",
+  "backup_o_que_leva": "Uma cópia guarda as tarefas, as contas, a estrutura da empresa, a trilha de auditoria, as configurações e os dados dos plugins. Não guarda os plugins em si: um ficheiro de cópia anda por e-mail e por pen, e restaurar nunca deve ser uma forma de instalar código.",
+  "backup_criar": "Guardar cópia...",
+  "backup_criar_ajuda": "Escreve tudo num ficheiro ZIP à sua escolha. Guarde-o fora desta máquina.",
+  "backup_restaurar": "Restaurar cópia...",
+  "backup_restaurar_ajuda": "Substitui os dados atuais pelos da cópia. O estado de agora é guardado primeiro, para poder voltar atrás.",
+  "backup_restaurar_aviso": "Isto substitui os dados atuais. O estado de agora é guardado numa cópia de emergência antes de qualquer coisa ser tocada. Quer continuar?",
+  "backup_de_quando": "Cópia de {data}.",
+  "backup_da_versao": "Feita pela versão {versao}.",
+  "backup_plugins_registados": "Plugins na altura: {plugins} (não são instalados pelo restauro).",
+  "backup_criado": "Cópia guardada em {caminho}",
+  "backup_restaurado": "Dados repostos. O estado anterior ficou em {caminho}",
+  "backup_reiniciar": "Feche e volte a abrir a aplicação para trabalhar sobre os dados repostos.",
+  "backup_falhou": "Não foi possível concluir: {erro}",
+  "backup_erro": "A operação de cópia de segurança falhou.",
+  "backup_invalido": "Este ficheiro não é uma cópia de segurança válida.",
+  "backup_incompativel": "Esta cópia foi feita por uma versão mais recente da aplicação."
 }

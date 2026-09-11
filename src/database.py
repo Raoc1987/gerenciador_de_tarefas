@@ -104,6 +104,27 @@ _MIGRACOES: List[Sequence[str]] = [
         "ALTER TABLE tarefas ADD COLUMN criada_por TEXT NOT NULL DEFAULT ''",
         "CREATE INDEX IF NOT EXISTS idx_tarefas_criada_por ON tarefas (criada_por)",
     ),
+    # v7 — estrutura da organização (ver core/organizacao.py).
+    #
+    # Uma árvore só, com `tipo` a dizer o que cada nó é, em vez de uma tabela
+    # por nível. As empresas não são todas iguais — há divisões, regiões,
+    # filiais — e com três tabelas cada formato novo seria uma migração. Aqui
+    # é uma linha. A travessia também se escreve uma vez só.
+    #
+    # Aditiva e vazia: quem não usa estrutura nenhuma não nota diferença.
+    (
+        """
+        CREATE TABLE IF NOT EXISTS unidades (
+            id         INTEGER PRIMARY KEY AUTOINCREMENT,
+            nome       TEXT    NOT NULL,
+            tipo       TEXT    NOT NULL,
+            pai_id     INTEGER REFERENCES unidades(id),
+            ativa      INTEGER NOT NULL DEFAULT 1,
+            criada_em  TEXT    NOT NULL
+        )
+        """,
+        "CREATE INDEX IF NOT EXISTS idx_unidades_pai ON unidades (pai_id)",
+    ),
 ]
 
 #: Colunas devolvidas por :func:`buscar_tarefas` — contrato estável de que a

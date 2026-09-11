@@ -49,6 +49,10 @@ EVENTOS_AUDITAVEIS: Dict[str, str] = {
     eventos.UTILIZADOR_CRIADO: "id",
     eventos.UTILIZADOR_ALTERADO: "id",
     eventos.UTILIZADOR_REMOVIDO: "id",
+    # Mexer na estrutura da empresa muda quem vê o quê: fica registado.
+    eventos.UNIDADE_CRIADA: "id",
+    eventos.UNIDADE_ALTERADA: "id",
+    eventos.UNIDADE_REMOVIDA: "id",
     eventos.APP_INICIADA: "",
     eventos.APP_ENCERRADA: "",
 }

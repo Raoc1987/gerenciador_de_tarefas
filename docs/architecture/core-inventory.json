@@ -10,6 +10,7 @@
     "permissoes.py": "Papéis e permissões, com um ponto único de verificação usado pela interface, pela análise, pelos relatórios e pelos módulos.",
     "seguranca.py": "Derivação e verificação de palavras-passe. Segurança não se implementa duas vezes.",
     "utilizadores.py": "Contas e autenticação. Quem está em sessão determina permissões, propriedade e auditoria.",
+    "organizacao.py": "Estrutura da empresa: quem esta sob quem. Permissoes por ambito, propriedade de dados e multiempresa dependem todas dela; nenhum modulo a pode definir sozinho.",
     "auditoria.py": "Trilha do que aconteceu. Requisito transversal: qualquer módulo produz eventos auditáveis sem saber que a auditoria existe.",
     "plugin_api.py": "Contrato entre a aplicação e os módulos. É a fronteira que impede o monólito.",
     "plugin_manager.py": "Ciclo de vida dos plugins, com isolamento de falhas.",

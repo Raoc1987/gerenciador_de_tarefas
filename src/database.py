@@ -74,6 +74,27 @@ _MIGRACOES: List[Sequence[str]] = [
         "CREATE INDEX IF NOT EXISTS idx_auditoria_momento ON auditoria (momento)",
         "CREATE INDEX IF NOT EXISTS idx_auditoria_evento ON auditoria (evento)",
     ),
+    # v5 — contas de utilizador (ver core/utilizadores.py).
+    #
+    # COLLATE NOCASE no nome: "Ana" e "ana" são a mesma pessoa, e permitir as
+    # duas contas seria um convite a enganos. A senha guardada é o resultado
+    # de uma derivação lenta, nunca a palavra-passe.
+    (
+        """
+        CREATE TABLE IF NOT EXISTS utilizadores (
+            id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+            nome_utilizador     TEXT    NOT NULL UNIQUE COLLATE NOCASE,
+            nome                TEXT    NOT NULL DEFAULT '',
+            senha_hash          TEXT    NOT NULL,
+            papel               TEXT    NOT NULL,
+            ativo               INTEGER NOT NULL DEFAULT 1,
+            criado_em           TEXT    NOT NULL,
+            ultimo_acesso       TEXT,
+            tentativas_falhadas INTEGER NOT NULL DEFAULT 0,
+            bloqueado_ate       TEXT
+        )
+        """,
+    ),
 ]
 
 #: Colunas devolvidas por :func:`buscar_tarefas` — contrato estável de que a

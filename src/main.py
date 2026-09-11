@@ -189,12 +189,42 @@ def main(argumentos: list[str] | None = None) -> int:
             return 1
 
     try:
-        from gui import iniciar_interface
-
-        iniciar_interface()
+        return abrir_aplicacao()
     except Exception:
         logger.exception("Falha fatal na aplicação.")
         return 1
+
+
+def abrir_aplicacao() -> int:
+    """Pede credenciais e, se forem aceites, abre a janela principal.
+
+    O início de sessão e a aplicação partilham o mesmo interpretador Tk: a
+    janela principal só é construída depois de haver sessão.
+    """
+    import tkinter as tk
+
+    import gui
+    import login_ui
+    from core import auditoria, utilizadores
+
+    logger = obter_logger("main")
+    auditoria.ativar()
+
+    raiz = tk.Tk()
+    raiz.withdraw()
+    try:
+        utilizador = login_ui.autenticar(raiz)
+        if utilizador is None:
+            logger.info("Início de sessão cancelado; a sair.")
+            raiz.destroy()
+            return 0
+
+        gui.criar_janela(raiz=raiz).mainloop()
+    finally:
+        try:
+            utilizadores.terminar_sessao()
+        except Exception:  # pragma: no cover - defensivo
+            logger.exception("Falha ao encerrar a sessão.")
 
     logger.info("Aplicação encerrada normalmente.")
     return 0

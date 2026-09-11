@@ -27,6 +27,7 @@ from language_manager import (
     restaurar_idioma_guardado,
 )
 from plugin_ui import AnfitriaoGUI, JanelaPlugins, ServicoTarefasApp
+from utilizadores_ui import JanelaUtilizadores
 from utils import atualizar_relógio, formatar_data, validar_data_iso
 
 logger = obter_logger(__name__)
@@ -60,8 +61,12 @@ def criar_gerenciador_de_plugins(anfitriao=None) -> PluginManager:
     )
 
 
-def criar_janela() -> tk.Tk:
+def criar_janela(raiz: tk.Tk | None = None) -> tk.Tk:
     """Constrói a janela principal sem entrar no laço de eventos.
+
+    Args:
+        raiz: janela Tk já existente — é assim que o início de sessão e a
+            aplicação partilham o mesmo interpretador, em vez de criarem dois.
 
     Separado de :func:`iniciar_interface` para que os testes possam exercitar
     a interface real sem bloquear no ``mainloop``.
@@ -72,7 +77,8 @@ def criar_janela() -> tk.Tk:
     auditoria.ativar()
     eventos.publicar(eventos.APP_INICIADA, origem="gui")
 
-    app = tk.Tk()
+    app = raiz if raiz is not None else tk.Tk()
+    app.deiconify()
     app.title(carregar_texto("titulo"))
     app.geometry("800x600")
     _aplicar_icone(app)
@@ -87,6 +93,9 @@ def criar_janela() -> tk.Tk:
 
     label_titulo = ttk.Label(frame_topo, font=("Arial", 18))
     label_titulo.pack()
+
+    label_sessao = ttk.Label(frame_topo, foreground="#7a8794", font=("Arial", 9))
+    label_sessao.pack()
 
     dropdown = ttk.OptionMenu(
         frame_topo,
@@ -206,6 +215,9 @@ def criar_janela() -> tk.Tk:
     def abrir_auditoria():
         JanelaAuditoria(app)
 
+    def abrir_utilizadores():
+        JanelaUtilizadores(app)
+
     def arrancar_plugins():
         """Semeia os plugins embutidos e ativa os que o utilizador deixou ligados."""
         try:
@@ -237,6 +249,10 @@ def criar_janela() -> tk.Tk:
         configuracoes.add_command(
             label=carregar_texto("plugins") + "...", command=abrir_plugins
         )
+        if permissoes.pode(Permissao.UTILIZADORES_GERIR):
+            configuracoes.add_command(
+                label=carregar_texto("utilizadores") + "...", command=abrir_utilizadores
+            )
         # A trilha de auditoria é de quem administra a instalação.
         if permissoes.pode(Permissao.SISTEMA_ADMIN):
             configuracoes.add_separator()
@@ -254,6 +270,9 @@ def criar_janela() -> tk.Tk:
         """Reaplica todos os textos visíveis conforme o idioma atual."""
         app.title(carregar_texto("titulo"))
         label_titulo.config(text=carregar_texto("titulo"))
+        label_sessao.config(
+            text=carregar_texto("sessao_de", nome=permissoes.sessao().utilizador)
+        )
         label_descricao.config(text=carregar_texto("descricao_tarefa"))
         label_data.config(text=carregar_texto("data_vencimento"))
         botao_adicionar.config(text=carregar_texto("adicionar"))

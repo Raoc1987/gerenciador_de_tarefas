@@ -43,6 +43,12 @@ EVENTOS_AUDITAVEIS: Dict[str, str] = {
     eventos.PLUGIN_ATUALIZADO: "id",
     eventos.PLUGIN_REMOVIDO: "id",
     eventos.PLUGIN_ERRO: "id",
+    eventos.SESSAO_INICIADA: "id",
+    eventos.SESSAO_TERMINADA: "id",
+    eventos.SESSAO_FALHADA: "id",
+    eventos.UTILIZADOR_CRIADO: "id",
+    eventos.UTILIZADOR_ALTERADO: "id",
+    eventos.UTILIZADOR_REMOVIDO: "id",
     eventos.APP_INICIADA: "",
     eventos.APP_ENCERRADA: "",
 }
@@ -53,6 +59,11 @@ _DETALHES = {
     eventos.PLUGIN_ATUALIZADO: ("versao", "versao_anterior"),
     eventos.PLUGIN_ERRO: ("erro",),
     eventos.PLUGIN_REMOVIDO: ("dados_removidos",),
+    # Nunca "senha": o detalhe diz o que mudou, não o valor.
+    eventos.SESSAO_INICIADA: ("papel",),
+    eventos.SESSAO_FALHADA: ("motivo", "tentativas"),
+    eventos.UTILIZADOR_CRIADO: ("papel",),
+    eventos.UTILIZADOR_ALTERADO: ("alteracao",),
 }
 
 #: Corte do detalhe, para um traceback não inchar a tabela.

@@ -99,19 +99,57 @@ def botoes(widget):
 
 
 def entradas(widget):
-    return [w for w in descendentes(widget) if isinstance(w, ttk.Entry)]
+    """Campos de texto — exclui Combobox, que herda de ttk.Entry."""
+    return [
+        w
+        for w in descendentes(widget)
+        if isinstance(w, ttk.Entry) and not isinstance(w, ttk.Combobox)
+    ]
 
 
 def listbox(widget):
     return next(w for w in descendentes(widget) if isinstance(w, tk.Listbox))
 
 
+def notebook_de(janela):
+    """O Notebook principal da janela."""
+    return next(w for w in descendentes(janela) if isinstance(w, ttk.Notebook))
+
+
+def titulos_das_abas(janela):
+    """Rótulos das abas, pela ordem em que aparecem."""
+    notebook = notebook_de(janela)
+    return [notebook.tab(i, "text") for i in range(notebook.index("end"))]
+
+
+def aba(janela, rotulo):
+    """O conteúdo da aba com o rótulo indicado.
+
+    Os testes dizem em que aba estão a mexer: a janela tem Dashboard, Tarefas
+    e, quando há plugins ativos, as abas deles.
+    """
+    notebook = notebook_de(janela)
+    for indice in range(notebook.index("end")):
+        if notebook.tab(indice, "text") == rotulo:
+            return janela.nametowidget(notebook.tabs()[indice])
+    raise AssertionError(f"aba {rotulo!r} não encontrada em {titulos_das_abas(janela)}")
+
+
+def tarefas(janela):
+    """Atalho para a aba de tarefas (o rótulo muda com o idioma)."""
+    for rotulo in ("Tarefas", "Tasks", "Tareas"):
+        try:
+            return aba(janela, rotulo)
+        except AssertionError:
+            continue
+    raise AssertionError(f"aba de tarefas não encontrada em {titulos_das_abas(janela)}")
+
+
 # ============================================================ JANELA PRINCIPAL
 
 
-def test_janela_abre_com_aba_de_tarefas(janela):
-    notebook = next(w for w in descendentes(janela) if isinstance(w, ttk.Notebook))
-    assert notebook.tab(0, "text") == "Tarefas"
+def test_janela_abre_com_dashboard_e_tarefas(janela):
+    assert titulos_das_abas(janela) == ["Dashboard", "Tarefas"]
     assert janela.title() == "Gerenciador de Tarefas"
 
 
@@ -125,23 +163,25 @@ def test_menu_de_configuracoes_tem_plugins(janela):
 def test_adicionar_tarefa_pela_interface(janela):
     import database
 
-    campos = entradas(janela)
+    painel = tarefas(janela)
+    campos = entradas(painel)
     campos[0].insert(0, "Tarefa da GUI")
     campos[1].insert(0, "2026-05-01")
-    botoes(janela)["Adicionar"].invoke()
+    botoes(painel)["Adicionar"].invoke()
     janela.update()
 
     assert [t[1] for t in database.buscar_tarefas()] == ["Tarefa da GUI"]
-    assert "Tarefa da GUI" in listbox(janela).get(0)
+    assert "Tarefa da GUI" in listbox(painel).get(0)
 
 
 def test_data_invalida_avisa_e_nao_grava(janela, dialogos):
     import database
 
-    campos = entradas(janela)
+    painel = tarefas(janela)
+    campos = entradas(painel)
     campos[0].insert(0, "Com data ruim")
     campos[1].insert(0, "01/05/2026")
-    botoes(janela)["Adicionar"].invoke()
+    botoes(painel)["Adicionar"].invoke()
     assert dialogos["aviso"]
     assert database.buscar_tarefas() == []
 
@@ -149,16 +189,17 @@ def test_data_invalida_avisa_e_nao_grava(janela, dialogos):
 def test_concluir_e_remover_pela_interface(janela, dialogos):
     import database
 
-    entradas(janela)[0].insert(0, "Para concluir")
-    botoes(janela)["Adicionar"].invoke()
-    lista = listbox(janela)
+    painel = tarefas(janela)
+    entradas(painel)[0].insert(0, "Para concluir")
+    botoes(painel)["Adicionar"].invoke()
+    lista = listbox(painel)
     lista.selection_set(0)
-    botoes(janela)["Concluir"].invoke()
+    botoes(painel)["Concluir"].invoke()
     assert database.buscar_tarefas()[0][3] == 1
     assert "✔" in lista.get(0)
 
     lista.selection_set(0)
-    botoes(janela)["Remover"].invoke()
+    botoes(painel)["Remover"].invoke()
     assert database.buscar_tarefas() == []
 
 
@@ -174,7 +215,8 @@ def test_troca_de_idioma_atualiza_a_interface(janela):
 
     assert lm.idioma_atual() == "en"
     assert janela.title() == "Task Manager"
-    assert "Add" in botoes(janela)
+    assert titulos_das_abas(janela) == ["Dashboard", "Tasks"]
+    assert "Add" in botoes(tarefas(janela))
     barra = janela.nametowidget(janela.cget("menu"))
     assert barra.entrycget(0, "label") == "Settings"
 
@@ -241,15 +283,11 @@ def test_plugin_adiciona_aba_a_janela_principal(janela, criar_plugin):
     botoes(tela)["Ativar"].invoke()
     janela.update()
 
-    notebook = next(w for w in descendentes(janela) if isinstance(w, ttk.Notebook))
-    assert [notebook.tab(i, "text") for i in range(notebook.index("end"))] == [
-        "Tarefas",
-        "Aba do Plugin",
-    ]
+    assert titulos_das_abas(janela) == ["Dashboard", "Tarefas", "Aba do Plugin"]
 
     botoes(tela)["Desativar"].invoke()
     janela.update()
-    assert notebook.index("end") == 1
+    assert titulos_das_abas(janela) == ["Dashboard", "Tarefas"]
     tela.destroy()
 
 
@@ -430,16 +468,14 @@ def test_titulo_da_aba_do_plugin_segue_o_idioma(janela, criar_plugin):
     janela.update()
     tela.destroy()
 
-    notebook = next(w for w in descendentes(janela) if isinstance(w, ttk.Notebook))
-    assert notebook.tab(1, "text") == "Calendário"
+    assert titulos_das_abas(janela) == ["Dashboard", "Tarefas", "Calendário"]
 
     variavel = next(w for w in descendentes(janela) if isinstance(w, ttk.OptionMenu))
     menu = janela.nametowidget(variavel.cget("menu"))
     menu.invoke(menu.index("Inglês 🇺🇸"))
     janela.update()
 
-    assert notebook.tab(0, "text") == "Tasks"
-    assert notebook.tab(1, "text") == "Calendar"
+    assert titulos_das_abas(janela) == ["Dashboard", "Tasks", "Calendar"]
 
 
 def test_plugins_embutidos_sao_semeados_no_arranque(

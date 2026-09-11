@@ -150,7 +150,7 @@ def test_plugin_real_na_janela(pasta_plugins, zip_calendar, tmp_path, monkeypatc
             w for w in _todos(app) if isinstance(w, ttk.Notebook)
         )
         titulos = [notebook.tab(i, "text") for i in range(notebook.index("end"))]
-        assert titulos == ["Tarefas", "Calendário"]
+        assert titulos == ["Dashboard", "Tarefas", "Calendário"]
 
         # O painel do plugin mostra as tarefas do dia selecionado.
         modulo = sys.modules[PREFIXO_MODULO + "calendar"]
@@ -180,7 +180,7 @@ def test_plugin_real_na_janela(pasta_plugins, zip_calendar, tmp_path, monkeypatc
         # Desativar remove a aba, sem tocar nas tarefas.
         gerenciador.desativar("calendar")
         app.update()
-        assert notebook.index("end") == 1
+        assert notebook.index("end") == 2, "fica o Dashboard e as Tarefas"
         assert len(database.buscar_tarefas()) == 2
     finally:
         app.gerenciador_de_plugins.desativar_todos()

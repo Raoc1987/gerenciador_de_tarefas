@@ -8,6 +8,7 @@ from core.paths import caminho_recurso, diretorio_plugins_embutidos
 from core.plugin_manager import PluginManager
 from core.plugin_registry import RegistroEstadoBanco
 from core.plugin_sources import FontePastasLocais
+from dashboard_ui import PainelDashboard
 from database import (
     adicionar_tarefa,
     buscar_tarefas,
@@ -93,6 +94,10 @@ def criar_janela() -> tk.Tk:
     # ------------------------------------------- abas (tarefas + plugins)
     notebook = ttk.Notebook(app)
     notebook.pack(fill=tk.BOTH, expand=True, padx=10)
+
+    painel_dashboard = PainelDashboard(notebook)
+    notebook.add(painel_dashboard, text=carregar_texto("dashboard"))
+
     aba_tarefas = ttk.Frame(notebook)
     notebook.add(aba_tarefas, text=carregar_texto("tarefas"))
 
@@ -240,7 +245,9 @@ def criar_janela() -> tk.Tk:
         botao_concluir.config(text=carregar_texto("concluir"))
         botao_remover.config(text=carregar_texto("remover"))
         botao_atualizar.config(text=carregar_texto("atualizar_lista"))
+        notebook.tab(painel_dashboard, text=carregar_texto("dashboard"))
         notebook.tab(aba_tarefas, text=carregar_texto("tarefas"))
+        painel_dashboard.aplicar_idioma()
         anfitriao.atualizar_traducoes()
         construir_menu()
         recarregar_lista()

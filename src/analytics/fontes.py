@@ -12,8 +12,15 @@ from typing import List, Optional, Sequence
 
 from analytics.datas import intervalo_de_dias, periodo_anterior
 from analytics.insights import Insight, gerar
-from analytics.metricas import KPIs, Tarefa, calcular_kpis, comparar, normalizar
-from analytics.series import Ponto, media_movel, prever, serie_diaria, tendencia
+from analytics.metricas import KPIs, Tarefa, calcular_kpis, normalizar
+from analytics.series import (
+    Ponto,
+    media_movel,
+    prever,
+    serie_diaria,
+    tendencia,
+    variacao_percentual,
+)
 from core.log import obter_logger
 from core.permissoes import Permissao, exigir
 
@@ -22,6 +29,19 @@ logger = obter_logger(__name__)
 #: Períodos oferecidos pelo dashboard, em dias.
 PERIODOS = (7, 30, 90, 365)
 PERIODO_PADRAO = 30
+
+
+@dataclass(frozen=True)
+class Fluxo:
+    """O que **aconteceu** num período: grandezas comparáveis entre períodos."""
+
+    criadas: int = 0
+    concluidas: int = 0
+
+    @property
+    def saldo(self) -> int:
+        """Criadas menos concluídas: positivo significa acumulação."""
+        return self.criadas - self.concluidas
 
 
 @dataclass(frozen=True)
@@ -36,8 +56,19 @@ class Panorama:
     fim: date
     dias: int
     kpis: KPIs
-    kpis_anteriores: KPIs
+    """Estado **atual** de todas as tarefas: pendentes, atrasadas, total."""
+
+    fluxo: Fluxo
+    """O que aconteceu no período."""
+
+    fluxo_anterior: Fluxo
+    """O mesmo, no período imediatamente anterior."""
+
     variacoes: dict
+    """Variação percentual do fluxo. Só grandezas de fluxo aparecem aqui:
+    comparar "pendentes agora" com "pendentes há 30 dias" exigiria histórico
+    de estado, que não é guardado — e inventá-lo daria um número errado."""
+
     criadas: List[Ponto]
     concluidas: List[Ponto]
     concluidas_suavizadas: List[Ponto]
@@ -86,11 +117,28 @@ def panorama(
     inicio, fim = intervalo_de_dias(hoje, dias)
     inicio_antes, fim_antes = periodo_anterior(inicio, fim)
 
-    def no_periodo(desde: date, ate: date) -> List[Tarefa]:
-        return [t for t in itens if t.criada_em and desde <= t.criada_em <= ate]
+    def contar(desde: date, ate: date, campo: str) -> int:
+        return sum(
+            1
+            for t in itens
+            if getattr(t, campo) and desde <= getattr(t, campo) <= ate
+        )
 
+    def fluxo_de(desde: date, ate: date) -> Fluxo:
+        return Fluxo(
+            criadas=contar(desde, ate, "criada_em"),
+            concluidas=contar(desde, ate, "concluida_em"),
+        )
+
+    # Estado atual (tudo), medido hoje: é o que interessa em "pendentes" e
+    # "atrasadas", que são fotografias e não fluxos.
     kpis = calcular_kpis(itens, hoje)
-    kpis_antes = calcular_kpis(no_periodo(inicio_antes, fim_antes), fim_antes)
+    fluxo = fluxo_de(inicio, fim)
+    fluxo_antes = fluxo_de(inicio_antes, fim_antes)
+    variacoes = {
+        "criadas": variacao_percentual(fluxo.criadas, fluxo_antes.criadas),
+        "concluidas": variacao_percentual(fluxo.concluidas, fluxo_antes.concluidas),
+    }
 
     criadas = serie_diaria([t.criada_em for t in itens if t.criada_em], inicio, fim)
     concluidas = serie_diaria(
@@ -103,8 +151,9 @@ def panorama(
         fim=fim,
         dias=dias,
         kpis=kpis,
-        kpis_anteriores=kpis_antes,
-        variacoes=comparar(kpis, kpis_antes),
+        fluxo=fluxo,
+        fluxo_anterior=fluxo_antes,
+        variacoes=variacoes,
         criadas=criadas,
         concluidas=concluidas,
         concluidas_suavizadas=media_movel(concluidas, janela),

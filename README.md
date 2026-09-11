@@ -4,9 +4,10 @@
 [![GitHub release](https://img.shields.io/github/v/release/Raoc1987/gerenciador_de_tarefas)](https://github.com/Raoc1987/gerenciador_de_tarefas/releases)
 [![GitHub issues](https://img.shields.io/github/issues/Raoc1987/gerenciador_de_tarefas)](https://github.com/Raoc1987/gerenciador_de_tarefas/issues)
 
-Aplicação desktop para gerenciamento de tarefas, com múltiplos idiomas,
-calendário, banco de dados SQLite e um **sistema de plugins** com instalação,
-ativação, atualização e remoção pela própria interface.
+Plataforma desktop modular de gestão, com o gestor de tarefas como núcleo:
+dashboard com indicadores e análise, múltiplos idiomas, calendário, banco
+SQLite e um **sistema de plugins** com instalação, ativação, atualização e
+remoção pela própria interface.
 
 Só usa a biblioteca padrão do Python — sem dependências externas em execução.
 
@@ -77,6 +78,35 @@ executável empacotado:
 ```bash
 dist\GerenciadorDeTarefas\GerenciadorDeTarefas.exe --autoteste --relatorio relatorio.txt
 ```
+
+---
+
+## 📊 Dashboard e análise
+
+A aba **Dashboard** mostra, para o período escolhido (7, 30, 90 ou 365 dias):
+
+- **Criadas** e **Concluídas** no período, com a variação face ao período
+  anterior;
+- **Pendentes**, **Atrasadas** e **taxa de conclusão** — estado atual;
+- conclusões por dia, com média móvel e previsão a tracejado;
+- distribuição entre concluídas, em dia e atrasadas;
+- **análise em texto**: atrasos, produtividade, tendência, dias atípicos.
+
+O dashboard atualiza-se sozinho quando uma tarefa muda — não é preciso
+carregar em nada.
+
+Duas regras que o produto respeita e que os testes garantem:
+
+- **Só se compara o que é comparável.** "Criadas" e "concluídas" são fluxos e
+  têm variação percentual; "pendentes" e "atrasadas" são fotografias do
+  presente e não a têm, porque o histórico de estado não é guardado.
+- **Sem dados suficientes, não há conclusão.** Menos de 4 pontos não geram
+  tendência nem previsão, menos de 7 não geram deteção de anomalias, e uma
+  variação abaixo de 10% não vira notícia. Cada frase mostra o número em que
+  se baseia.
+
+Os cálculos vivem em `src/analytics/` e não dependem da interface: a mesma
+métrica serve dashboard, alertas e (no futuro) relatórios.
 
 ---
 
@@ -186,6 +216,8 @@ Tudo chega pelo `self.contexto` — um plugin **não** importa `database` nem
 | `contexto.config()` / `guardar_config(dados)` | configuração privada do plugin |
 | `contexto.diretorio_dados` | pasta gravável só deste plugin |
 | `contexto.diretorio_plugin` | pasta onde o plugin está instalado |
+| `contexto.subscrever(padrão, ouvinte)` | reagir a eventos (`"tarefa.*"`, `"plugin.ativado"`…) |
+| `contexto.publicar(nome, **dados)` | emitir eventos próprios (use um prefixo seu) |
 | `contexto.logger` | log já nomeado com o id do plugin |
 | `contexto.app_version` | versão da aplicação a correr |
 
@@ -200,7 +232,10 @@ DISCOVER → VALIDATE → INSTALL → REGISTER → LOAD → ACTIVATE
 ```
 
 Uma exceção em qualquer destes passos é registada no log, marca o plugin como
-"com erro" e **não afeta a aplicação nem os outros plugins**.
+"com erro" e **não afeta a aplicação nem os outros plugins** — o mesmo vale
+para um ouvinte de eventos que rebente: quem publicou não fica a saber e os
+outros ouvintes continuam. As subscrições de um plugin são canceladas quando
+ele é desativado.
 
 #### Empacotar e instalar
 
@@ -243,9 +278,14 @@ gerenciador_de_tarefas/
 │   ├── database.py             # SQLite com migrações versionadas
 │   ├── language_manager.py     # idiomas da aplicação e dos plugins
 │   ├── calendar_widget.py      # calendário reutilizável
+│   ├── dashboard_ui.py         # aba Dashboard
 │   ├── utils.py
+│   ├── analytics/              # métricas, séries, insights (sem interface)
+│   ├── widgets/                # gráficos desenhados em Canvas
 │   └── core/
 │       ├── version.py          # nome e versão (fonte única)
+│       ├── eventos.py          # barramento de eventos
+│       ├── permissoes.py       # papéis e permissões (RBAC)
 │       ├── paths.py            # recursos vs. dados do utilizador vs. temporários
 │       ├── config.py           # configuração da app e por plugin
 │       ├── log.py
@@ -259,7 +299,8 @@ gerenciador_de_tarefas/
 ├── assets/icon.ico
 ├── installer/setup.iss         # instalador Inno Setup
 ├── tools/                      # build, instalador, empacotar plugin, ícone
-├── tests/                      # 222 testes
+├── docs/architecture/          # visão, ADRs e roadmap
+├── tests/                      # 356 testes
 ├── docs/AUDIT.md               # auditoria do estado inicial do projeto
 └── GerenciadorDeTarefas.spec   # receita do PyInstaller
 ```
@@ -272,6 +313,8 @@ Princípios:
   pelo PyInstaller e pelo Inno Setup.
 - **Dados do utilizador nunca em `Program Files`.**
 - **Erro de plugin nunca derruba a aplicação.**
+- **Os módulos empresariais entram como plugins**, não como código do núcleo
+  (ver `docs/architecture/ADR-0001-nucleo-fino.md`).
 
 Os plugins podem, no futuro, vir de uma loja online: `core/plugin_sources.py`
 já separa "de onde vem o pacote" de "como é validado e instalado", com

@@ -5,6 +5,40 @@ Todas as mudanças importantes deste projeto serão documentadas aqui.
 O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 o projeto usa [versionamento semântico](https://semver.org/lang/pt-BR/).
 
+## [Não lançado]
+
+Primeiro passo da evolução para plataforma modular de gestão. O gestor de
+tarefas continua a ser o núcleo; os módulos empresariais entrarão como
+plugins (ver `docs/architecture/`).
+
+### Adicionado
+
+- **Barramento de eventos** (`core/eventos.py`): os módulos passam a
+  comunicar sem se conhecerem. Um ouvinte com defeito não afeta os outros nem
+  quem publicou. Plugins podem subscrever e publicar eventos, e as suas
+  subscrições morrem com eles.
+- **Permissões (RBAC)** (`core/permissoes.py`): permissões nomeadas, cinco
+  papéis e um ponto único de verificação. **Sem autenticação** — a estrutura
+  existe, o ecrã de início de sessão não.
+- **Camada de análise** (`analytics/`): KPIs, séries temporais, média móvel,
+  tendência, previsão, deteção de anomalias e insights em texto. Funções
+  puras, independentes da interface e da persistência.
+- **Dashboard** com indicadores, gráficos e análise, que se atualiza sozinho
+  quando as tarefas mudam.
+- **Gráficos desenhados em Canvas** (`widgets/graficos.py`), sem matplotlib:
+  o executável cresceu 0,1 MiB em vez de ~170 MiB.
+- `docs/architecture/` com a visão, o roadmap e três ADRs.
+- Migração de banco v3: `concluida_em`, sem a qual "concluídas por dia" não
+  existia.
+
+### Corrigido
+
+- A previsão era desenhada sobre o início da série em vez de a prolongar.
+- Os cartões comparavam o total de sempre com uma janela de 30 dias.
+- Eixos com escalas ilegíveis (30.2, 60.4, 90.6).
+- Um gráfico sem dados desenhava uma linha achatada no zero, que parece uma
+  medição.
+
 ## [1.0.0] - 2026-09-11
 
 Primeira versão funcional e distribuível.

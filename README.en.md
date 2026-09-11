@@ -1,8 +1,9 @@
 # 🧠 Task Manager (Gerenciador de Tarefas)
 
-Desktop task manager with multi-language support, a calendar, SQLite storage
-and a **plugin system** — install, enable, update and remove plugins from the
-app itself.
+Modular desktop management platform built around a task manager: dashboard
+with indicators and analysis, multi-language support, a calendar, SQLite
+storage and a **plugin system** — install, enable, update and remove plugins
+from the app itself.
 
 Runtime uses the Python standard library only: no external dependencies.
 
@@ -15,6 +16,7 @@ Runtime uses the Python standard library only: no external dependencies.
 
 ## 🚀 Features
 
+- 📊 Dashboard with KPIs, charts, forecast and plain-language analysis
 - ✅ Add, complete and delete tasks, with due dates
 - 🗓️ Calendar tab (shipped as a plugin) showing the tasks of each day
 - 🌍 English, Portuguese and Spanish, switchable at runtime
@@ -63,7 +65,7 @@ empty — there are no runtime dependencies; `requirements-dev.txt` brings
 `pytest` and `pyinstaller`.
 
 ```bash
-python -m pytest            # 222 tests
+python -m pytest                 # 356 tests
 python src/main.py --autoteste   # self-check of a running installation
 ```
 
@@ -156,6 +158,8 @@ import `database` or `gui` directly:
 | `contexto.config()` / `guardar_config(data)` | the plugin's private settings |
 | `contexto.diretorio_dados` | writable folder owned by the plugin |
 | `contexto.diretorio_plugin` | where the plugin is installed |
+| `contexto.subscrever(pattern, listener)` | react to events (`"tarefa.*"`, `"plugin.ativado"`…) |
+| `contexto.publicar(name, **data)` | emit your own events (use your own prefix) |
 | `contexto.logger` | logger named after the plugin |
 | `contexto.app_version` | running application version |
 
@@ -192,9 +196,14 @@ gerenciador_de_tarefas/
 │   ├── database.py             # SQLite with versioned migrations
 │   ├── language_manager.py     # app and plugin translations
 │   ├── calendar_widget.py      # reusable calendar
+│   ├── dashboard_ui.py         # Dashboard tab
 │   ├── utils.py
+│   ├── analytics/              # metrics, series, insights (UI-free)
+│   ├── widgets/                # Canvas-drawn charts
 │   └── core/
 │       ├── version.py          # single source of name and version
+│       ├── eventos.py          # event bus
+│       ├── permissoes.py       # roles and permissions (RBAC)
 │       ├── paths.py            # resources vs. user data vs. temp
 │       ├── config.py           # app settings and per-plugin settings
 │       ├── log.py
@@ -207,7 +216,8 @@ gerenciador_de_tarefas/
 ├── assets/idiomas/             # pt.json, en.json, es.json
 ├── installer/setup.iss         # Inno Setup installer
 ├── tools/                      # build, installer, plugin packaging, icon
-├── tests/                      # 222 tests
+├── docs/architecture/          # vision, ADRs and roadmap
+├── tests/                      # 356 tests
 └── GerenciadorDeTarefas.spec   # PyInstaller recipe
 ```
 

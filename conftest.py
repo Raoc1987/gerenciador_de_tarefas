@@ -26,10 +26,16 @@ def dados_isolados(tmp_path, monkeypatch):
     monkeypatch.setenv(ENV_DATA_DIR, str(destino))
 
     import language_manager
+    from core import eventos, permissoes
 
     language_manager.limpar_cache()
     language_manager.definir_idioma("pt", persistir=False)
+    # O barramento e a sessão são globais: nenhum teste pode herdar os do anterior.
+    eventos.barramento().limpar()
+    permissoes.terminar_sessao()
     yield destino
+    eventos.barramento().limpar()
+    permissoes.terminar_sessao()
 
 
 @pytest.fixture

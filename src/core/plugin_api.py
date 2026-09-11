@@ -321,6 +321,8 @@ class ContextoPlugin:
     logger: logging.Logger
     tarefas: Optional[ServicoTarefas] = None
     ui: Optional[InterfaceAnfitria] = None
+    _subscrever_evento: Optional[Callable[..., Any]] = None
+    _publicar_evento: Optional[Callable[..., Any]] = None
     _ler_config: Optional[Callable[[str], Dict[str, Any]]] = None
     _gravar_config: Optional[Callable[[str, Dict[str, Any]], None]] = None
     _traduzir: Optional[Callable[..., str]] = None
@@ -347,6 +349,27 @@ class ContextoPlugin:
         if self._traduzir is None:
             return padrao if padrao is not None else chave
         return self._traduzir(chave, padrao, **formatacao)
+
+    def subscrever(self, padrao: str, ouvinte: Callable[[Any], None]) -> Any:
+        """Reage a eventos da plataforma, ex.: ``"tarefa.criada"`` ou ``"tarefa.*"``.
+
+        As subscrições ficam associadas ao plugin e são canceladas
+        automaticamente quando ele é desativado — um plugin desligado não
+        continua a reagir.
+        """
+        if self._subscrever_evento is None:
+            return None
+        return self._subscrever_evento(padrao, ouvinte, self.manifesto.id)
+
+    def publicar(self, nome: str, **dados: Any) -> Any:
+        """Publica um evento do plugin.
+
+        Use um prefixo próprio (ex.: ``"estoque.item_criado"``) para não
+        colidir com os eventos do núcleo.
+        """
+        if self._publicar_evento is None:
+            return None
+        return self._publicar_evento(nome, self.manifesto.id, **dados)
 
     def registrar_textos(self, textos_por_idioma: Dict[str, Dict[str, str]]) -> None:
         """Regista textos próprios do plugin, no formato ``{idioma: {chave: texto}}``.

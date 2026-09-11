@@ -16,6 +16,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Iterator, List, Optional, Sequence
 
+from core import eventos
 from core.log import obter_logger
 from core.paths import caminho_banco
 
@@ -104,7 +105,16 @@ def adicionar_tarefa(descricao: str, data_vencimento: Optional[str] = None) -> i
             " VALUES (?, ?, 0, ?)",
             (descricao, data_vencimento, datetime.now().isoformat(timespec="seconds")),
         )
-        return int(cursor.lastrowid)
+        tarefa_id = int(cursor.lastrowid)
+
+    eventos.publicar(
+        eventos.TAREFA_CRIADA,
+        origem="database",
+        id=tarefa_id,
+        descricao=descricao,
+        data_vencimento=data_vencimento,
+    )
+    return tarefa_id
 
 
 def buscar_tarefas(incluir_concluidas: bool = True) -> List[tuple]:
@@ -134,14 +144,26 @@ def concluir_tarefa(tarefa_id: int, concluida: bool = True) -> bool:
             "UPDATE tarefas SET concluida = ? WHERE id = ?",
             (1 if concluida else 0, tarefa_id),
         )
-        return cursor.rowcount > 0
+        mudou = cursor.rowcount > 0
+
+    if mudou:
+        eventos.publicar(
+            eventos.TAREFA_CONCLUIDA if concluida else eventos.TAREFA_REABERTA,
+            origem="database",
+            id=tarefa_id,
+        )
+    return mudou
 
 
 def remover_tarefa(tarefa_id: int) -> bool:
     """Remove uma tarefa. Devolve ``True`` se a tarefa existia."""
     with conectar() as conexao:
         cursor = conexao.execute("DELETE FROM tarefas WHERE id = ?", (tarefa_id,))
-        return cursor.rowcount > 0
+        removida = cursor.rowcount > 0
+
+    if removida:
+        eventos.publicar(eventos.TAREFA_REMOVIDA, origem="database", id=tarefa_id)
+    return removida
 
 
 def tarefas_por_data(data_iso: str) -> List[tuple]:

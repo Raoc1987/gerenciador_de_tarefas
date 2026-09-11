@@ -21,6 +21,7 @@ from types import ModuleType
 from typing import Dict, List, Optional
 
 from core import config as config_app
+from core import eventos
 from core import plugin_package
 from core.log import obter_logger
 from core.paths import (
@@ -379,6 +380,8 @@ class PluginManager:
             logger=obter_logger(f"plugin.{registro.id}"),
             tarefas=self._tarefas,
             ui=self._ui,
+            _subscrever_evento=eventos.subscrever,
+            _publicar_evento=eventos.publicar,
             _ler_config=config_app.carregar_config_plugin,
             _gravar_config=config_app.guardar_config_plugin,
             _traduzir=traduzir,
@@ -413,6 +416,9 @@ class PluginManager:
             if persistir:
                 self._registro.definir_habilitado(plugin_id, False)
                 registro.habilitado = False
+            eventos.publicar(
+                eventos.PLUGIN_ERRO, origem="plugin_manager", id=plugin_id, erro=str(erro)
+            )
             return ResultadoOperacao(False, "plugin_erro_ativar", plugin_id, str(erro))
 
         registro.estado = EstadoPlugin.ATIVO
@@ -421,6 +427,12 @@ class PluginManager:
             self._registro.definir_habilitado(plugin_id, True)
         registro.habilitado = True
         logger.info("Plugin ativado: %s v%s", registro.id, registro.versao)
+        eventos.publicar(
+            eventos.PLUGIN_ATIVADO,
+            origem="plugin_manager",
+            id=plugin_id,
+            versao=registro.versao,
+        )
         return ResultadoOperacao(True, "plugin_ativo", plugin_id)
 
     def desativar(self, plugin_id: str, persistir: bool = True) -> ResultadoOperacao:
@@ -455,6 +467,7 @@ class PluginManager:
             self._registro.definir_habilitado(plugin_id, False)
         registro.habilitado = False
         logger.info("Plugin desativado: %s", plugin_id)
+        eventos.publicar(eventos.PLUGIN_DESATIVADO, origem="plugin_manager", id=plugin_id)
         return ResultadoOperacao(True, "plugin_inativo", plugin_id, detalhes)
 
     # ---------------------------------------------------------------- UNLOAD
@@ -598,6 +611,14 @@ class PluginManager:
             f" (anterior: {versao_anterior})" if versao_anterior else "",
         )
 
+        eventos.publicar(
+            eventos.PLUGIN_ATUALIZADO if atualizacao else eventos.PLUGIN_INSTALADO,
+            origem="plugin_manager",
+            id=manifesto.id,
+            versao=manifesto.versao,
+            versao_anterior=versao_anterior,
+        )
+
         # Um plugin que estava a correr volta a correr na versão nova.
         if estava_ativo:
             reativacao = self.ativar(manifesto.id, persistir=False)
@@ -711,6 +732,12 @@ class PluginManager:
         self._registro.esquecer(plugin_id)
         self._plugins.pop(plugin_id, None)
         logger.info("Plugin removido: %s (dados removidos: %s)", plugin_id, remover_dados)
+        eventos.publicar(
+            eventos.PLUGIN_REMOVIDO,
+            origem="plugin_manager",
+            id=plugin_id,
+            dados_removidos=remover_dados,
+        )
         return ResultadoOperacao(True, "plugin_removido", plugin_id)
 
     # ---------------------------------------------------------------- apoio
@@ -739,3 +766,5 @@ class PluginManager:
 
         sys.modules.pop(PREFIXO_MODULO + plugin_id, None)
         remover_textos_plugin(plugin_id)
+        # Um plugin descarregado não pode continuar a reagir a eventos.
+        eventos.cancelar_por_dono(plugin_id)

@@ -954,3 +954,167 @@ def test_atualizacao_com_versao_nova_que_falha_ao_ativar(gerenciador, zip_valido
     assert "falha proposital" in resultado.detalhes
     assert gerenciador.obter("demo").estado == EstadoPlugin.ERRO
     assert gerenciador.versao_instalada("demo") == "2.0.0"
+
+
+# ======================================================= EVENTOS E PLUGINS
+
+
+CORPO_OUVINTE = '''
+from core.plugin_api import Plugin
+
+recebidos = []
+
+
+class PluginOuvinte(Plugin):
+    def ativar(self):
+        self.contexto.subscrever("tarefa.*", self._ao_acontecer)
+
+    def _ao_acontecer(self, evento):
+        recebidos.append(evento.nome)
+'''
+
+CORPO_OUVINTE_MAU = '''
+from core.plugin_api import Plugin
+
+
+class PluginOuvinteMau(Plugin):
+    def ativar(self):
+        self.contexto.subscrever("tarefa.criada", self._explode)
+
+    def _explode(self, evento):
+        raise RuntimeError("ouvinte com defeito")
+'''
+
+CORPO_PUBLICADOR = '''
+from core.plugin_api import Plugin
+
+
+class PluginPublicador(Plugin):
+    def ativar(self):
+        self.contexto.publicar("demo.aconteceu", valor=42)
+'''
+
+
+def test_plugin_reage_a_eventos_da_aplicacao(gerenciador, criar_plugin):
+    import database
+    from core import eventos
+
+    criar_plugin("ouvinte", corpo=CORPO_OUVINTE)
+    gerenciador.descobrir()
+    gerenciador.ativar("ouvinte")
+
+    database.criar_tabela()
+    tarefa_id = database.adicionar_tarefa("Tarefa observada")
+    database.concluir_tarefa(tarefa_id)
+
+    recebidos = sys.modules[PREFIXO_MODULO + "ouvinte"].recebidos
+    assert recebidos == [eventos.TAREFA_CRIADA, eventos.TAREFA_CONCLUIDA]
+
+
+def test_plugin_desativado_deixa_de_receber(gerenciador, criar_plugin):
+    import database
+
+    criar_plugin("ouvinte", corpo=CORPO_OUVINTE)
+    gerenciador.descobrir()
+    gerenciador.ativar("ouvinte")
+    modulo = sys.modules[PREFIXO_MODULO + "ouvinte"]
+
+    database.criar_tabela()
+    database.adicionar_tarefa("Antes")
+    assert len(modulo.recebidos) == 1
+
+    gerenciador.descarregar("ouvinte")
+    database.adicionar_tarefa("Depois")
+    assert len(modulo.recebidos) == 1, "as subscrições saem com o plugin"
+
+
+def test_plugin_removido_nao_deixa_subscricoes(gerenciador, criar_plugin):
+    from core import eventos
+
+    criar_plugin("ouvinte", corpo=CORPO_OUVINTE)
+    gerenciador.descobrir()
+    gerenciador.ativar("ouvinte")
+    assert eventos.barramento().subscritores("tarefa.criada")
+
+    gerenciador.remover("ouvinte")
+    assert eventos.barramento().subscritores("tarefa.criada") == []
+
+
+def test_ouvinte_defeituoso_de_plugin_nao_impede_o_trabalho(gerenciador, criar_plugin):
+    import database
+
+    criar_plugin("mau", corpo=CORPO_OUVINTE_MAU)
+    criar_plugin("bom", corpo=CORPO_OUVINTE)
+    gerenciador.descobrir()
+    gerenciador.ativar("mau")
+    gerenciador.ativar("bom")
+
+    database.criar_tabela()
+    tarefa_id = database.adicionar_tarefa("Tem de ser criada")
+
+    assert database.obter_tarefa(tarefa_id) is not None
+    assert sys.modules[PREFIXO_MODULO + "bom"].recebidos, "o bom continua a receber"
+    assert gerenciador.obter("mau").ativo, "falhar a tratar um evento não desativa"
+
+
+def test_plugin_pode_publicar_os_seus_eventos(gerenciador, criar_plugin):
+    from core import eventos
+
+    recebidos = []
+    eventos.subscrever("demo.*", recebidos.append)
+
+    criar_plugin("publicador", corpo=CORPO_PUBLICADOR)
+    gerenciador.descobrir()
+    gerenciador.ativar("publicador")
+
+    assert [e.nome for e in recebidos] == ["demo.aconteceu"]
+    assert recebidos[0].dados == {"valor": 42}
+    assert recebidos[0].origem == "publicador"
+
+
+def test_ciclo_de_vida_do_plugin_publica_eventos(gerenciador, criar_plugin, zip_valido):
+    from core import eventos
+
+    recebidos = []
+    eventos.subscrever("plugin.*", recebidos.append)
+
+    gerenciador.instalar_zip(zip_valido("demo"))
+    gerenciador.ativar("demo")
+    gerenciador.desativar("demo")
+    gerenciador.remover("demo")
+
+    assert [e.nome for e in recebidos] == [
+        eventos.PLUGIN_INSTALADO,
+        eventos.PLUGIN_ATIVADO,
+        eventos.PLUGIN_DESATIVADO,
+        eventos.PLUGIN_REMOVIDO,
+    ]
+
+
+def test_falha_de_ativacao_publica_evento_de_erro(gerenciador, criar_plugin):
+    from core import eventos
+
+    recebidos = []
+    eventos.subscrever(eventos.PLUGIN_ERRO, recebidos.append)
+
+    criar_plugin("quebrado", corpo=CORPO_FALHA_ATIVAR)
+    gerenciador.descobrir()
+    gerenciador.ativar("quebrado")
+
+    assert len(recebidos) == 1
+    assert recebidos[0].dados["id"] == "quebrado"
+    assert "falha proposital" in recebidos[0].dados["erro"]
+
+
+def test_atualizacao_publica_evento_com_versao_anterior(gerenciador, zip_valido):
+    from core import eventos
+
+    recebidos = []
+    eventos.subscrever(eventos.PLUGIN_ATUALIZADO, recebidos.append)
+
+    gerenciador.instalar_zip(zip_valido("demo", version="1.0.0"))
+    gerenciador.instalar_zip(zip_valido("demo", version="2.0.0", nome="v2.zip"))
+
+    assert len(recebidos) == 1
+    assert recebidos[0].dados["versao"] == "2.0.0"
+    assert recebidos[0].dados["versao_anterior"] == "1.0.0"

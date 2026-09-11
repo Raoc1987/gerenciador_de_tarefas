@@ -53,6 +53,8 @@ EVENTOS_AUDITAVEIS: Dict[str, str] = {
     eventos.UNIDADE_CRIADA: "id",
     eventos.UNIDADE_ALTERADA: "id",
     eventos.UNIDADE_REMOVIDA: "id",
+    # Ligar ou desligar uma parte do produto muda o que toda a gente vê.
+    eventos.FUNCIONALIDADE_ALTERADA: "id",
     eventos.APP_INICIADA: "",
     eventos.APP_ENCERRADA: "",
 }

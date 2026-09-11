@@ -217,7 +217,39 @@ PLUGINS                                   [+ Instalar Plugin]
 Desativar **não** desinstala, e o estado sobrevive ao reinício.
 
 
-### Cópia de segurança
+### Funcionalidades da instalação
+
+`Configurações → Funcionalidades` (administradores). Liga e desliga partes do
+produto **nesta instalação**.
+
+Não é o mesmo que permissões, e confundi-las é o erro que este módulo existe
+para evitar:
+
+| Pergunta | Quem responde |
+|---|---|
+| Esta **pessoa** pode fazer isto? | `core/permissoes.py` |
+| Esta **instalação** tem isto, de todo? | `core/funcionalidades.py` |
+
+As duas combinam-se: um administrador com todas as permissões do mundo não
+exporta relatórios se a instalação não os tiver.
+
+Tudo nasce ligado — atualizar não tira nada a ninguém. Desligar é deliberado,
+exige `sistema.admin` e fica na trilha de auditoria, porque muda o que toda a
+gente vê. O efeito é visível ao reabrir a aplicação: as abas e o menu são
+construídos no arranque.
+
+As funcionalidades são **declaradas**, não inventadas: perguntar por uma chave
+que não está no catálogo levanta erro em vez de devolver `False`. Uma pergunta
+com um erro de escrita a responder "está desligada" é a forma mais silenciosa
+de desligar alguma coisa sem querer.
+
+O que ficou de fora é tão deliberado quanto o que entrou: as tarefas, as
+contas e os plugins são o produto; a cópia de segurança não se desliga (uma
+opção que deixa ficar sem rede não é uma opção); e a trilha de auditoria tem
+o seu próprio mecanismo — parar de registar é uma decisão de conformidade, não
+uma preferência.
+
+## Cópia de segurança
 
 `Configurações → Cópia de segurança` (administradores). Guarda num ZIP as
 tarefas, as contas, a estrutura da empresa, a trilha de auditoria, as

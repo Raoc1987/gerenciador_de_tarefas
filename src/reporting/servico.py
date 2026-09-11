@@ -6,6 +6,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Tuple
 
+from core import funcionalidades
 from core.log import obter_logger
 from core.permissoes import Permissao, exigir
 from reporting import exportadores
@@ -35,9 +36,14 @@ def exportar(relatorio: Relatorio, destino: Path, formato: str = "") -> Path:
     O formato é deduzido da extensão do destino quando não é indicado.
 
     Raises:
+        FuncionalidadeDesligadaError: se a instalação não tiver relatórios.
         PermissaoNegadaError: se a sessão não puder exportar relatórios.
         ValueError: se o formato for desconhecido.
     """
+    # Duas perguntas diferentes, por esta ordem: a instalação tem isto? E
+    # depois, esta pessoa pode? Esconder o botão não chega — um plugin ou um
+    # agendamento chegam aqui por outro caminho.
+    funcionalidades.exigir("relatorios")
     exigir(Permissao.RELATORIOS_EXPORTAR)
 
     destino = Path(destino)

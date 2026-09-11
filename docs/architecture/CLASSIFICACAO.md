@@ -15,6 +15,7 @@ interface) · **Module** (domínio de negócio, como plugin) · **Plugin**
 | Versão, caminhos, config, log | Core | `src/core/` |
 | Barramento de eventos | Core | `core/eventos.py` |
 | Permissões (RBAC) | Core | `core/permissoes.py` |
+| Funcionalidades da instalacao | Core | `core/funcionalidades.py` |
 | Contas e autenticação | Core | `core/utilizadores.py`, `core/seguranca.py` |
 | Auditoria | Core | `core/auditoria.py` |
 | Estrutura da organizacao | Core | `core/organizacao.py` |
@@ -40,7 +41,6 @@ Ordenado por **valor sobre custo**, não pela ordem em que foi proposto.
 | # | Bloco | Categoria | Porquê agora | Depende de |
 |---|---|---|---|---|
 | 3 | ABAC (regras por atributo) | **Core** | O caso que mais pesava — "o gestor vê o seu departamento" — já está feito com a hierarquia. O que falta do ABAC é o caso geral: regras por atributo arbitrário | hierarquia |
-| 21 | Feature flags | **Core** | Minúsculo, e é o que evita `if licenca` espalhado por cem ficheiros | — |
 | 7 | Workflow Engine | **Service** | O diferencial que nomeou, e o barramento de eventos já dá a base. Nada de novo é preciso | eventos |
 | 4 | Auditoria com antes/depois | Core (extensão) | A trilha existe; falta o valor anterior e o novo | — |
 
@@ -51,7 +51,7 @@ Ordenado por **valor sobre custo**, não pela ordem em que foi proposto.
 | 5 | KPI Engine (indicadores declarativos) | **Service** | Bom desenho. Só compensa quando houver mais do que um domínio a medir |
 | 1 | Decision Engine (insight → recomendação → ação) | **Service** | Metade existe (insights). A outra metade *é* o Workflow: fazer os dois juntos |
 | 12 | Pesquisa global | **Core** (registo) + UI | Cada módulo regista o que sabe pesquisar. Barato e muito visível |
-| 22 | Entitlement engine | **Core** | Licenciamento a sério. Depende de feature flags e de haver módulos que valha a pena licenciar |
+| 22 | Entitlement engine | **Core** | Licenciamento a sério. As feature flags já estão feitas; falta haver módulos que valha a pena licenciar |
 | 8 | Import Wizard | **Service** + UI | Muito útil a PMEs. Independente de tudo o resto |
 | 6 | OKR / metas | **Module** | Liga tarefas à estratégia; precisa do KPI Engine para não ser uma lista bonita |
 | 11 | Gestão documental | **Module** | Precisa de armazenamento de ficheiros no SDK, além de dados |

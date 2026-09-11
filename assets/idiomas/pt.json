@@ -228,5 +228,20 @@
   "backup_falhou": "Não foi possível concluir: {erro}",
   "backup_erro": "A operação de cópia de segurança falhou.",
   "backup_invalido": "Este ficheiro não é uma cópia de segurança válida.",
-  "backup_incompativel": "Esta cópia foi feita por uma versão mais recente da aplicação."
+  "backup_incompativel": "Esta cópia foi feita por uma versão mais recente da aplicação.",
+  "funcionalidades": "Funcionalidades",
+  "funcionalidades_ajuda": "O que esta instalação inclui. Isto é diferente das permissões: as permissões dizem o que cada pessoa pode fazer, isto diz o que existe de todo. Desligar uma funcionalidade esconde-a de toda a gente, incluindo de quem administra.",
+  "funcionalidades_reiniciar": "Guardado. Feche e reabra a aplicação para ver a mudança.",
+  "funcionalidade_essencial": "Não pode ser desligada.",
+  "funcionalidade_desconhecida": "Essa funcionalidade não existe.",
+  "funcionalidade_desligada": "Esta funcionalidade está desligada nesta instalação.",
+  "funcionalidade_painel": "Painel e análise",
+  "funcionalidade_painel_ajuda": "A aba com os indicadores, os gráficos e as tendências. As tarefas continuam a funcionar sem ela.",
+  "funcionalidade_relatorios": "Relatórios e exportação",
+  "funcionalidade_relatorios_ajuda": "Gerar e exportar relatórios em CSV, XLSX e PDF.",
+  "funcionalidade_estrutura": "Estrutura da empresa",
+  "funcionalidade_estrutura_ajuda": "O ecrã onde se desenham empresas, departamentos e equipas. Desligá-lo não muda quem vê o quê: a estrutura que já existe continua a valer.",
+  "funcionalidade_copia_seguranca": "Cópia de segurança",
+  "funcionalidade_copia_seguranca_ajuda": "Guardar e repor os seus dados.",
+  "repor_origem": "Repor valores de origem"
 }

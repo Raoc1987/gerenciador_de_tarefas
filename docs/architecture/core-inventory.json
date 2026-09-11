@@ -8,6 +8,7 @@
     "log.py": "Registo único. Sem isto, cada módulo inventava o seu e o diagnóstico deixava de ser possível.",
     "eventos.py": "Barramento. É o que permite acrescentar módulos sem os ligar uns aos outros — a peça que sustenta a arquitetura modular.",
     "permissoes.py": "Papéis e permissões, com um ponto único de verificação usado pela interface, pela análise, pelos relatórios e pelos módulos.",
+    "funcionalidades.py": "Que partes do produto estao ligadas nesta instalacao. E a resposta a uma pergunta diferente da das permissoes, e e o que evita que o licenciamento futuro seja um if espalhado por cem ficheiros.",
     "seguranca.py": "Derivação e verificação de palavras-passe. Segurança não se implementa duas vezes.",
     "utilizadores.py": "Contas e autenticação. Quem está em sessão determina permissões, propriedade e auditoria.",
     "organizacao.py": "Estrutura da empresa: quem esta sob quem. Permissoes por ambito, propriedade de dados e multiempresa dependem todas dela; nenhum modulo a pode definir sozinho.",

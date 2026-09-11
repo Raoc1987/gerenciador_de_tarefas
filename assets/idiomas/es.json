@@ -228,5 +228,20 @@
   "backup_falhou": "No se pudo completar: {erro}",
   "backup_erro": "La operación de copia de seguridad falló.",
   "backup_invalido": "Este archivo no es una copia de seguridad válida.",
-  "backup_incompativel": "Esta copia fue hecha por una versión más reciente de la aplicación."
+  "backup_incompativel": "Esta copia fue hecha por una versión más reciente de la aplicación.",
+  "funcionalidades": "Funcionalidades",
+  "funcionalidades_ajuda": "Lo que incluye esta instalación. No es lo mismo que los permisos: los permisos dicen qué puede hacer cada persona, esto dice qué existe en absoluto. Desactivar una funcionalidad la oculta a todos, incluidos los administradores.",
+  "funcionalidades_reiniciar": "Guardado. Cierre y vuelva a abrir la aplicación para ver el cambio.",
+  "funcionalidade_essencial": "No se puede desactivar.",
+  "funcionalidade_desconhecida": "Esa funcionalidad no existe.",
+  "funcionalidade_desligada": "Esta funcionalidad está desactivada en esta instalación.",
+  "funcionalidade_painel": "Panel y análisis",
+  "funcionalidade_painel_ajuda": "La pestaña con los indicadores, los gráficos y las tendencias. Las tareas siguen funcionando sin ella.",
+  "funcionalidade_relatorios": "Informes y exportación",
+  "funcionalidade_relatorios_ajuda": "Generar y exportar informes en CSV, XLSX y PDF.",
+  "funcionalidade_estrutura": "Estructura de la empresa",
+  "funcionalidade_estrutura_ajuda": "La pantalla donde se dibujan empresas, departamentos y equipos. Desactivarla no cambia quién ve qué: la estructura existente sigue vigente.",
+  "funcionalidade_copia_seguranca": "Copia de seguridad",
+  "funcionalidade_copia_seguranca_ajuda": "Guardar y restaurar sus datos.",
+  "repor_origem": "Restablecer valores iniciales"
 }

@@ -4,7 +4,7 @@ import tkinter as tk
 from tkinter import messagebox, ttk
 
 from auditoria_ui import JanelaAuditoria
-from core import auditoria, eventos, permissoes
+from core import auditoria, eventos, funcionalidades, permissoes
 from core.log import obter_logger
 from core.paths import caminho_recurso, diretorio_plugins_embutidos
 from core.plugin_manager import PluginManager
@@ -14,6 +14,7 @@ from core.plugin_sources import FontePastasLocais
 from dashboard_ui import PainelDashboard
 import tarefas_servico
 from backup_ui import JanelaBackup
+from funcionalidades_ui import JanelaFuncionalidades
 from organizacao_ui import JanelaOrganizacao
 from language_manager import (
     IDIOMAS_SUPORTADOS,
@@ -110,8 +111,12 @@ def criar_janela(raiz: tk.Tk | None = None) -> tk.Tk:
     notebook = ttk.Notebook(app)
     notebook.pack(fill=tk.BOTH, expand=True, padx=10)
 
-    painel_dashboard = PainelDashboard(notebook)
-    notebook.add(painel_dashboard, text=carregar_texto("dashboard"))
+    # A aba só é construída se a instalação tiver o painel: criá-la e escondê-la
+    # seria pagar o custo de a desenhar para não a mostrar.
+    painel_dashboard = None
+    if funcionalidades.ativa("painel"):
+        painel_dashboard = PainelDashboard(notebook)
+        notebook.add(painel_dashboard, text=carregar_texto("dashboard"))
 
     aba_tarefas = ttk.Frame(notebook)
     notebook.add(aba_tarefas, text=carregar_texto("tarefas"))
@@ -250,6 +255,9 @@ def criar_janela(raiz: tk.Tk | None = None) -> tk.Tk:
     def abrir_backup():
         JanelaBackup(app)
 
+    def abrir_funcionalidades():
+        JanelaFuncionalidades(app)
+
     def arrancar_plugins():
         """Semeia os plugins embutidos e ativa os que o utilizador deixou ligados."""
         try:
@@ -289,14 +297,19 @@ def criar_janela(raiz: tk.Tk | None = None) -> tk.Tk:
         # instalação: mexer na primeira muda o que as outras pessoas veem.
         if permissoes.pode(Permissao.SISTEMA_ADMIN):
             configuracoes.add_separator()
-            configuracoes.add_command(
-                label=carregar_texto("estrutura") + "...", command=abrir_estrutura
-            )
+            if funcionalidades.ativa("estrutura"):
+                configuracoes.add_command(
+                    label=carregar_texto("estrutura") + "...", command=abrir_estrutura
+                )
             configuracoes.add_command(
                 label=carregar_texto("auditoria") + "...", command=abrir_auditoria
             )
             configuracoes.add_command(
                 label=carregar_texto("backup") + "...", command=abrir_backup
+            )
+            configuracoes.add_command(
+                label=carregar_texto("funcionalidades") + "...",
+                command=abrir_funcionalidades,
             )
         barra.add_cascade(label=carregar_texto("configuracoes"), menu=configuracoes)
         app.config(menu=barra)
@@ -319,9 +332,11 @@ def criar_janela(raiz: tk.Tk | None = None) -> tk.Tk:
         botao_remover.config(text=carregar_texto("remover"))
         botao_atualizar.config(text=carregar_texto("atualizar_lista"))
         caixa_minhas.config(text=carregar_texto("so_as_minhas"))
-        notebook.tab(painel_dashboard, text=carregar_texto("dashboard"))
+        if painel_dashboard is not None:
+            notebook.tab(painel_dashboard, text=carregar_texto("dashboard"))
         notebook.tab(aba_tarefas, text=carregar_texto("tarefas"))
-        painel_dashboard.aplicar_idioma()
+        if painel_dashboard is not None:
+            painel_dashboard.aplicar_idioma()
         anfitriao.atualizar_traducoes()
         construir_menu()
         recarregar_lista()

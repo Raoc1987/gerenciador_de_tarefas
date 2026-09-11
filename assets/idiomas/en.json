@@ -228,5 +228,20 @@
   "backup_falhou": "Could not finish: {erro}",
   "backup_erro": "The backup operation failed.",
   "backup_invalido": "This file is not a valid backup.",
-  "backup_incompativel": "This backup was made by a newer version of the application."
+  "backup_incompativel": "This backup was made by a newer version of the application.",
+  "funcionalidades": "Features",
+  "funcionalidades_ajuda": "What this installation includes. This is not the same as permissions: permissions say what each person may do, this says what exists at all. Turning a feature off hides it from everyone, administrators included.",
+  "funcionalidades_reiniciar": "Saved. Close and reopen the application to see the change.",
+  "funcionalidade_essencial": "Cannot be turned off.",
+  "funcionalidade_desconhecida": "That feature does not exist.",
+  "funcionalidade_desligada": "This feature is turned off in this installation.",
+  "funcionalidade_painel": "Dashboard and analytics",
+  "funcionalidade_painel_ajuda": "The tab with indicators, charts and trends. Tasks keep working without it.",
+  "funcionalidade_relatorios": "Reports and export",
+  "funcionalidade_relatorios_ajuda": "Generating and exporting reports as CSV, XLSX and PDF.",
+  "funcionalidade_estrutura": "Company structure",
+  "funcionalidade_estrutura_ajuda": "The screen where companies, departments and teams are drawn. Turning it off does not change who sees what: the existing structure still applies.",
+  "funcionalidade_copia_seguranca": "Backup",
+  "funcionalidade_copia_seguranca_ajuda": "Saving and restoring your data.",
+  "repor_origem": "Reset to defaults"
 }

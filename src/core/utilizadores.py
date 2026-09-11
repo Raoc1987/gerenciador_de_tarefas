@@ -83,6 +83,8 @@ class Utilizador:
     ultimo_acesso: Optional[str] = None
     tentativas_falhadas: int = 0
     bloqueado_ate: Optional[str] = None
+    unidade_id: Optional[int] = None
+    """Onde a pessoa está na estrutura. ``None`` enquanto não houver estrutura."""
 
     @property
     def papel(self) -> Papel:
@@ -132,12 +134,13 @@ def _linha_para_utilizador(linha) -> Utilizador:
         ultimo_acesso=linha[7],
         tentativas_falhadas=linha[8],
         bloqueado_ate=linha[9],
+        unidade_id=linha[10],
     )
 
 
 _COLUNAS = (
     "id, nome_utilizador, nome, senha_hash, papel, ativo, criado_em, "
-    "ultimo_acesso, tentativas_falhadas, bloqueado_ate"
+    "ultimo_acesso, tentativas_falhadas, bloqueado_ate, unidade_id"
 )
 
 
@@ -312,6 +315,39 @@ def definir_papel(nome_utilizador: str, papel: str) -> bool:
         origem="utilizadores",
         id=utilizador.nome_utilizador,
         alteracao=f"papel={papel}",
+    )
+    return True
+
+
+def definir_unidade(nome_utilizador: str, unidade_id: Optional[int]) -> bool:
+    """Põe (ou tira) a pessoa de um lugar na estrutura.
+
+    ``None`` tira-a da estrutura sem lhe tocar em mais nada. Não mexe nas
+    tarefas que já criou: a unidade delas foi gravada quando o trabalho foi
+    feito, e mudá-la agora reescreveria o passado.
+
+    Raises:
+        UnidadeNaoEncontradaError: se a unidade indicada não existir.
+    """
+    utilizador = obter(nome_utilizador)
+    if utilizador is None:
+        return False
+    if unidade_id is not None:
+        from core import organizacao
+
+        organizacao.exigir(unidade_id)
+
+    with _conectar() as conexao:
+        conexao.execute(
+            "UPDATE utilizadores SET unidade_id = ? WHERE id = ?",
+            (unidade_id, utilizador.id),
+        )
+    logger.info("Unidade de %s alterada para %s", nome_utilizador, unidade_id)
+    eventos.publicar(
+        eventos.UTILIZADOR_ALTERADO,
+        origem="utilizadores",
+        id=utilizador.nome_utilizador,
+        alteracao=f"unidade={unidade_id}",
     )
     return True
 

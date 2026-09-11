@@ -125,6 +125,19 @@ _MIGRACOES: List[Sequence[str]] = [
         """,
         "CREATE INDEX IF NOT EXISTS idx_unidades_pai ON unidades (pai_id)",
     ),
+    # v8 — a que unidade pertencem as contas e as tarefas.
+    #
+    # A unidade da tarefa é gravada quando ela é criada, e não deduzida do
+    # departamento atual de quem a criou. Se alguém mudar de departamento, o
+    # trabalho que fez continua a contar para onde foi feito — mudá-lo de
+    # sítio retroativamente seria reescrever o passado.
+    #
+    # NULL em ambas é o estado normal de quem não usa estrutura nenhuma.
+    (
+        "ALTER TABLE utilizadores ADD COLUMN unidade_id INTEGER REFERENCES unidades(id)",
+        "ALTER TABLE tarefas ADD COLUMN unidade_id INTEGER REFERENCES unidades(id)",
+        "CREATE INDEX IF NOT EXISTS idx_tarefas_unidade ON tarefas (unidade_id)",
+    ),
 ]
 
 #: Colunas devolvidas por :func:`buscar_tarefas` — contrato estável de que a
@@ -137,15 +150,31 @@ COLUNAS_TAREFA_COMPLETA = COLUNAS_TAREFA + ", concluida_em, criada_por"
 SEM_DONO = ""
 
 
-def _clausula_de_dono(dono: Optional[str]) -> tuple:
-    """Condição SQL e parâmetros para filtrar por dono.
+def _clausula_de_dono(dono: Optional[str], unidades: Optional[Sequence[int]] = None) -> tuple:
+    """Condição SQL e parâmetros para o âmbito de quem está a ver.
 
-    ``None`` significa "não filtrar". Quem pede as suas tarefas vê também as
-    que não têm dono: são anteriores às contas e não pertencem a mais ninguém.
+    ``dono=None`` significa "não filtrar". Quem pede as suas tarefas vê também
+    as que não têm dono: são anteriores às contas e não pertencem a mais
+    ninguém.
+
+    ``unidades`` alarga o âmbito às tarefas dessas unidades — é assim que um
+    chefe de departamento vê o trabalho da sua equipa além do seu. A relação
+    é **OU**: as minhas *ou* as da minha unidade. Uma lista vazia não alarga
+    nada, que é o que acontece a quem não tem lugar na estrutura.
+
+    Quem decide o que vai aqui dentro é :mod:`tarefas_servico`; o
+    armazenamento só sabe montar a condição.
     """
     if dono is None:
         return "", []
-    return "(criada_por = ? OR criada_por = ?)", [dono, SEM_DONO]
+
+    condicao = "(criada_por = ? OR criada_por = ?)"
+    parametros: List = [dono, SEM_DONO]
+    if unidades:
+        marcadores = ", ".join("?" for _ in unidades)
+        condicao = f"({condicao} OR unidade_id IN ({marcadores}))"
+        parametros.extend(unidades)
+    return condicao, parametros
 
 
 def caminho_bd() -> Path:
@@ -190,12 +219,16 @@ def adicionar_tarefa(
     descricao: str,
     data_vencimento: Optional[str] = None,
     criada_por: str = SEM_DONO,
+    unidade_id: Optional[int] = None,
 ) -> int:
     """Insere uma tarefa e devolve o seu ``id``.
 
     Args:
         criada_por: quem a criou. Quem decide isto é a camada de serviço
             (:mod:`tarefas_servico`), não o armazenamento.
+        unidade_id: a unidade a que o trabalho pertence, no momento em que é
+            criado. Fica gravada: se a pessoa mudar de departamento amanhã,
+            isto continua a contar para onde foi feito.
 
     Raises:
         ValueError: se a descrição estiver vazia.
@@ -207,12 +240,13 @@ def adicionar_tarefa(
     with conectar() as conexao:
         cursor = conexao.execute(
             "INSERT INTO tarefas (descricao, data_vencimento, concluida, criada_em,"
-            " criada_por) VALUES (?, ?, 0, ?, ?)",
+            " criada_por, unidade_id) VALUES (?, ?, 0, ?, ?, ?)",
             (
                 descricao,
                 data_vencimento,
                 datetime.now().isoformat(timespec="seconds"),
                 criada_por or SEM_DONO,
+                unidade_id,
             ),
         )
         tarefa_id = int(cursor.lastrowid)
@@ -229,7 +263,9 @@ def adicionar_tarefa(
 
 
 def buscar_tarefas(
-    incluir_concluidas: bool = True, de: Optional[str] = None
+    incluir_concluidas: bool = True,
+    de: Optional[str] = None,
+    unidades: Optional[Sequence[int]] = None,
 ) -> List[tuple]:
     """Tarefas como tuplas ``(id, descrição, vencimento, concluída, criada_em)``.
 
@@ -243,7 +279,7 @@ def buscar_tarefas(
     parametros: List = []
     if not incluir_concluidas:
         condicoes.append("concluida = 0")
-    clausula, valores = _clausula_de_dono(de)
+    clausula, valores = _clausula_de_dono(de, unidades)
     if clausula:
         condicoes.append(clausula)
         parametros.extend(valores)
@@ -261,6 +297,15 @@ def dono_de(tarefa_id: int) -> Optional[str]:
     with conectar() as conexao:
         linha = conexao.execute(
             "SELECT criada_por FROM tarefas WHERE id = ?", (tarefa_id,)
+        ).fetchone()
+    return linha[0] if linha else None
+
+
+def unidade_de(tarefa_id: int) -> Optional[int]:
+    """A unidade a que a tarefa pertence, ou ``None``."""
+    with conectar() as conexao:
+        linha = conexao.execute(
+            "SELECT unidade_id FROM tarefas WHERE id = ?", (tarefa_id,)
         ).fetchone()
     return linha[0] if linha else None
 
@@ -305,14 +350,16 @@ def remover_tarefa(tarefa_id: int) -> bool:
     return removida
 
 
-def buscar_tarefas_completas(de: Optional[str] = None) -> List[tuple]:
+def buscar_tarefas_completas(
+    de: Optional[str] = None, unidades: Optional[Sequence[int]] = None
+) -> List[tuple]:
     """Tarefas com todas as colunas, incluindo ``concluida_em`` e ``criada_por``.
 
     Usada pela camada de analytics. :func:`buscar_tarefas` mantém o formato de
     cinco colunas de que a interface e os plugins dependem.
     """
     consulta = f"SELECT {COLUNAS_TAREFA_COMPLETA} FROM tarefas"
-    clausula, parametros = _clausula_de_dono(de)
+    clausula, parametros = _clausula_de_dono(de, unidades)
     if clausula:
         consulta += " WHERE " + clausula
     consulta += " ORDER BY id ASC"
@@ -320,11 +367,13 @@ def buscar_tarefas_completas(de: Optional[str] = None) -> List[tuple]:
         return conexao.execute(consulta, parametros).fetchall()
 
 
-def tarefas_por_data(data_iso: str, de: Optional[str] = None) -> List[tuple]:
+def tarefas_por_data(
+    data_iso: str, de: Optional[str] = None, unidades: Optional[Sequence[int]] = None
+) -> List[tuple]:
     """Tarefas cujo vencimento é exatamente ``data_iso`` (``AAAA-MM-DD``)."""
     consulta = f"SELECT {COLUNAS_TAREFA} FROM tarefas WHERE data_vencimento = ?"
     parametros: List = [data_iso]
-    clausula, valores = _clausula_de_dono(de)
+    clausula, valores = _clausula_de_dono(de, unidades)
     if clausula:
         consulta += " AND " + clausula
         parametros.extend(valores)

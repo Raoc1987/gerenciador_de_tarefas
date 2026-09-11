@@ -104,6 +104,7 @@ def test_a_lista_do_que_e_concedivel_esta_fixada():
         "tarefas.ler",
         "tarefas.escrever",
         "tarefas.ver_todas",
+        "tarefas.ver_unidade",
         "analytics.ler",
         "relatorios.ler",
         "relatorios.exportar",

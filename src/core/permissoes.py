@@ -58,6 +58,15 @@ class Permissao(str, Enum):
     TAREFAS_VER_TODAS = "tarefas.ver_todas"
     """Ver e editar tarefas de outras pessoas, além das próprias."""
 
+    TAREFAS_VER_UNIDADE = "tarefas.ver_unidade"
+    """Ver e editar as tarefas da sua unidade e das que estão abaixo dela.
+
+    O meio-termo entre "só as minhas" e "as de toda a gente", que é onde a
+    maioria dos chefes de departamento realmente está. Sem unidade atribuída
+    não alcança nada: o âmbito é a sub-árvore, e uma pessoa sem lugar na
+    estrutura tem sub-árvore vazia.
+    """
+
     ANALYTICS_LER = "analytics.ler"
     RELATORIOS_LER = "relatorios.ler"
     RELATORIOS_EXPORTAR = "relatorios.exportar"
@@ -122,6 +131,22 @@ PAPEIS: Dict[str, Papel] = {
                 Permissao.TAREFAS_ESCREVER,
                 Permissao.ANALYTICS_LER,
                 Permissao.RELATORIOS_LER,
+            }
+        ),
+    ),
+    # Manda no seu departamento e no que está abaixo dele — não na empresa
+    # toda. Papel novo: nenhum dos que já existiam muda de comportamento com
+    # a chegada da estrutura.
+    "gestor_de_unidade": Papel(
+        "gestor_de_unidade",
+        frozenset(
+            {
+                Permissao.TAREFAS_LER,
+                Permissao.TAREFAS_ESCREVER,
+                Permissao.TAREFAS_VER_UNIDADE,
+                Permissao.ANALYTICS_LER,
+                Permissao.RELATORIOS_LER,
+                Permissao.RELATORIOS_EXPORTAR,
             }
         ),
     ),

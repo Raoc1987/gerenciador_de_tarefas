@@ -241,6 +241,9 @@ def test_autenticar_inicia_a_sessao(raiz, com_conta, monkeypatch):
         def __init__(self, master):
             self.resultado = com_conta
 
+        def winfo_exists(self):
+            return True
+
     monkeypatch.setattr(login_ui, "JanelaLogin", JanelaFalsa)
     monkeypatch.setattr(raiz, "wait_window", lambda _: None)
 
@@ -419,7 +422,10 @@ def test_arranque_pede_sessao_antes_de_abrir(monkeypatch, com_conta):
         def mainloop(self):
             ordem.append("janela")
 
-    def autenticar_falso(raiz):
+        def after(self, *args):
+            pass
+
+    def autenticar_falso(raiz, ao_abrir=None):
         ordem.append("login")
         utilizadores.iniciar_sessao(com_conta)
         return com_conta
@@ -435,8 +441,90 @@ def test_cancelar_o_login_fecha_a_aplicacao(monkeypatch, com_conta):
     import main
 
     construiu = []
-    monkeypatch.setattr("login_ui.autenticar", lambda raiz: None)
+    monkeypatch.setattr("login_ui.autenticar", lambda raiz, ao_abrir=None: None)
     monkeypatch.setattr("gui.criar_janela", lambda raiz=None: construiu.append(1))
 
     assert main.abrir_aplicacao() == 0
     assert construiu == [], "sem sessão, a janela principal não chega a existir"
+
+
+# ================================ O AUTOTESTE PERCORRE O ARRANQUE VERDADEIRO
+
+
+def test_autenticar_avisa_quem_quer_ver_a_janela(raiz, com_conta, monkeypatch):
+    """O gancho é o que permite verificar o arranque sem o imitar."""
+    import login_ui
+
+    vistas = []
+    monkeypatch.setattr(raiz, "wait_window", lambda janela: janela.destroy())
+    login_ui.autenticar(raiz, ao_abrir=vistas.append)
+
+    assert len(vistas) == 1
+    assert isinstance(vistas[0], login_ui.JanelaLogin)
+
+
+def test_autenticar_sobrevive_a_um_gancho_que_fecha_a_janela(raiz, com_conta):
+    """Esperar por uma janela que já não existe é um erro de Tcl, não uma espera."""
+    import login_ui
+
+    resultado = login_ui.autenticar(raiz, ao_abrir=lambda janela: janela.destroy())
+    assert resultado is None
+
+
+def test_o_arranque_real_e_verificado_e_nao_imitado(monkeypatch):
+    """O autoteste tem de passar pela mesma função que o duplo-clique usa."""
+    import main
+
+    chamadas = {}
+
+    def falso(ao_abrir_sessao=None, ao_abrir_principal=None):
+        chamadas["ganchos"] = (ao_abrir_sessao is not None, ao_abrir_principal is not None)
+        return 0
+
+    monkeypatch.setattr(main, "abrir_aplicacao", falso)
+    main.verificar_arranque_real(lambda *a, **k: None)
+
+    assert chamadas["ganchos"] == (True, True)
+
+
+def test_o_arranque_real_nao_cria_contas_na_instalacao(monkeypatch):
+    """Criar o administrador aqui trancaria o utilizador fora do seu programa.
+
+    Se a verificação usasse a área de dados real, passaria a existir uma conta
+    e o ecrã de primeira utilização nunca mais apareceria a quem instalou.
+    """
+    import main
+    from core import utilizadores
+    from core.paths import diretorio_dados_utilizador
+
+    antes = diretorio_dados_utilizador()
+    assert not utilizadores.existe_algum()
+
+    usadas = []
+
+    def falso(ao_abrir_sessao=None, ao_abrir_principal=None):
+        usadas.append(diretorio_dados_utilizador())
+        return 0
+
+    monkeypatch.setattr(main, "abrir_aplicacao", falso)
+    main.verificar_arranque_real(lambda *a, **k: None)
+
+    assert usadas and usadas[0] != antes, "devia correr numa área isolada"
+    assert not utilizadores.existe_algum(), "não pode deixar contas para trás"
+    assert diretorio_dados_utilizador() == antes, "e devia devolver tudo como estava"
+
+
+def test_o_arranque_real_relata_quando_nada_aparece(monkeypatch):
+    """Sem janela visível, a verificação falha em vez de ficar a esperar."""
+    import main
+
+    monkeypatch.setattr(
+        main, "abrir_aplicacao", lambda ao_abrir_sessao=None, ao_abrir_principal=None: 0
+    )
+    resultados = {}
+    main.verificar_arranque_real(
+        lambda nome, condicao, detalhe="": resultados.__setitem__(nome, condicao)
+    )
+
+    assert resultados["janela de início de sessão visível"] is False
+    assert resultados["janela principal visível"] is False

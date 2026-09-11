@@ -141,6 +141,12 @@ def autoteste(relatorio: Path | None = None) -> int:
     except Exception as erro:  # pragma: no cover
         verificar("interface gráfica", False, repr(erro))
 
+    # --- arranque real: a aplicação abre mesmo?
+    try:
+        verificar_arranque_real(verificar)
+    except Exception as erro:  # pragma: no cover
+        verificar("arranque real", False, repr(erro))
+
     if falhas:
         linhas.append(
             f"AUTOTESTE FALHOU: {len(falhas)} verificação(ões) — {', '.join(falhas)}"
@@ -195,11 +201,136 @@ def main(argumentos: list[str] | None = None) -> int:
         return 1
 
 
-def abrir_aplicacao() -> int:
+def verificar_arranque_real(verificar) -> None:
+    """Abre a aplicação pelo caminho verdadeiro e confirma que se vê.
+
+    O autoteste antigo construía a janela principal diretamente. Passava
+    sempre — inclusive enquanto o programa, ao ser aberto a sério, ficava a
+    correr sem nada no ecrã, porque a janela de início de sessão era escondida
+    com a raiz. Um build não devia poder dizer "válido" sobre um caminho que
+    ninguém percorre.
+
+    Corre numa área de dados temporária, **sempre**. Criar a conta de
+    administrador na instalação real trancaria o utilizador fora do seu
+    próprio programa: passaria a existir uma conta, e o ecrã de primeira
+    utilização nunca mais apareceria.
+    """
+    import os
+    import secrets
+    import tempfile
+
+    from core.paths import ENV_DATA_DIR
+
+    #: Um arranque normal demora segundos. Isto é folga para uma máquina lenta,
+    #: não uma espera esperada.
+    LIMITE_MS = 60_000
+
+    estado: dict = {}
+    # A senha não pode conter o nome de utilizador: é a política da aplicação
+    # a funcionar, e os dados de verificação têm de a respeitar como os de
+    # qualquer pessoa.
+    utilizador = "autoteste"
+    senha = "Arranque-" + secrets.token_hex(12)
+
+    def desistir(raiz) -> None:
+        """Uma aplicação que não abre fica à espera para sempre.
+
+        Foi exatamente o que aconteceu quando a janela de sessão era escondida
+        com a raiz: o programa não falhava, ficava pendurado. Sem isto o
+        autoteste herdava o mesmo bloqueio em vez de o reportar.
+        """
+        estado["expirou"] = True
+        try:
+            raiz.destroy()
+        except Exception:  # pragma: no cover - defensivo
+            pass
+
+    def preencher_sessao(janela) -> None:
+        """Faz o que uma pessoa faria, já com o ciclo de eventos a correr."""
+        try:
+            estado["sessao"] = bool(janela.winfo_viewable())
+            janela.entrada_nome.insert(0, "Autoteste")
+            janela.entrada_utilizador.insert(0, utilizador)
+            janela.entrada_senha.insert(0, senha)
+            janela.entrada_confirmacao.insert(0, senha)
+            janela.submeter()
+            if janela.winfo_exists() and janela.resultado is None:
+                estado["erro_sessao"] = janela.mensagem.cget("text") or "recusado"
+                janela.destroy()
+        except Exception as erro:  # pragma: no cover - diagnóstico
+            estado["erro_sessao"] = repr(erro)
+            if janela.winfo_exists():
+                janela.destroy()
+
+    def ao_abrir_sessao(janela) -> None:
+        # Agendado, não imediato: assim corre dentro da espera pela janela,
+        # como um utilizador a escrever. A agir já, fechava a janela antes de
+        # alguém começar a esperar por ela.
+        janela.after(0, preencher_sessao, janela)
+        janela.after(LIMITE_MS, desistir, janela.master)
+
+    def ao_abrir_principal(janela) -> None:
+        try:
+            janela.update()
+            estado["principal"] = bool(janela.winfo_viewable())
+            estado["abas"] = len(janela.winfo_children())
+        except Exception as erro:  # pragma: no cover - diagnóstico
+            estado["erro_principal"] = repr(erro)
+        finally:
+            janela.destroy()  # sai do mainloop
+
+    anterior = os.environ.get(ENV_DATA_DIR)
+    with tempfile.TemporaryDirectory(prefix="gdt_arranque_") as isolado:
+        os.environ[ENV_DATA_DIR] = isolado
+        try:
+            codigo = abrir_aplicacao(ao_abrir_sessao, ao_abrir_principal)
+        except Exception as erro:  # pragma: no cover - diagnóstico
+            estado["erro"] = repr(erro)
+            codigo = 1
+        finally:
+            if anterior is None:
+                os.environ.pop(ENV_DATA_DIR, None)
+            else:
+                os.environ[ENV_DATA_DIR] = anterior
+
+    if estado.get("expirou"):
+        motivo = "a aplicação ficou a correr sem abrir (esgotou o tempo)"
+    else:
+        motivo = estado.get("erro_sessao") or estado.get("erro") or ""
+
+    sessao_ok = estado.get("sessao") is True
+    principal_ok = estado.get("principal") is True
+    verificar(
+        "janela de início de sessão visível",
+        sessao_ok,
+        "" if sessao_ok else (motivo or "nada apareceu no ecrã"),
+    )
+    verificar(
+        "janela principal visível",
+        principal_ok,
+        "" if principal_ok else (motivo or estado.get("erro_principal", "")),
+    )
+    verificar(
+        "arranque completo",
+        codigo == 0 and not estado.get("expirou"),
+        f"código {codigo}",
+    )
+
+
+def abrir_aplicacao(ao_abrir_sessao=None, ao_abrir_principal=None) -> int:
     """Pede credenciais e, se forem aceites, abre a janela principal.
 
     O início de sessão e a aplicação partilham o mesmo interpretador Tk: a
     janela principal só é construída depois de haver sessão.
+
+    Args:
+        ao_abrir_sessao: chamado com a janela de início de sessão.
+        ao_abrir_principal: chamado com a janela principal, já dentro do
+            ``mainloop``.
+
+    Os dois ganchos existem para o ``--autoteste`` poder verificar **este**
+    arranque, e não um parecido. Um build só devia dizer "válido" sobre o
+    caminho que o utilizador percorre.
     """
     import tkinter as tk
 
@@ -213,13 +344,17 @@ def abrir_aplicacao() -> int:
     raiz = tk.Tk()
     raiz.withdraw()
     try:
-        utilizador = login_ui.autenticar(raiz)
+        utilizador = login_ui.autenticar(raiz, ao_abrir=ao_abrir_sessao)
         if utilizador is None:
             logger.info("Início de sessão cancelado; a sair.")
             raiz.destroy()
             return 0
 
-        gui.criar_janela(raiz=raiz).mainloop()
+        janela = gui.criar_janela(raiz=raiz)
+        if ao_abrir_principal is not None:
+            # Dentro do mainloop, não antes: é lá que a janela existe a sério.
+            janela.after(0, ao_abrir_principal, janela)
+        janela.mainloop()
     finally:
         try:
             utilizadores.terminar_sessao()

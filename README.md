@@ -71,9 +71,25 @@ em ambientes sem interface gráfica.
 python src/main.py --autoteste
 ```
 
-Verifica banco, idiomas, recursos, plugins e criação da janela, e devolve
-código de saída diferente de zero se algo falhar. Funciona também no
-executável empacotado:
+Verifica banco, idiomas, recursos, plugins e — o mais importante — **abre a
+aplicação pelo caminho verdadeiro**: o mesmo `abrir_aplicacao()` que o
+duplo-clique usa, confirmando que a janela de início de sessão e a janela
+principal chegam mesmo a estar visíveis.
+
+Essa última parte existe porque faltava: o autoteste construía a janela
+principal diretamente e dava "OK" enquanto o programa, aberto a sério, ficava
+a correr sem nada no ecrã. Uma verificação que não passa pelo caminho do
+utilizador não diz nada sobre ele.
+
+O arranque é verificado **numa área de dados temporária**, sempre. Criar a
+conta de administrador na instalação real trancaria o utilizador fora do seu
+próprio programa — passaria a existir uma conta, e o ecrã de primeira
+utilização nunca mais apareceria.
+
+Devolve código de saída diferente de zero se algo falhar, e nunca fica
+pendurado: uma aplicação que não abre espera para sempre, por isso há um
+limite de tempo que transforma o bloqueio numa falha comunicada. Funciona
+também no executável empacotado:
 
 ```bash
 dist\GerenciadorDeTarefas\GerenciadorDeTarefas.exe --autoteste --relatorio relatorio.txt

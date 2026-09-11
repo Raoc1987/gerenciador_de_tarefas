@@ -64,11 +64,24 @@ class _JanelaModal(tk.Toplevel):
         # Sem dono visível não há nada que traga esta janela para a frente.
         self.lift()
         self.attributes("-topmost", True)
-        self.after_idle(self.attributes, "-topmost", False)
+        self.after_idle(self._largar_primeiro_plano)
         try:
             self.grab_set()
             self.focus_force()
         except tk.TclError:  # pragma: no cover - ambiente sem gestor de janelas
+            pass
+
+    def _largar_primeiro_plano(self) -> None:
+        """Deixa de estar por cima de tudo, sem chatear quem já fechou.
+
+        A janela — ou o interpretador inteiro — pode ter desaparecido entre o
+        agendamento e a execução, e aí nem perguntar se existe é seguro. É o
+        caso quando a sessão é imediata.
+        """
+        try:
+            if self.winfo_exists():
+                self.attributes("-topmost", False)
+        except tk.TclError:  # pragma: no cover - a janela já foi
             pass
 
     def submeter(self) -> None:  # pragma: no cover - sobreposto
@@ -229,20 +242,27 @@ class JanelaPrimeiroAdministrador(_JanelaModal):
         self.destroy()
 
 
-def autenticar(raiz: tk.Misc) -> Optional[Utilizador]:
+def autenticar(raiz: tk.Misc, ao_abrir=None) -> Optional[Utilizador]:
     """Garante uma sessão iniciada, criando a primeira conta se for preciso.
+
+    Args:
+        ao_abrir: chamado com a janela assim que ela existe, antes de se
+            esperar por ela. É por aqui que o autoteste percorre o arranque
+            verdadeiro em vez de um caminho parecido — e só se descobre que
+            uma janela não aparece quem a tenta ver.
 
     Returns:
         O utilizador autenticado, ou ``None`` se desistiu.
     """
-    if not utilizadores.existe_algum():
-        janela = JanelaPrimeiroAdministrador(raiz)
+    classe = JanelaLogin if utilizadores.existe_algum() else JanelaPrimeiroAdministrador
+    janela = classe(raiz)
+    if ao_abrir is not None:
+        ao_abrir(janela)
+    # A janela pode já ter sido fechada pelo gancho. Esperar por uma janela
+    # que não existe é um erro de Tcl, não uma espera.
+    if janela.winfo_exists():
         raiz.wait_window(janela)
-        utilizador = janela.resultado
-    else:
-        janela = JanelaLogin(raiz)
-        raiz.wait_window(janela)
-        utilizador = janela.resultado
+    utilizador = janela.resultado
 
     if utilizador is not None:
         utilizadores.iniciar_sessao(utilizador)

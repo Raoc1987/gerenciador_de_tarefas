@@ -4,7 +4,7 @@ import tkinter as tk
 from tkinter import messagebox, ttk
 
 from core.log import obter_logger
-from core.paths import diretorio_plugins_embutidos
+from core.paths import caminho_recurso, diretorio_plugins_embutidos
 from core.plugin_manager import PluginManager
 from core.plugin_registry import RegistroEstadoBanco
 from core.plugin_sources import FontePastasLocais
@@ -36,6 +36,17 @@ def _rotulo_tarefa(tarefa) -> str:
     return f"{marca} {descricao}{sufixo}"
 
 
+def _aplicar_icone(app: tk.Tk) -> None:
+    """Usa o ícone da aplicação na janela, se estiver disponível."""
+    icone = caminho_recurso("assets", "icon.ico")
+    if not icone.is_file():
+        return
+    try:
+        app.iconbitmap(default=str(icone))
+    except tk.TclError:  # pragma: no cover - plataformas sem suporte a .ico
+        logger.debug("Não foi possível aplicar o ícone da janela.")
+
+
 def criar_gerenciador_de_plugins(anfitriao=None) -> PluginManager:
     """Cria o PluginManager já ligado ao banco e aos serviços da aplicação."""
     return PluginManager(
@@ -57,6 +68,7 @@ def criar_janela() -> tk.Tk:
     app = tk.Tk()
     app.title(carregar_texto("titulo"))
     app.geometry("800x600")
+    _aplicar_icone(app)
 
     # ------------------------------------------------------------ topo
     frame_topo = ttk.Frame(app)

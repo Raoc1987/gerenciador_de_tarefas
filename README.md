@@ -148,13 +148,24 @@ formas mais fiáveis de deixar um sistema aberto.
 
 Depois disso, a aplicação pede credenciais ao abrir.
 
-| Papel | O que pode fazer |
-|---|---|
-| Administrador | tudo, incluindo contas e auditoria |
-| Gestor | tarefas, análise, relatórios (incl. exportar) e plugins |
-| Supervisor | tarefas, análise e ver relatórios |
-| Colaborador | ler e escrever tarefas |
-| Visualizador | ler tarefas, análise e relatórios |
+| Papel | Tarefas | Análise e relatórios | Gestão |
+|---|---|---|---|
+| Administrador | vê e edita todas | tudo, incluindo exportar | contas, plugins, auditoria |
+| Gestor | vê e edita todas | tudo, incluindo exportar | plugins |
+| Supervisor | vê e edita todas | ver | — |
+| Colaborador | **só as suas** | ver (as suas) | — |
+| Visualizador | vê todas, não edita | ver | — |
+
+As tarefas passam a ter dono: quem as cria. Um Colaborador vê e edita as suas;
+os outros papéis veem as de toda a gente, com o nome de quem criou cada uma e
+um filtro **Só as minhas**.
+
+As tarefas criadas **antes** de existirem contas ficam sem dono e continuam
+visíveis para todos — não se inventa um dono que nunca existiu.
+
+A regra vive num sítio só (`src/tarefas_servico.py`) e vale para tudo: a
+janela, o dashboard, os relatórios e os **plugins** — um plugin não consegue
+ver o que a sua sessão não pode ver.
 
 `Configurações → Utilizadores` (para quem tem `utilizadores.gerir`) permite
 criar contas, mudar papéis, ativar/desativar, redefinir palavras-passe e
@@ -374,6 +385,7 @@ gerenciador_de_tarefas/
 │   ├── language_manager.py     # idiomas da aplicação e dos plugins
 │   ├── calendar_widget.py      # calendário reutilizável
 │   ├── dashboard_ui.py         # aba Dashboard
+│   ├── tarefas_servico.py      # quem vê e edita que tarefas
 │   ├── utils.py
 │   ├── auditoria_ui.py         # tela de auditoria
 │   ├── login_ui.py             # início de sessão e primeiro administrador
@@ -405,7 +417,7 @@ gerenciador_de_tarefas/
 ├── installer/setup.iss         # instalador Inno Setup
 ├── tools/                      # build, instalador, empacotar plugin, ícone
 ├── docs/architecture/          # visão, ADRs e roadmap
-├── tests/                      # 518 testes
+├── tests/                      # 545 testes
 ├── docs/AUDIT.md               # auditoria do estado inicial do projeto
 └── GerenciadorDeTarefas.spec   # receita do PyInstaller
 ```

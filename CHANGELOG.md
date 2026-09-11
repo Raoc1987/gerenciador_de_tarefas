@@ -13,6 +13,12 @@ plugins (ver `docs/architecture/`).
 
 ### Adicionado
 
+- **Dono das tarefas** (`tarefas_servico.py`, migração v6): quem cria uma
+  tarefa passa a ser o seu dono. Um Colaborador vê e edita as suas; Gestor,
+  Supervisor e Visualizador veem as de todos, com o nome de quem criou e um
+  filtro "Só as minhas". As tarefas anteriores às contas ficam sem dono e
+  continuam de todos. A regra vale para a janela, o dashboard, os relatórios
+  e os plugins.
 - **Contas de utilizador e início de sessão** (`core/seguranca.py`,
   `core/utilizadores.py`): palavras-passe derivadas com PBKDF2-HMAC-SHA256 e
   sal próprio, bloqueio após tentativas falhadas, e a garantia de nunca ficar

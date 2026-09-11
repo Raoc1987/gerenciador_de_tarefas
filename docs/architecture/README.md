@@ -71,6 +71,7 @@ Cada peça é utilizável sozinha e testável sem interface.
 | **Auditoria persistida** | ✅ implementado |
 | **Relatórios e exportação (PDF, XLSX, CSV)** | ✅ implementado |
 | **Autenticação de utilizadores** | ✅ implementado |
+| **Dono das tarefas e visibilidade por papel** | ✅ implementado |
 | **Verificação de atualizações** | ✅ implementado (como plugin) |
 | Multiempresa | ❌ **NÃO IMPLEMENTADO** |
 | Licenciamento | ❌ **NÃO IMPLEMENTADO** |
@@ -89,11 +90,15 @@ Também concluído: **autenticação** e o **plugin de atualizações**.
 
 A seguir, por ordem de valor:
 
-1. **Módulo Projetos** — primeiro módulo de gestão, já como plugin, para
+1. **SDK de dados e permissões para plugins** — um módulo de negócio precisa
+   de tabelas próprias, permissões próprias e migrações próprias, e o
+   `ContextoPlugin` ainda não dá nada disso. Tem de vir **antes** do primeiro
+   módulo, ou ele acabará a importar `database` diretamente. (A resolver
+   também aí: um plugin que importe um módulo vizinho usa um nome global —
+   dois plugins com um `verificador.py` colidiriam.)
+2. **Módulo Projetos** — primeiro módulo de gestão, já como plugin, para
    provar que o Plugin Engine aguenta um módulo de negócio a sério: tabelas
    próprias, permissões próprias e eventos próprios.
-2. **Dono das tarefas** — hoje as tarefas são da instalação, não de quem as
-   criou. É o passo que falta entre ter contas e ter multiempresa.
 3. **Multiempresa** — isolamento de dados por empresa.
 4. **Licenciamento** — só depois de existir algo que valha a pena licenciar.
 5. **Cifrar o banco** — hoje a autenticação protege o uso da aplicação, não o

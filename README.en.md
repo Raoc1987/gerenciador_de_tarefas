@@ -17,6 +17,7 @@ Runtime uses the Python standard library only: no external dependencies.
 ## 🚀 Features
 
 - 👤 User accounts with sign-in, roles and permissions (no default password)
+- 🔒 Tasks have an owner: members see their own, managers see everyone's
 - 🔔 Update checker plugin — asks before contacting the internet, never installs by itself
 - 📊 Dashboard with KPIs, charts, forecast and plain-language analysis
 - 📄 Reports exported to PDF, XLSX and CSV — written without extra dependencies
@@ -69,7 +70,7 @@ empty — there are no runtime dependencies; `requirements-dev.txt` brings
 `pytest` and `pyinstaller`.
 
 ```bash
-python -m pytest                 # 518 tests
+python -m pytest                 # 545 tests
 python src/main.py --autoteste   # self-check of a running installation
 ```
 
@@ -201,6 +202,7 @@ gerenciador_de_tarefas/
 │   ├── language_manager.py     # app and plugin translations
 │   ├── calendar_widget.py      # reusable calendar
 │   ├── dashboard_ui.py         # Dashboard tab
+│   ├── tarefas_servico.py      # who sees and edits which tasks
 │   ├── utils.py
 │   ├── auditoria_ui.py         # audit trail window
 │   ├── login_ui.py             # sign-in and first administrator
@@ -229,7 +231,7 @@ gerenciador_de_tarefas/
 ├── installer/setup.iss         # Inno Setup installer
 ├── tools/                      # build, installer, plugin packaging, icon
 ├── docs/architecture/          # vision, ADRs and roadmap
-├── tests/                      # 518 tests
+├── tests/                      # 545 tests
 └── GerenciadorDeTarefas.spec   # PyInstaller recipe
 ```
 

@@ -17,6 +17,8 @@ Runtime uses the Python standard library only: no external dependencies.
 ## 🚀 Features
 
 - 📊 Dashboard with KPIs, charts, forecast and plain-language analysis
+- 📄 Reports exported to PDF, XLSX and CSV — written without extra dependencies
+- 🔍 Audit trail of what happened, read-only in the UI
 - ✅ Add, complete and delete tasks, with due dates
 - 🗓️ Calendar tab (shipped as a plugin) showing the tasks of each day
 - 🌍 English, Portuguese and Spanish, switchable at runtime
@@ -65,7 +67,7 @@ empty — there are no runtime dependencies; `requirements-dev.txt` brings
 `pytest` and `pyinstaller`.
 
 ```bash
-python -m pytest                 # 356 tests
+python -m pytest                 # 421 tests
 python src/main.py --autoteste   # self-check of a running installation
 ```
 
@@ -198,12 +200,16 @@ gerenciador_de_tarefas/
 │   ├── calendar_widget.py      # reusable calendar
 │   ├── dashboard_ui.py         # Dashboard tab
 │   ├── utils.py
+│   ├── auditoria_ui.py         # audit trail window
+│   ├── textos.py               # shared insight presentation
 │   ├── analytics/              # metrics, series, insights (UI-free)
+│   ├── reporting/              # reports and export (PDF/XLSX/CSV)
 │   ├── widgets/                # Canvas-drawn charts
 │   └── core/
 │       ├── version.py          # single source of name and version
 │       ├── eventos.py          # event bus
 │       ├── permissoes.py       # roles and permissions (RBAC)
+│       ├── auditoria.py        # audit trail
 │       ├── paths.py            # resources vs. user data vs. temp
 │       ├── config.py           # app settings and per-plugin settings
 │       ├── log.py
@@ -217,7 +223,7 @@ gerenciador_de_tarefas/
 ├── installer/setup.iss         # Inno Setup installer
 ├── tools/                      # build, installer, plugin packaging, icon
 ├── docs/architecture/          # vision, ADRs and roadmap
-├── tests/                      # 356 tests
+├── tests/                      # 421 tests
 └── GerenciadorDeTarefas.spec   # PyInstaller recipe
 ```
 

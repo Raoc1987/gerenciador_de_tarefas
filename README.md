@@ -110,6 +110,36 @@ métrica serve dashboard, alertas e (no futuro) relatórios.
 
 ---
 
+## 📄 Relatórios
+
+No Dashboard, **Exportar** gera um relatório do período escolhido em **PDF**,
+**Excel (XLSX)** ou **CSV**, com os indicadores, a análise e a lista de
+tarefas — os mesmos números que estão no ecrã, porque a construção lê a
+análise em vez de recalcular.
+
+O XLSX e o PDF são escritos à mão, sem openpyxl nem reportlab: o executável
+continua sem dependências (ver ADR-0002). Para isso não ficar pela fé, os
+testes **leem de volta** o que foi gerado, com openpyxl e pypdf — bibliotecas
+de teste que não entram no executável.
+
+## 🔍 Auditoria
+
+`Configurações → Auditoria` mostra o que aconteceu: tarefas criadas,
+concluídas, reabertas e removidas, plugins instalados, ativados, atualizados
+e removidos, e o arranque e o encerramento da aplicação.
+
+- Só regista o que é **auditável** — uma lista explícita, não tudo o que passa.
+- **Não guarda o conteúdo das tarefas**: interessa que a tarefa 12 foi
+  removida e quando, não o que dizia.
+- A tela é **só de leitura**. A trilha só é reduzida por retenção explícita
+  (`core.auditoria.aplicar_retencao(dias)`), que diz sempre quantos registos
+  removeu.
+- Falhar a registar **nunca** interrompe quem está a trabalhar.
+
+Visível apenas para quem tem a permissão `sistema.admin`.
+
+---
+
 ## 🧩 Plugins
 
 ### Usar
@@ -280,12 +310,16 @@ gerenciador_de_tarefas/
 │   ├── calendar_widget.py      # calendário reutilizável
 │   ├── dashboard_ui.py         # aba Dashboard
 │   ├── utils.py
+│   ├── auditoria_ui.py         # tela de auditoria
+│   ├── textos.py               # apresentação partilhada dos insights
 │   ├── analytics/              # métricas, séries, insights (sem interface)
+│   ├── reporting/              # relatórios e exportação (PDF/XLSX/CSV)
 │   ├── widgets/                # gráficos desenhados em Canvas
 │   └── core/
 │       ├── version.py          # nome e versão (fonte única)
 │       ├── eventos.py          # barramento de eventos
 │       ├── permissoes.py       # papéis e permissões (RBAC)
+│       ├── auditoria.py        # trilha do que aconteceu
 │       ├── paths.py            # recursos vs. dados do utilizador vs. temporários
 │       ├── config.py           # configuração da app e por plugin
 │       ├── log.py
@@ -300,7 +334,7 @@ gerenciador_de_tarefas/
 ├── installer/setup.iss         # instalador Inno Setup
 ├── tools/                      # build, instalador, empacotar plugin, ícone
 ├── docs/architecture/          # visão, ADRs e roadmap
-├── tests/                      # 356 testes
+├── tests/                      # 421 testes
 ├── docs/AUDIT.md               # auditoria do estado inicial do projeto
 └── GerenciadorDeTarefas.spec   # receita do PyInstaller
 ```

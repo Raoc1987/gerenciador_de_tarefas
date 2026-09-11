@@ -13,6 +13,28 @@ plugins (ver `docs/architecture/`).
 
 ### Adicionado
 
+- **Relatórios** (`reporting/`) em PDF, XLSX e CSV, com indicadores, análise e
+  lista de tarefas, exportáveis a partir do Dashboard. O XLSX e o PDF são
+  escritos à mão, sem dependências no executável; os testes leem-nos de volta
+  com openpyxl e pypdf para confirmar que são ficheiros válidos.
+- **Auditoria persistida** (`core/auditoria.py` e `Configurações →
+  Auditoria`): consome o barramento e grava quem fez o quê e quando, sem
+  guardar o conteúdo das tarefas. Só de leitura na interface; retenção
+  explícita é a única forma de remover registos.
+- Migração de banco v4: tabela `auditoria` com índices.
+- `textos.py`: tradução partilhada dos insights, para a mesma conclusão não
+  ser escrita de duas maneiras no ecrã e no relatório.
+
+### Corrigido
+
+- O relatório mostrava o estado de uma tarefa no plural ("Atrasadas"), usava
+  o cabeçalho do formulário como cabeçalho de coluna e truncava datas por
+  repartir a largura por número de caracteres em vez de largura real.
+- `auditoria.ativar()` podia reportar-se ativa depois de o barramento ter
+  sido reposto, ficando calada sem ninguém dar por isso.
+
+### Adicionado (fundação, anterior)
+
 - **Barramento de eventos** (`core/eventos.py`): os módulos passam a
   comunicar sem se conhecerem. Um ouvinte com defeito não afeta os outros nem
   quem publicou. Plugins podem subscrever e publicar eventos, e as suas

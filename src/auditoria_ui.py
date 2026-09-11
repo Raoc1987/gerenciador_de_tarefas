@@ -78,7 +78,9 @@ class JanelaAuditoria(tk.Toplevel):
         self.tabela = ttk.Treeview(moldura, columns=colunas, show="headings", height=16)
         larguras = {"momento": 140, "evento": 150, "utilizador": 90, "alvo": 70, "detalhe": 260}
         for coluna in colunas:
-            self.tabela.heading(coluna, text=carregar_texto(f"auditoria_coluna_{coluna}"))
+            self.tabela.heading(
+                coluna, text=carregar_texto(f"auditoria_coluna_{coluna}"), anchor=tk.W
+            )
             self.tabela.column(coluna, width=larguras[coluna], anchor=tk.W)
 
         barra = ttk.Scrollbar(moldura, orient=tk.VERTICAL, command=self.tabela.yview)

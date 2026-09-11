@@ -125,10 +125,12 @@ def autoteste(relatorio: Path | None = None) -> int:
         abas = janela.winfo_children()
         gerenciador_gui = getattr(janela, "gerenciador_de_plugins", None)
         if gerenciador_gui is not None:
-            resultado = gerenciador_gui.ativar("calendar")
+            # persistir=False: o autoteste verifica, não altera as escolhas do
+            # utilizador — pode ser corrido sobre uma instalação a sério.
+            resultado = gerenciador_gui.ativar("calendar", persistir=False)
             verificar("ativar plugin calendar", resultado.sucesso, resultado.detalhes)
             janela.update()
-            gerenciador_gui.desativar("calendar")
+            gerenciador_gui.desativar("calendar", persistir=False)
             gerenciador_gui.desativar_todos()
         janela.destroy()
         verificar("interface gráfica", bool(abas))

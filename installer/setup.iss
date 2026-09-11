@@ -117,6 +117,13 @@ begin
   Result := ExpandConstant('{userappdata}\{#AppId}');
 end;
 
+function RemocaoDeDadosPedidaNaLinhaDeComandos(): Boolean;
+begin
+  { Para desinstalacao automatizada: unins000.exe /VERYSILENT /REMOVEDATA=yes
+    Sem este parametro, uma desinstalacao silenciosa MANTEM sempre os dados. }
+  Result := CompareText(ExpandConstant('{param:REMOVEDATA|no}'), 'yes') = 0;
+end;
+
 procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
 var
   Pasta: String;
@@ -127,8 +134,10 @@ begin
     Pasta := PastaDeDados();
     if DirExists(Pasta) then
     begin
-      if SuppressibleMsgBox(FmtMessage(CustomMessage('RemoverDados'), [Pasta]),
-                            mbConfirmation, MB_YESNO or MB_DEFBUTTON2, IDNO) = IDYES then
+      if RemocaoDeDadosPedidaNaLinhaDeComandos() then
+        DelTree(Pasta, True, True, True)
+      else if SuppressibleMsgBox(FmtMessage(CustomMessage('RemoverDados'), [Pasta]),
+                                 mbConfirmation, MB_YESNO or MB_DEFBUTTON2, IDNO) = IDYES then
         DelTree(Pasta, True, True, True);
     end;
   end;

@@ -158,9 +158,6 @@ def test_desinstalacao_nao_apaga_dados_em_silencio(iss):
     assert "MB_YESNO" in codigo, "tem de perguntar ao utilizador"
     assert "MB_DEFBUTTON2" in codigo, "a opção por omissão deve ser manter os dados"
     assert "DelTree" in codigo
-    # O DelTree tem de estar dentro do ramo do 'sim'.
-    posicao_pergunta = codigo.index("MB_YESNO")
-    assert codigo.index("DelTree") > posicao_pergunta
 
     apagados = iss.split("[UninstallDelete]", 1)[1].split("[Code]", 1)[0]
     assert "{userappdata}" not in apagados
@@ -176,3 +173,21 @@ def test_iss_suporta_os_tres_idiomas_da_aplicacao(iss):
     assert "brazilianportuguese" in secao
     assert "english" in secao
     assert "spanish" in secao
+
+
+def test_desinstalacao_silenciosa_mantem_os_dados_por_omissao(iss):
+    """Sem /REMOVEDATA=yes, uma desinstalação automatizada preserva os dados."""
+    codigo = iss.split("[Code]", 1)[1]
+    assert "{param:REMOVEDATA|no}" in codigo, "o valor por omissão tem de ser 'no'"
+    assert "RemocaoDeDadosPedidaNaLinhaDeComandos" in codigo
+
+
+def test_remocao_de_dados_so_com_pedido_explicito(iss):
+    """DelTree só acontece por parâmetro explícito ou por resposta 'sim'."""
+    codigo = iss.split("[Code]", 1)[1]
+    ocorrencias = codigo.count("DelTree")
+    assert ocorrencias == 2, "só os dois caminhos explícitos podem apagar dados"
+    posicao_param = codigo.index("RemocaoDeDadosPedidaNaLinhaDeComandos()")
+    posicao_pergunta = codigo.index("MB_YESNO")
+    primeiro, segundo = [m.start() for m in re.finditer("DelTree", codigo)]
+    assert posicao_param < primeiro < posicao_pergunta < segundo

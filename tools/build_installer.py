@@ -36,11 +36,19 @@ from core.version import (  # noqa: E402
     APP_VERSION,
 )
 
-CAMINHOS_ISCC = [
-    r"C:\Program Files (x86)\Inno Setup 6\ISCC.exe",
-    r"C:\Program Files\Inno Setup 6\ISCC.exe",
-    r"C:\Program Files (x86)\Inno Setup 5\ISCC.exe",
-]
+
+def _candidatos_iscc() -> list[Path]:
+    """Locais habituais do compilador, incluindo instalações só para o utilizador."""
+    pastas = [
+        os.environ.get("ProgramFiles(x86)"),
+        os.environ.get("ProgramFiles"),
+        os.path.join(os.environ.get("LOCALAPPDATA", ""), "Programs"),
+    ]
+    caminhos = []
+    for pasta in filter(None, pastas):
+        for versao in ("Inno Setup 6", "Inno Setup 5"):
+            caminhos.append(Path(pasta) / versao / "ISCC.exe")
+    return caminhos
 
 
 def localizar_iscc() -> Path | None:
@@ -53,9 +61,9 @@ def localizar_iscc() -> Path | None:
     if no_path:
         return Path(no_path)
 
-    for caminho in CAMINHOS_ISCC:
-        if Path(caminho).is_file():
-            return Path(caminho)
+    for caminho in _candidatos_iscc():
+        if caminho.is_file():
+            return caminho
     return None
 
 

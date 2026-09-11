@@ -48,7 +48,23 @@ _MIGRACOES: List[Sequence[str]] = [
         )
         """,
     ),
+    # v3 — quando a tarefa foi concluída.
+    #
+    # Sem isto, "concluídas por dia" não existe: só se sabe que a tarefa está
+    # concluída, não quando. As linhas antigas ficam com NULL — a análise
+    # trata-as como "data desconhecida" em vez de inventar uma.
+    (
+        "ALTER TABLE tarefas ADD COLUMN concluida_em TEXT",
+        "CREATE INDEX IF NOT EXISTS idx_tarefas_concluida_em ON tarefas (concluida_em)",
+        "CREATE INDEX IF NOT EXISTS idx_tarefas_vencimento ON tarefas (data_vencimento)",
+    ),
 ]
+
+#: Colunas devolvidas por :func:`buscar_tarefas` — contrato estável de que a
+#: interface e os plugins dependem. Campos novos entram em
+#: :func:`buscar_tarefas_completas`, para não partir quem desempacota 5 valores.
+COLUNAS_TAREFA = "id, descricao, data_vencimento, concluida, criada_em"
+COLUNAS_TAREFA_COMPLETA = COLUNAS_TAREFA + ", concluida_em"
 
 
 def caminho_bd() -> Path:
@@ -139,10 +155,11 @@ def obter_tarefa(tarefa_id: int) -> Optional[tuple]:
 
 def concluir_tarefa(tarefa_id: int, concluida: bool = True) -> bool:
     """Marca (ou desmarca) uma tarefa como concluída. Devolve se algo mudou."""
+    momento = datetime.now().isoformat(timespec="seconds") if concluida else None
     with conectar() as conexao:
         cursor = conexao.execute(
-            "UPDATE tarefas SET concluida = ? WHERE id = ?",
-            (1 if concluida else 0, tarefa_id),
+            "UPDATE tarefas SET concluida = ?, concluida_em = ? WHERE id = ?",
+            (1 if concluida else 0, momento, tarefa_id),
         )
         mudou = cursor.rowcount > 0
 
@@ -164,6 +181,18 @@ def remover_tarefa(tarefa_id: int) -> bool:
     if removida:
         eventos.publicar(eventos.TAREFA_REMOVIDA, origem="database", id=tarefa_id)
     return removida
+
+
+def buscar_tarefas_completas() -> List[tuple]:
+    """Tarefas com todas as colunas, incluindo ``concluida_em``.
+
+    Usada pela camada de analytics. :func:`buscar_tarefas` mantém o formato de
+    cinco colunas de que a interface e os plugins dependem.
+    """
+    with conectar() as conexao:
+        return conexao.execute(
+            f"SELECT {COLUNAS_TAREFA_COMPLETA} FROM tarefas ORDER BY id ASC"
+        ).fetchall()
 
 
 def tarefas_por_data(data_iso: str) -> List[tuple]:

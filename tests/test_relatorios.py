@@ -363,25 +363,6 @@ def test_pdf_sem_seccoes(tmp_path):
 # ============================================================ ARQUITETURA
 
 
-def test_reporting_nao_depende_da_interface():
-    """A exportação tem de servir a GUI, um agendamento ou um plugin."""
-    import ast
-    from pathlib import Path
-
-    raiz = Path(__file__).resolve().parent.parent / "src" / "reporting"
-    for arquivo in raiz.rglob("*.py"):
-        arvore = ast.parse(arquivo.read_text(encoding="utf-8"))
-        for no in ast.walk(arvore):
-            nomes = []
-            if isinstance(no, ast.Import):
-                nomes = [alias.name for alias in no.names]
-            elif isinstance(no, ast.ImportFrom):
-                nomes = [no.module or ""]
-            for nome in nomes:
-                assert nome.split(".")[0] != "tkinter", f"{arquivo.name} importa {nome}"
-                assert nome not in {"gui", "dashboard_ui", "plugin_ui"}
-
-
 def test_exportadores_cumprem_o_contrato():
     for formato in exportadores.FORMATOS:
         modulo = exportadores.obter(formato)

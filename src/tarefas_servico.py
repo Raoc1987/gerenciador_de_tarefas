@@ -24,6 +24,15 @@ from core.permissoes import Permissao, PermissaoNegadaError
 logger = obter_logger(__name__)
 
 
+def garantir_esquema() -> None:
+    """Cria as tabelas se ainda não existirem.
+
+    Quem usa as tarefas pede-o ao serviço; o armazenamento é assunto daqui
+    para dentro. É o mesmo padrão defensivo da auditoria e das contas.
+    """
+    database.criar_tabela()
+
+
 def utilizador_atual() -> str:
     """Quem está em sessão."""
     return permissoes.sessao().utilizador

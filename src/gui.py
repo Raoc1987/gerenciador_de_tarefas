@@ -13,7 +13,6 @@ from core.permissoes import Permissao, PermissaoNegadaError
 from core.plugin_sources import FontePastasLocais
 from dashboard_ui import PainelDashboard
 import tarefas_servico
-from database import criar_tabela
 from language_manager import (
     IDIOMAS_SUPORTADOS,
     carregar_texto,
@@ -70,7 +69,7 @@ def criar_janela(raiz: tk.Tk | None = None) -> tk.Tk:
     Separado de :func:`iniciar_interface` para que os testes possam exercitar
     a interface real sem bloquear no ``mainloop``.
     """
-    criar_tabela()
+    tarefas_servico.garantir_esquema()
     restaurar_idioma_guardado()
     # A auditoria liga-se ao barramento antes de qualquer coisa acontecer.
     auditoria.ativar()

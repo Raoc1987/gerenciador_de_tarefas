@@ -1,0 +1,20 @@
+{
+  "_leia_me": "Inventário do Core. Cada módulo em src/core/ tem de constar aqui com a razão de ali estar (ver ADR-0004). tests/test_arquitetura.py falha se aparecer um módulo novo sem justificação — é assim que a regra deixa de ser uma sugestão.",
+  "modulos": {
+    "__init__.py": "Marca o pacote.",
+    "version.py": "Nome e versão da aplicação. Fonte única lida pela app, pelo PyInstaller e pelo Inno Setup; duplicá-la é garantir que divergem.",
+    "paths.py": "Separa recursos, dados do utilizador e temporários. Todo o resto grava alguma coisa, e nada pode decidir sozinho onde.",
+    "config.py": "Configuração da aplicação e, isolada, a de cada plugin. Um plugin removido não pode levar preferências da aplicação com ele.",
+    "log.py": "Registo único. Sem isto, cada módulo inventava o seu e o diagnóstico deixava de ser possível.",
+    "eventos.py": "Barramento. É o que permite acrescentar módulos sem os ligar uns aos outros — a peça que sustenta a arquitetura modular.",
+    "permissoes.py": "Papéis e permissões, com um ponto único de verificação usado pela interface, pela análise, pelos relatórios e pelos módulos.",
+    "seguranca.py": "Derivação e verificação de palavras-passe. Segurança não se implementa duas vezes.",
+    "utilizadores.py": "Contas e autenticação. Quem está em sessão determina permissões, propriedade e auditoria.",
+    "auditoria.py": "Trilha do que aconteceu. Requisito transversal: qualquer módulo produz eventos auditáveis sem saber que a auditoria existe.",
+    "plugin_api.py": "Contrato entre a aplicação e os módulos. É a fronteira que impede o monólito.",
+    "plugin_manager.py": "Ciclo de vida dos plugins, com isolamento de falhas.",
+    "plugin_package.py": "Validação e extração segura de pacotes. Código não confiável entra por aqui e por mais lado nenhum.",
+    "plugin_registry.py": "Estado instalado/ativo dos plugins, persistido.",
+    "plugin_sources.py": "De onde vêm os pacotes (local, embutido, futura loja), separado de como são validados."
+  }
+}

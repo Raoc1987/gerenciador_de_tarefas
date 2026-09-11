@@ -19,7 +19,7 @@ from pathlib import Path
 from tkinter import filedialog, messagebox, ttk
 from typing import Any, Callable, Dict, List, Optional
 
-import database
+import tarefas_servico
 from core.log import obter_logger
 from core.plugin_api import EstadoPlugin
 from core.plugin_manager import PluginManager, RegistroPlugin, ResultadoOperacao
@@ -35,20 +35,21 @@ class ServicoTarefasApp:
     """Acesso às tarefas concedido aos plugins.
 
     Deliberadamente estreito: os plugins podem ler e criar tarefas, mas não
-    apagar nem mexer no schema.
+    apagar nem mexer no schema. Passa por :mod:`tarefas_servico`, para um
+    plugin não conseguir ver o que a sessão não pode ver.
     """
 
     def listar(self, incluir_concluidas: bool = True) -> List[tuple]:
-        """Todas as tarefas."""
-        return database.buscar_tarefas(incluir_concluidas=incluir_concluidas)
+        """Tarefas visíveis para a sessão atual."""
+        return tarefas_servico.listar(incluir_concluidas=incluir_concluidas)
 
     def listar_por_data(self, data_iso: str) -> List[tuple]:
-        """Tarefas com vencimento na data indicada."""
-        return database.tarefas_por_data(data_iso)
+        """Tarefas visíveis com vencimento na data indicada."""
+        return tarefas_servico.listar_por_data(data_iso)
 
     def adicionar(self, descricao: str, data_vencimento: Optional[str] = None) -> int:
-        """Cria uma tarefa e devolve o seu id."""
-        return database.adicionar_tarefa(descricao, data_vencimento)
+        """Cria uma tarefa em nome de quem está em sessão."""
+        return tarefas_servico.adicionar(descricao, data_vencimento)
 
 
 class AnfitriaoGUI:

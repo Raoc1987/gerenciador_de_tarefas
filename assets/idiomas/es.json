@@ -172,6 +172,8 @@
   "utilizador_ultimo_admin": "Esta es la última cuenta de administración activa: la operación dejaría la instalación sin nadie que pueda gestionarla.",
   "sessao_de": "Sesión: {nome}",
   "confirmar_terminar_sessao": "¿Cerrar la sesión y salir de la aplicación?",
+  "so_as_minhas": "Solo las mías",
+  "tarefa_de_outro": "Esta tarea es de otra persona y usted no puede modificarla.",
   "meses": "Enero,Febrero,Marzo,Abril,Mayo,Junio,Julio,Agosto,Septiembre,Octubre,Noviembre,Diciembre",
   "dias_semana": "Lun,Mar,Mié,Jue,Vie,Sáb,Dom"
 }

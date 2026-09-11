@@ -95,13 +95,36 @@ _MIGRACOES: List[Sequence[str]] = [
         )
         """,
     ),
+    # v6 — quem criou a tarefa.
+    #
+    # As linhas anteriores ficam com "" (sem dono conhecido): foram criadas
+    # antes de existirem contas, e inventar-lhes um dono seria escrever no
+    # banco uma coisa que nunca aconteceu.
+    (
+        "ALTER TABLE tarefas ADD COLUMN criada_por TEXT NOT NULL DEFAULT ''",
+        "CREATE INDEX IF NOT EXISTS idx_tarefas_criada_por ON tarefas (criada_por)",
+    ),
 ]
 
 #: Colunas devolvidas por :func:`buscar_tarefas` — contrato estável de que a
 #: interface e os plugins dependem. Campos novos entram em
 #: :func:`buscar_tarefas_completas`, para não partir quem desempacota 5 valores.
 COLUNAS_TAREFA = "id, descricao, data_vencimento, concluida, criada_em"
-COLUNAS_TAREFA_COMPLETA = COLUNAS_TAREFA + ", concluida_em"
+COLUNAS_TAREFA_COMPLETA = COLUNAS_TAREFA + ", concluida_em, criada_por"
+
+#: Dono usado pelas tarefas criadas antes de existirem contas.
+SEM_DONO = ""
+
+
+def _clausula_de_dono(dono: Optional[str]) -> tuple:
+    """Condição SQL e parâmetros para filtrar por dono.
+
+    ``None`` significa "não filtrar". Quem pede as suas tarefas vê também as
+    que não têm dono: são anteriores às contas e não pertencem a mais ninguém.
+    """
+    if dono is None:
+        return "", []
+    return "(criada_por = ? OR criada_por = ?)", [dono, SEM_DONO]
 
 
 def caminho_bd() -> Path:
@@ -142,8 +165,16 @@ def criar_tabela() -> None:
         _aplicar_migracoes(conexao)
 
 
-def adicionar_tarefa(descricao: str, data_vencimento: Optional[str] = None) -> int:
+def adicionar_tarefa(
+    descricao: str,
+    data_vencimento: Optional[str] = None,
+    criada_por: str = SEM_DONO,
+) -> int:
     """Insere uma tarefa e devolve o seu ``id``.
+
+    Args:
+        criada_por: quem a criou. Quem decide isto é a camada de serviço
+            (:mod:`tarefas_servico`), não o armazenamento.
 
     Raises:
         ValueError: se a descrição estiver vazia.
@@ -154,9 +185,14 @@ def adicionar_tarefa(descricao: str, data_vencimento: Optional[str] = None) -> i
 
     with conectar() as conexao:
         cursor = conexao.execute(
-            "INSERT INTO tarefas (descricao, data_vencimento, concluida, criada_em)"
-            " VALUES (?, ?, 0, ?)",
-            (descricao, data_vencimento, datetime.now().isoformat(timespec="seconds")),
+            "INSERT INTO tarefas (descricao, data_vencimento, concluida, criada_em,"
+            " criada_por) VALUES (?, ?, 0, ?, ?)",
+            (
+                descricao,
+                data_vencimento,
+                datetime.now().isoformat(timespec="seconds"),
+                criada_por or SEM_DONO,
+            ),
         )
         tarefa_id = int(cursor.lastrowid)
 
@@ -166,18 +202,46 @@ def adicionar_tarefa(descricao: str, data_vencimento: Optional[str] = None) -> i
         id=tarefa_id,
         descricao=descricao,
         data_vencimento=data_vencimento,
+        criada_por=criada_por or SEM_DONO,
     )
     return tarefa_id
 
 
-def buscar_tarefas(incluir_concluidas: bool = True) -> List[tuple]:
-    """Devolve as tarefas como tuplas ``(id, descrição, vencimento, concluída, criada_em)``."""
-    consulta = "SELECT id, descricao, data_vencimento, concluida, criada_em FROM tarefas"
+def buscar_tarefas(
+    incluir_concluidas: bool = True, de: Optional[str] = None
+) -> List[tuple]:
+    """Tarefas como tuplas ``(id, descrição, vencimento, concluída, criada_em)``.
+
+    O formato de cinco colunas é contrato da interface e dos plugins; campos
+    novos entram em :func:`buscar_tarefas_completas`.
+
+    Args:
+        de: se indicado, só as tarefas desse dono (e as sem dono).
+    """
+    condicoes = []
+    parametros: List = []
     if not incluir_concluidas:
-        consulta += " WHERE concluida = 0"
+        condicoes.append("concluida = 0")
+    clausula, valores = _clausula_de_dono(de)
+    if clausula:
+        condicoes.append(clausula)
+        parametros.extend(valores)
+
+    consulta = f"SELECT {COLUNAS_TAREFA} FROM tarefas"
+    if condicoes:
+        consulta += " WHERE " + " AND ".join(condicoes)
     consulta += " ORDER BY concluida ASC, id ASC"
     with conectar() as conexao:
-        return conexao.execute(consulta).fetchall()
+        return conexao.execute(consulta, parametros).fetchall()
+
+
+def dono_de(tarefa_id: int) -> Optional[str]:
+    """Quem criou a tarefa (``""`` se não se sabe), ou ``None`` se não existe."""
+    with conectar() as conexao:
+        linha = conexao.execute(
+            "SELECT criada_por FROM tarefas WHERE id = ?", (tarefa_id,)
+        ).fetchone()
+    return linha[0] if linha else None
 
 
 def obter_tarefa(tarefa_id: int) -> Optional[tuple]:
@@ -220,23 +284,29 @@ def remover_tarefa(tarefa_id: int) -> bool:
     return removida
 
 
-def buscar_tarefas_completas() -> List[tuple]:
-    """Tarefas com todas as colunas, incluindo ``concluida_em``.
+def buscar_tarefas_completas(de: Optional[str] = None) -> List[tuple]:
+    """Tarefas com todas as colunas, incluindo ``concluida_em`` e ``criada_por``.
 
     Usada pela camada de analytics. :func:`buscar_tarefas` mantém o formato de
     cinco colunas de que a interface e os plugins dependem.
     """
+    consulta = f"SELECT {COLUNAS_TAREFA_COMPLETA} FROM tarefas"
+    clausula, parametros = _clausula_de_dono(de)
+    if clausula:
+        consulta += " WHERE " + clausula
+    consulta += " ORDER BY id ASC"
     with conectar() as conexao:
-        return conexao.execute(
-            f"SELECT {COLUNAS_TAREFA_COMPLETA} FROM tarefas ORDER BY id ASC"
-        ).fetchall()
+        return conexao.execute(consulta, parametros).fetchall()
 
 
-def tarefas_por_data(data_iso: str) -> List[tuple]:
+def tarefas_por_data(data_iso: str, de: Optional[str] = None) -> List[tuple]:
     """Tarefas cujo vencimento é exatamente ``data_iso`` (``AAAA-MM-DD``)."""
+    consulta = f"SELECT {COLUNAS_TAREFA} FROM tarefas WHERE data_vencimento = ?"
+    parametros: List = [data_iso]
+    clausula, valores = _clausula_de_dono(de)
+    if clausula:
+        consulta += " AND " + clausula
+        parametros.extend(valores)
+    consulta += " ORDER BY concluida ASC, id ASC"
     with conectar() as conexao:
-        return conexao.execute(
-            "SELECT id, descricao, data_vencimento, concluida, criada_em"
-            " FROM tarefas WHERE data_vencimento = ? ORDER BY concluida ASC, id ASC",
-            (data_iso,),
-        ).fetchall()
+        return conexao.execute(consulta, parametros).fetchall()

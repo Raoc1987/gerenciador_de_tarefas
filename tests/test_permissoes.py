@@ -92,8 +92,20 @@ def test_permissoes_efetivas_do_administrador():
 def test_permissoes_efetivas_de_papel_limitado():
     permissoes.definir_sessao("bruno", "colaborador", persistir=False)
     assert permissoes.sessao().permissoes() == frozenset(
-        {Permissao.TAREFAS_LER, Permissao.TAREFAS_ESCREVER}
+        {
+            Permissao.TAREFAS_LER,
+            Permissao.TAREFAS_ESCREVER,
+            Permissao.ANALYTICS_LER,
+            Permissao.RELATORIOS_LER,
+        }
     )
+
+
+def test_colaborador_ve_a_analise_mas_nao_a_dos_outros():
+    """Ver os próprios números não é privilégio; ver os dos outros é."""
+    permissoes.definir_sessao("bruno", "colaborador", persistir=False)
+    assert permissoes.pode(Permissao.ANALYTICS_LER)
+    assert not permissoes.pode(Permissao.TAREFAS_VER_TODAS)
 
 
 def test_todos_os_papeis_tem_permissoes_validas():

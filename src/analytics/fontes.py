@@ -88,16 +88,20 @@ class Panorama:
 
 
 def carregar_tarefas() -> List[Tarefa]:
-    """Lê as tarefas do banco, já normalizadas para análise.
+    """Lê as tarefas visíveis para a sessão, normalizadas para análise.
+
+    Passa pelo serviço de tarefas: os indicadores de quem só vê as suas contam
+    só as suas.
 
     Raises:
-        PermissaoNegadaError: se a sessão não puder ler analytics.
+        PermissaoNegadaError: se a sessão não puder ler analytics ou tarefas.
     """
     import database
+    import tarefas_servico
 
     exigir(Permissao.ANALYTICS_LER)
     database.criar_tabela()
-    return normalizar(database.buscar_tarefas_completas())
+    return normalizar(tarefas_servico.listar_completas())
 
 
 def panorama(

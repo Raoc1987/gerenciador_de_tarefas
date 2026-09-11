@@ -172,6 +172,8 @@
   "utilizador_ultimo_admin": "This is the last active administrator account: the operation would leave the installation with nobody able to manage it.",
   "sessao_de": "Signed in: {nome}",
   "confirmar_terminar_sessao": "Sign out and close the application?",
+  "so_as_minhas": "Only mine",
+  "tarefa_de_outro": "This task belongs to someone else and cannot be changed by you.",
   "meses": "January,February,March,April,May,June,July,August,September,October,November,December",
   "dias_semana": "Mon,Tue,Wed,Thu,Fri,Sat,Sun"
 }

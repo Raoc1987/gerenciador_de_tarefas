@@ -9,16 +9,11 @@ from core.log import obter_logger
 from core.paths import caminho_recurso, diretorio_plugins_embutidos
 from core.plugin_manager import PluginManager
 from core.plugin_registry import RegistroEstadoBanco
-from core.permissoes import Permissao
+from core.permissoes import Permissao, PermissaoNegadaError
 from core.plugin_sources import FontePastasLocais
 from dashboard_ui import PainelDashboard
-from database import (
-    adicionar_tarefa,
-    buscar_tarefas,
-    concluir_tarefa,
-    criar_tabela,
-    remover_tarefa,
-)
+import tarefas_servico
+from database import criar_tabela
 from language_manager import (
     IDIOMAS_SUPORTADOS,
     carregar_texto,
@@ -33,11 +28,15 @@ from utils import atualizar_relógio, formatar_data, validar_data_iso
 logger = obter_logger(__name__)
 
 
-def _rotulo_tarefa(tarefa) -> str:
-    """Formata uma linha da lista: ``[✔] descrição (vencimento)``."""
-    _, descricao, vencimento, concluida, _ = tarefa
+def _rotulo_tarefa(tarefa, mostrar_dono: bool = False) -> str:
+    """Formata uma linha da lista: ``[✔] descrição (vencimento) — dono``."""
+    identificador, descricao, vencimento, concluida, _ = tarefa
     marca = "[✔]" if concluida else "[  ]"
     sufixo = f"  ({formatar_data(vencimento)})" if vencimento else ""
+    if mostrar_dono:
+        criador = tarefas_servico.dono(identificador)
+        if criador:
+            sufixo += f"  — {criador}"
     return f"{marca} {descricao}{sufixo}"
 
 
@@ -133,6 +132,14 @@ def criar_janela(raiz: tk.Tk | None = None) -> tk.Tk:
     botao_adicionar = ttk.Button(frame_form, command=lambda: acao_adicionar())
     botao_adicionar.grid(row=1, column=2, padx=4)
 
+    # Só faz sentido escolher entre "as minhas" e "todas" a quem vê todas.
+    apenas_minhas = tk.BooleanVar(value=False)
+    caixa_minhas = ttk.Checkbutton(
+        frame_form, variable=apenas_minhas, command=lambda: recarregar_lista()
+    )
+    if tarefas_servico.ve_tudo():
+        caixa_minhas.grid(row=1, column=3, padx=(12, 0))
+
     # -------------------------------------------------------- lista + ações
     lista = tk.Listbox(aba_tarefas, width=80, height=15)
     lista.pack(pady=10)
@@ -150,16 +157,18 @@ def criar_janela(raiz: tk.Tk | None = None) -> tk.Tk:
     ids_visiveis = []
 
     def recarregar_lista():
-        """Relê o banco e repovoa a Listbox."""
+        """Relê as tarefas visíveis e repovoa a Listbox."""
         lista.delete(0, tk.END)
         ids_visiveis.clear()
-        tarefas = buscar_tarefas()
+        so_minhas = bool(apenas_minhas.get())
+        tarefas = tarefas_servico.listar(apenas_minhas=so_minhas)
+        mostrar_dono = tarefas_servico.ve_tudo() and not so_minhas
         if not tarefas:
             lista.insert(tk.END, carregar_texto("sem_tarefas"))
             return
         for tarefa in tarefas:
             ids_visiveis.append(tarefa[0])
-            lista.insert(tk.END, _rotulo_tarefa(tarefa))
+            lista.insert(tk.END, _rotulo_tarefa(tarefa, mostrar_dono))
 
     def tarefa_selecionada():
         """Id da tarefa selecionada, ou ``None`` (avisando o utilizador)."""
@@ -178,7 +187,13 @@ def criar_janela(raiz: tk.Tk | None = None) -> tk.Tk:
         if not validar_data_iso(vencimento):
             messagebox.showwarning(carregar_texto("aviso"), carregar_texto("data_invalida"))
             return
-        adicionar_tarefa(descricao, vencimento)
+        try:
+            tarefas_servico.adicionar(descricao, vencimento)
+        except PermissaoNegadaError:
+            messagebox.showwarning(
+                carregar_texto("aviso"), carregar_texto("permissao_negada")
+            )
+            return
         entrada_descricao.delete(0, tk.END)
         entrada_data.delete(0, tk.END)
         recarregar_lista()
@@ -187,9 +202,14 @@ def criar_janela(raiz: tk.Tk | None = None) -> tk.Tk:
         tarefa_id = tarefa_selecionada()
         if tarefa_id is None:
             return
-        atual = next((t for t in buscar_tarefas() if t[0] == tarefa_id), None)
+        atual = tarefas_servico.obter(tarefa_id)
         if atual is not None:
-            concluir_tarefa(tarefa_id, not atual[3])
+            try:
+                tarefas_servico.concluir(tarefa_id, not atual[3])
+            except PermissaoNegadaError:
+                messagebox.showwarning(
+                    carregar_texto("aviso"), carregar_texto("tarefa_de_outro")
+                )
         recarregar_lista()
 
     def acao_remover():
@@ -201,7 +221,12 @@ def criar_janela(raiz: tk.Tk | None = None) -> tk.Tk:
             carregar_texto("confirmar"),
             carregar_texto("confirmar_remocao", item=rotulo),
         ):
-            remover_tarefa(tarefa_id)
+            try:
+                tarefas_servico.remover(tarefa_id)
+            except PermissaoNegadaError:
+                messagebox.showwarning(
+                    carregar_texto("aviso"), carregar_texto("tarefa_de_outro")
+                )
             recarregar_lista()
 
     # ------------------------------------------------------------- plugins
@@ -279,6 +304,7 @@ def criar_janela(raiz: tk.Tk | None = None) -> tk.Tk:
         botao_concluir.config(text=carregar_texto("concluir"))
         botao_remover.config(text=carregar_texto("remover"))
         botao_atualizar.config(text=carregar_texto("atualizar_lista"))
+        caixa_minhas.config(text=carregar_texto("so_as_minhas"))
         notebook.tab(painel_dashboard, text=carregar_texto("dashboard"))
         notebook.tab(aba_tarefas, text=carregar_texto("tarefas"))
         painel_dashboard.aplicar_idioma()

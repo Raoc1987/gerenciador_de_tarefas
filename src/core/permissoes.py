@@ -1,16 +1,16 @@
 """Papéis e permissões da plataforma (RBAC).
 
-Estado honesto: **não existe autenticação.** A aplicação é hoje monoposto e a
-sessão corrente é um utilizador local com o papel guardado na configuração.
-O que existe é a *estrutura*: permissões nomeadas, papéis que as agrupam e um
-ponto único de verificação.
+Quem entra na aplicação (ver :mod:`core.utilizadores`) tem um papel, e o papel
+concede permissões nomeadas. Há um ponto único de verificação — :func:`pode` e
+:func:`exigir` — usado pela interface, pela análise, pelos relatórios e pelo
+serviço de tarefas.
 
-Isto não é decoração. É o que permite, mais tarde:
+Sem sessão iniciada, a sessão corrente é o utilizador local guardado na
+configuração: é o que permite correr o ``--autoteste`` e os testes sem um ecrã
+de início de sessão.
 
-* um ecrã de início de sessão substituir :func:`definir_sessao` sem tocar em
-  mais nada;
-* o licenciamento restringir permissões por plano;
-* um plugin declarar as permissões que precisa em vez de assumir acesso total.
+Quem vê que tarefas é decidido em :mod:`tarefas_servico`, a partir de
+``TAREFAS_VER_TODAS``.
 
 Uso::
 
@@ -55,6 +55,9 @@ class Permissao(str, Enum):
 
     TAREFAS_LER = "tarefas.ler"
     TAREFAS_ESCREVER = "tarefas.escrever"
+    TAREFAS_VER_TODAS = "tarefas.ver_todas"
+    """Ver e editar tarefas de outras pessoas, além das próprias."""
+
     ANALYTICS_LER = "analytics.ler"
     RELATORIOS_LER = "relatorios.ler"
     RELATORIOS_EXPORTAR = "relatorios.exportar"
@@ -89,6 +92,7 @@ PAPEIS: Dict[str, Papel] = {
             {
                 Permissao.TAREFAS_LER,
                 Permissao.TAREFAS_ESCREVER,
+                Permissao.TAREFAS_VER_TODAS,
                 Permissao.ANALYTICS_LER,
                 Permissao.RELATORIOS_LER,
                 Permissao.RELATORIOS_EXPORTAR,
@@ -102,18 +106,36 @@ PAPEIS: Dict[str, Papel] = {
             {
                 Permissao.TAREFAS_LER,
                 Permissao.TAREFAS_ESCREVER,
+                Permissao.TAREFAS_VER_TODAS,
                 Permissao.ANALYTICS_LER,
                 Permissao.RELATORIOS_LER,
             }
         ),
     ),
+    # Vê e escreve as suas tarefas, e a análise das suas: agora que as tarefas
+    # têm dono, ver os próprios números deixou de ser um privilégio.
     "colaborador": Papel(
         "colaborador",
-        frozenset({Permissao.TAREFAS_LER, Permissao.TAREFAS_ESCREVER}),
+        frozenset(
+            {
+                Permissao.TAREFAS_LER,
+                Permissao.TAREFAS_ESCREVER,
+                Permissao.ANALYTICS_LER,
+                Permissao.RELATORIOS_LER,
+            }
+        ),
     ),
+    # Vê tudo, não escreve nada: é um papel de acompanhamento.
     "visualizador": Papel(
         "visualizador",
-        frozenset({Permissao.TAREFAS_LER, Permissao.ANALYTICS_LER, Permissao.RELATORIOS_LER}),
+        frozenset(
+            {
+                Permissao.TAREFAS_LER,
+                Permissao.TAREFAS_VER_TODAS,
+                Permissao.ANALYTICS_LER,
+                Permissao.RELATORIOS_LER,
+            }
+        ),
     ),
 }
 

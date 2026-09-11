@@ -454,11 +454,19 @@ def test_panorama_le_do_banco(dados_isolados):
     assert visao.kpis.concluidas == 1
 
 
-def test_analytics_exige_permissao():
+def test_analytics_exige_permissao(monkeypatch):
+    """Todos os papéis de origem veem a análise (das suas tarefas); a
+    permissão continua a valer para papéis restritos e para plugins."""
     from core import permissoes
-    from core.permissoes import PermissaoNegadaError
+    from core.permissoes import Papel, Permissao, PermissaoNegadaError
 
-    permissoes.definir_sessao("bruno", "colaborador", persistir=False)
+    monkeypatch.setitem(
+        permissoes.PAPEIS,
+        "sem_analise",
+        Papel("sem_analise", frozenset({Permissao.TAREFAS_LER})),
+    )
+    permissoes.definir_sessao("bruno", "sem_analise", persistir=False)
+
     with pytest.raises(PermissaoNegadaError):
         fontes.carregar_tarefas()
 

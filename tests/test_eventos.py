@@ -203,6 +203,9 @@ def test_criar_tarefa_publica_evento():
         "id": tarefa_id,
         "descricao": "Preparar relatório",
         "data_vencimento": "2026-10-01",
+        # Criada pelo armazenamento diretamente: sem dono. Quem carimba o dono
+        # é o serviço de tarefas, não o banco.
+        "criada_por": "",
     }
     assert recebidos[0].origem == "database"
 

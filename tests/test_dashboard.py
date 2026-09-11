@@ -321,11 +321,17 @@ def test_dashboard_sem_dados_nao_finge(raiz):
     assert "Sem dados neste período." in textos_do_canvas(widget._grafico_linhas)
 
 
-def test_dashboard_respeita_permissoes(raiz):
+def test_dashboard_respeita_permissoes(raiz, monkeypatch):
     from core import permissoes
+    from core.permissoes import Papel, Permissao
     from dashboard_ui import PainelDashboard
 
-    permissoes.definir_sessao("bruno", "colaborador", persistir=False)
+    monkeypatch.setitem(
+        permissoes.PAPEIS,
+        "sem_analise",
+        Papel("sem_analise", frozenset({Permissao.TAREFAS_LER})),
+    )
+    permissoes.definir_sessao("bruno", "sem_analise", persistir=False)
     widget = PainelDashboard(raiz, obter_panorama=lambda dias=30: fontes.panorama(
         dias=dias, hoje=HOJE, tarefas=tarefas_de_exemplo()
     ))

@@ -50,11 +50,24 @@ class _JanelaModal(tk.Toplevel):
         self.geometry(f"+{max(x, 0)}+{max(y, 0)}")
 
     def tornar_modal(self) -> None:
-        """Prende o foco a esta janela até ela fechar."""
-        self.transient(self.master)
+        """Prende o foco a esta janela até ela fechar.
+
+        ``transient`` só se usa se o dono estiver **visível**. No arranque não
+        está: a janela principal só nasce depois de haver sessão, e até lá a
+        raiz Tk está escondida. Uma janela transient de um dono escondido é
+        escondida com ele pelo gestor de janelas — o programa ficava a correr,
+        à espera de uma janela que ninguém via, e parecia não abrir.
+        """
+        if self.master is not None and self.master.winfo_viewable():
+            self.transient(self.master)
         self.centrar()
+        # Sem dono visível não há nada que traga esta janela para a frente.
+        self.lift()
+        self.attributes("-topmost", True)
+        self.after_idle(self.attributes, "-topmost", False)
         try:
             self.grab_set()
+            self.focus_force()
         except tk.TclError:  # pragma: no cover - ambiente sem gestor de janelas
             pass
 

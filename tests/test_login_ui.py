@@ -44,6 +44,52 @@ def rotulos(widget):
 # ================================================= PRIMEIRO ADMINISTRADOR
 
 
+# ============================================ A JANELA TEM DE SER VISTA
+
+
+@pytest.mark.parametrize(
+    "classe_nome", ["JanelaPrimeiroAdministrador", "JanelaLogin"]
+)
+def test_a_janela_de_sessao_aparece_com_a_raiz_escondida(raiz, classe_nome):
+    """No arranque a raiz está escondida — e é aí que isto tem de funcionar.
+
+    O `main.py` esconde a raiz Tk até haver sessão: a janela principal só nasce
+    depois. Uma janela `transient` de um dono escondido é escondida com ele
+    pelo gestor de janelas, e o programa fica a correr à espera de uma janela
+    que ninguém vê. Foi assim que o executável deixou de abrir.
+    """
+    import login_ui
+
+    raiz.withdraw()
+    janela = getattr(login_ui, classe_nome)(raiz)
+    raiz.update()
+    try:
+        assert janela.winfo_viewable(), (
+            "a janela de início de sessão não está visível: o programa "
+            "arrancaria sem nada no ecrã"
+        )
+    finally:
+        janela.destroy()
+
+
+def test_a_janela_de_sessao_segue_a_principal_quando_ela_existe(raiz):
+    """Com um dono visível, `transient` volta a fazer sentido e é usado."""
+    import login_ui
+
+    raiz.deiconify()
+    raiz.update()
+    janela = login_ui.JanelaLogin(raiz)
+    raiz.update()
+    try:
+        assert janela.winfo_viewable()
+        assert janela.wm_transient(), "devia estar presa à janela dona"
+    finally:
+        janela.destroy()
+
+
+# ============================================ PRIMEIRO ARRANQUE
+
+
 def test_primeiro_arranque_pede_para_criar_administrador(raiz):
     from login_ui import JanelaPrimeiroAdministrador
 

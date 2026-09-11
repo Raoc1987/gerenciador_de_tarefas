@@ -8,8 +8,8 @@ dashboard ouve-o e recalcula. Não faz `SELECT` nenhum — pede o panorama a
 from __future__ import annotations
 
 import tkinter as tk
-from datetime import date
-from tkinter import ttk
+from pathlib import Path
+from tkinter import filedialog, messagebox, ttk
 from typing import Callable, List, Optional
 
 from analytics import fontes
@@ -19,6 +19,9 @@ from core import eventos, permissoes
 from core.log import obter_logger
 from core.permissoes import Permissao
 from language_manager import carregar_texto
+from reporting import exportadores, servico
+from reporting.construtor import relatorio_de_tarefas
+from textos import texto_do_insight
 from widgets.graficos import (
     COR_ALERTA,
     COR_ATENCAO,
@@ -49,19 +52,6 @@ MARCAS_POR_NIVEL = {
     Nivel.POSITIVO: "+",
     Nivel.INFORMACAO: "•",
 }
-
-
-def texto_do_insight(insight: Insight) -> str:
-    """Traduz um insight, incluindo os parâmetros que precisam de tradução."""
-    parametros = dict(insight.parametros)
-    direcao = parametros.get("direcao")
-    if direcao:
-        parametros["direcao"] = carregar_texto(f"direcao_{_sem_acentos(direcao)}")
-    return carregar_texto(insight.chave, **parametros)
-
-
-def _sem_acentos(texto: str) -> str:
-    return texto.replace("á", "a").replace("é", "e").replace("í", "i").replace("ó", "o")
 
 
 class PainelDashboard(ttk.Frame):
@@ -103,6 +93,9 @@ class PainelDashboard(ttk.Frame):
 
         self._botao_atualizar = ttk.Button(barra, command=self.atualizar, width=12)
         self._botao_atualizar.pack(side=tk.RIGHT)
+
+        self._botao_exportar = ttk.Button(barra, command=self.exportar, width=12)
+        self._botao_exportar.pack(side=tk.RIGHT, padx=(0, 6))
 
         self._periodo_var = tk.StringVar()
         self._seletor = ttk.Combobox(
@@ -154,6 +147,7 @@ class PainelDashboard(ttk.Frame):
         """Reaplica os textos no idioma atual e redesenha."""
         self._titulo.config(text=carregar_texto("dashboard"))
         self._botao_atualizar.config(text=carregar_texto("atualizar_lista"))
+        self._botao_exportar.config(text=carregar_texto("exportar"))
         self._caixa_insights.config(text=carregar_texto("analise"))
         self._seletor.config(values=[self._rotulo_periodo(d) for d in PERIODOS])
         self._periodo_var.set(self._rotulo_periodo(self._dias))
@@ -197,6 +191,65 @@ class PainelDashboard(ttk.Frame):
             self._mostrar_mensagem(carregar_texto("dashboard_erro"))
             return
         self._mostrar(self._panorama)
+
+    def exportar(self) -> Optional[Path]:
+        """Gera o relatório do período e grava-o no formato escolhido.
+
+        Devolve o caminho gravado, ou ``None`` se o utilizador desistir ou não
+        tiver permissão. Nunca levanta: uma falha vira mensagem e log.
+        """
+        if not permissoes.pode(Permissao.RELATORIOS_EXPORTAR):
+            messagebox.showwarning(
+                carregar_texto("aviso"), carregar_texto("permissao_negada"), parent=self
+            )
+            return None
+
+        tipos = [
+            (exportadores.descricao(f), f"*{exportadores.extensao(f)}")
+            for f in servico.formatos_disponiveis()
+        ]
+        try:
+            relatorio = relatorio_de_tarefas(dias=self._dias)
+        except Exception:
+            logger.exception("Falha ao construir o relatório.")
+            messagebox.showerror(
+                carregar_texto("erro"),
+                carregar_texto("relatorio_erro_exportar"),
+                parent=self,
+            )
+            return None
+
+        escolhido = filedialog.asksaveasfilename(
+            parent=self,
+            title=carregar_texto("exportar_relatorio"),
+            initialfile=servico.nome_sugerido(relatorio, servico.formatos_disponiveis()[0]),
+            defaultextension=exportadores.extensao(servico.formatos_disponiveis()[0]),
+            filetypes=tipos,
+        )
+        if not escolhido:
+            return None
+
+        self.configure(cursor="watch")
+        self.update_idletasks()
+        try:
+            caminho = servico.exportar(relatorio, Path(escolhido))
+        except Exception:
+            logger.exception("Falha ao exportar o relatório.")
+            messagebox.showerror(
+                carregar_texto("erro"),
+                carregar_texto("relatorio_erro_exportar"),
+                parent=self,
+            )
+            return None
+        finally:
+            self.configure(cursor="")
+
+        messagebox.showinfo(
+            carregar_texto("informacao"),
+            carregar_texto("relatorio_exportado", caminho=caminho),
+            parent=self,
+        )
+        return caminho
 
     # ------------------------------------------------------------ desenho
 

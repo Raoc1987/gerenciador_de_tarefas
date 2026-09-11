@@ -1,5 +1,6 @@
 """Testes do dashboard e dos gráficos desenhados em Canvas."""
 
+import pathlib
 from datetime import date, timedelta
 
 import pytest
@@ -49,6 +50,20 @@ def textos_do_canvas(grafico):
         for item in grafico.canvas.find_all()
         if grafico.canvas.type(item) == "text"
     ]
+
+
+def botoes(widget):
+    """Mapa ``texto -> botão`` dos botões sob um widget."""
+    encontrados = {}
+
+    def percorrer(atual):
+        for filho in atual.winfo_children():
+            if isinstance(filho, ttk.Button):
+                encontrados[str(filho.cget("text"))] = filho
+            percorrer(filho)
+
+    percorrer(widget)
+    return encontrados
 
 
 def rotulos(widget):
@@ -385,3 +400,75 @@ def test_dashboard_traduz_os_insights(painel, raiz):
     assert "Completed (30d)" in textos
     assert "Pending" in textos
     assert any("overdue" in t.lower() for t in textos)
+
+
+# ============================================================== EXPORTAÇÃO
+
+
+@pytest.fixture
+def dialogos_de_ficheiro(monkeypatch, tmp_path):
+    """Substitui os diálogos modais da exportação e regista o que apareceu."""
+    from tkinter import filedialog, messagebox
+
+    import dashboard_ui
+
+    registo = {"destino": str(tmp_path / "relatorio.pdf"), "info": [], "erro": [], "aviso": []}
+    monkeypatch.setattr(
+        filedialog, "asksaveasfilename", lambda *a, **k: registo["destino"]
+    )
+    monkeypatch.setattr(messagebox, "showinfo", lambda *a, **k: registo["info"].append(a))
+    monkeypatch.setattr(messagebox, "showerror", lambda *a, **k: registo["erro"].append(a))
+    monkeypatch.setattr(messagebox, "showwarning", lambda *a, **k: registo["aviso"].append(a))
+    monkeypatch.setattr(dashboard_ui, "filedialog", filedialog)
+    monkeypatch.setattr(dashboard_ui, "messagebox", messagebox)
+    return registo
+
+
+def test_botao_exportar_gera_o_ficheiro(painel, raiz, dialogos_de_ficheiro, monkeypatch):
+    import database
+
+    database.criar_tabela()
+    database.adicionar_tarefa("Tarefa para o relatório", "2030-01-01")
+
+    botoes(painel)["Exportar"].invoke()
+    raiz.update()
+
+    destino = pathlib.Path(dialogos_de_ficheiro["destino"])
+    assert destino.is_file(), "o relatório tem de existir no disco"
+    assert destino.read_bytes().startswith(b"%PDF")
+    assert dialogos_de_ficheiro["info"], "o utilizador tem de saber onde ficou"
+    assert str(destino) in dialogos_de_ficheiro["info"][-1][1]
+
+
+def test_cancelar_a_gravacao_nao_escreve_nada(painel, raiz, dialogos_de_ficheiro):
+    dialogos_de_ficheiro["destino"] = ""
+    assert painel.exportar() is None
+    assert not dialogos_de_ficheiro["info"]
+
+
+def test_exportar_sem_permissao_avisa(raiz, dialogos_de_ficheiro):
+    from core import permissoes
+    from dashboard_ui import PainelDashboard
+
+    permissoes.definir_sessao("bruno", "colaborador", persistir=False)
+    widget = PainelDashboard(
+        raiz, obter_panorama=lambda dias=30: fontes.panorama(dias=dias, hoje=HOJE, tarefas=[])
+    )
+    widget.pack()
+    raiz.update()
+
+    assert widget.exportar() is None
+    assert dialogos_de_ficheiro["aviso"]
+    assert not pathlib.Path(dialogos_de_ficheiro["destino"]).exists()
+
+
+def test_falha_a_exportar_mostra_erro_e_nao_derruba(painel, raiz, dialogos_de_ficheiro, monkeypatch):
+    import dashboard_ui
+
+    def explode(*args, **kwargs):
+        raise OSError("disco cheio")
+
+    monkeypatch.setattr(dashboard_ui.servico, "exportar", explode)
+    assert painel.exportar() is None
+    assert dialogos_de_ficheiro["erro"]
+    assert painel.winfo_exists()

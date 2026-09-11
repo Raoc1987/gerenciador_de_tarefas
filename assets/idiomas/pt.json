@@ -97,6 +97,17 @@
   "insight_vencem_hoje": "{quantidade} tarefa(s) vencem hoje.",
   "insight_sem_prazo": "{quantidade} tarefa(s) pendentes sem prazo definido.",
   "kpi_criadas": "Criadas ({dias}d)",
+  "relatorio_titulo": "Relatório de Tarefas",
+  "relatorio_indicadores": "Indicadores",
+  "relatorio_criada_em": "Criada em",
+  "relatorio_concluida_em": "Concluída em",
+  "relatorio_duracao_media": "Duração média (dias)",
+  "relatorio_rodape": "Gerado por {aplicacao}",
+  "exportar": "Exportar",
+  "exportar_relatorio": "Exportar relatório",
+  "relatorio_exportado": "Relatório guardado em:\n{caminho}",
+  "relatorio_erro_exportar": "Não foi possível guardar o relatório.",
+  "formato": "Formato",
   "meses": "Janeiro,Fevereiro,Março,Abril,Maio,Junho,Julho,Agosto,Setembro,Outubro,Novembro,Dezembro",
   "dias_semana": "Seg,Ter,Qua,Qui,Sex,Sáb,Dom"
 }

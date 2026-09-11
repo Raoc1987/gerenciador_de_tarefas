@@ -64,6 +64,7 @@
   "plugin_erro_instalar": "The plugin could not be installed.",
   "plugin_erro_remover": "The plugin could not be removed.",
   "plugin_erro_generico": "An error occurred in the plugin system.",
+  "plugin_fonte_indisponivel": "This plugin source is not available yet.",
   "meses": "January,February,March,April,May,June,July,August,September,October,November,December",
   "dias_semana": "Mon,Tue,Wed,Thu,Fri,Sat,Sun"
 }

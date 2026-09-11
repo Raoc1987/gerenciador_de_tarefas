@@ -64,6 +64,7 @@
   "plugin_erro_instalar": "No se pudo instalar el complemento.",
   "plugin_erro_remover": "No se pudo eliminar el complemento.",
   "plugin_erro_generico": "Se produjo un error en el sistema de complementos.",
+  "plugin_fonte_indisponivel": "Esta fuente de complementos aún no está disponible.",
   "meses": "Enero,Febrero,Marzo,Abril,Mayo,Junio,Julio,Agosto,Septiembre,Octubre,Noviembre,Diciembre",
   "dias_semana": "Lun,Mar,Mié,Jue,Vie,Sáb,Dom"
 }

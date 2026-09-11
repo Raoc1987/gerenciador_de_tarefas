@@ -121,7 +121,7 @@ def test_remover_o_plugin_real(gerenciador, zip_calendar):
 
 
 @pytest.mark.skipif(not TKINTER_DISPONIVEL, reason="ambiente sem interface gráfica")
-def test_plugin_real_na_janela(pasta_plugins, zip_calendar, monkeypatch):
+def test_plugin_real_na_janela(pasta_plugins, zip_calendar, tmp_path, monkeypatch):
     """Percurso completo: instalar o zip, ativar e usar a aba do calendário."""
     from tkinter import messagebox
 
@@ -132,6 +132,7 @@ def test_plugin_real_na_janela(pasta_plugins, zip_calendar, monkeypatch):
     monkeypatch.setattr(messagebox, "showinfo", lambda *a, **k: None)
     monkeypatch.setattr(messagebox, "showwarning", lambda *a, **k: None)
     monkeypatch.setattr(pm_modulo, "diretorio_plugins_instalados", lambda: pasta_plugins)
+    monkeypatch.setattr(gui, "diretorio_plugins_embutidos", lambda: tmp_path / "sem_embutidos")
 
     database.criar_tabela()
     database.adicionar_tarefa("Reunião de equipa", "2026-06-15")

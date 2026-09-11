@@ -40,6 +40,7 @@ from core.plugin_api import (
     ServicoTarefas,
     encontrar_classe_plugin,
 )
+from core.plugin_sources import FontePlugins
 from core.version import APP_VERSION, comparar_versoes
 
 logger = obter_logger(__name__)
@@ -611,6 +612,61 @@ class PluginManager:
                 )
 
         return ResultadoOperacao(True, chave, manifesto.id)
+
+    def instalar_de_fonte(
+        self,
+        fonte: "FontePlugins",
+        plugin_id: str,
+        permitir_atualizacao: bool = True,
+    ) -> ResultadoOperacao:
+        """Instala um plugin oferecido por uma fonte (local, embutida ou remota).
+
+        A fonte apenas entrega um ``.zip``; a validação e a instalação são as
+        mesmas de sempre, venha o pacote de onde vier.
+        """
+        try:
+            disponivel = fonte.procurar(plugin_id)
+            if disponivel is None:
+                return ResultadoOperacao(False, "plugin_nao_encontrado", plugin_id)
+            caminho = fonte.obter_pacote(disponivel)
+        except NotImplementedError as erro:
+            return ResultadoOperacao(False, "plugin_fonte_indisponivel", plugin_id, str(erro))
+        except PluginError as erro:
+            return ResultadoOperacao(False, erro.chave_mensagem, plugin_id, str(erro))
+        except OSError as erro:
+            logger.exception("Falha ao obter o pacote de %s.", plugin_id)
+            return ResultadoOperacao(False, "plugin_erro_instalar", plugin_id, str(erro))
+
+        return self.instalar_zip(caminho, permitir_atualizacao=permitir_atualizacao)
+
+    def semear_de_fonte(self, fonte: "FontePlugins") -> List[ResultadoOperacao]:
+        """Instala os plugins da fonte que ainda não existem localmente.
+
+        Usado no arranque para disponibilizar os plugins que acompanham a
+        aplicação. **Nunca** substitui um plugin já instalado: a versão do
+        utilizador manda, mesmo que seja mais antiga.
+        """
+        resultados: List[ResultadoOperacao] = []
+        if not fonte.disponivel():
+            return resultados
+
+        for disponivel in fonte.listar():
+            if (self.diretorio / disponivel.id).exists():
+                continue
+            if not disponivel.compativel(self.app_version):
+                logger.info(
+                    "Plugin embutido %s ignorado por incompatibilidade.", disponivel.id
+                )
+                continue
+            resultado = self.instalar_de_fonte(fonte, disponivel.id)
+            logger.info(
+                "Semeadura de %s a partir de %s: %s",
+                disponivel.id,
+                fonte.nome,
+                "ok" if resultado.sucesso else resultado.detalhes,
+            )
+            resultados.append(resultado)
+        return resultados
 
     def inspecionar_zip(self, caminho_zip: Path) -> ManifestoPlugin:
         """Lê o manifesto de um ``.zip`` sem instalar nada.

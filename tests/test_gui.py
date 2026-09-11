@@ -60,12 +60,17 @@ def dialogos(monkeypatch):
 
 
 @pytest.fixture
-def janela(dialogos, pasta_plugins, monkeypatch):
-    """Janela principal real, com o diretório de plugins isolado."""
+def janela(dialogos, pasta_plugins, tmp_path, monkeypatch):
+    """Janela principal real, com os diretórios de plugins isolados.
+
+    Os plugins embutidos apontam para uma pasta inexistente: cada teste
+    controla o que está instalado. A semeadura tem o seu próprio teste.
+    """
     import core.plugin_manager as pm_modulo
     import gui
 
     monkeypatch.setattr(pm_modulo, "diretorio_plugins_instalados", lambda: pasta_plugins)
+    monkeypatch.setattr(gui, "diretorio_plugins_embutidos", lambda: tmp_path / "sem_embutidos")
     app = criar_janela_com_retentativa(gui.criar_janela)
     app.update_idletasks()
     yield app
@@ -434,3 +439,49 @@ def test_titulo_da_aba_do_plugin_segue_o_idioma(janela, criar_plugin):
 
     assert notebook.tab(0, "text") == "Tasks"
     assert notebook.tab(1, "text") == "Calendar"
+
+
+def test_plugins_embutidos_sao_semeados_no_arranque(
+    dialogos, pasta_plugins, raiz_projeto, monkeypatch
+):
+    """No arranque, os plugins que acompanham a aplicação ficam instalados."""
+    import core.plugin_manager as pm_modulo
+    import gui
+
+    monkeypatch.setattr(pm_modulo, "diretorio_plugins_instalados", lambda: pasta_plugins)
+    monkeypatch.setattr(
+        gui, "diretorio_plugins_embutidos", lambda: raiz_projeto / "plugins" / "available"
+    )
+
+    app = criar_janela_com_retentativa(gui.criar_janela)
+    try:
+        gerenciador = app.gerenciador_de_plugins
+        registro = gerenciador.obter("calendar")
+        assert registro is not None, "o plugin embutido deveria ter sido instalado"
+        assert registro.estado.utilizavel
+        # Instalado mas desativado: a decisão de ativar é do utilizador.
+        assert not registro.ativo
+        assert (pasta_plugins / "calendar" / "plugin.json").is_file()
+    finally:
+        app.gerenciador_de_plugins.desativar_todos()
+        app.destroy()
+
+
+def test_semeadura_nao_substitui_o_plugin_do_utilizador(
+    dialogos, pasta_plugins, raiz_projeto, criar_plugin, monkeypatch
+):
+    """Uma versão já instalada pelo utilizador nunca é sobreposta."""
+    import core.plugin_manager as pm_modulo
+    import gui
+
+    criar_plugin("calendar", version="0.9.0")
+    monkeypatch.setattr(pm_modulo, "diretorio_plugins_instalados", lambda: pasta_plugins)
+    monkeypatch.setattr(
+        gui, "diretorio_plugins_embutidos", lambda: raiz_projeto / "plugins" / "available"
+    )
+
+    app = criar_janela_com_retentativa(gui.criar_janela)
+    try:
+        assert app.gerenciador_de_plugins.versao_instalada("calendar") == "0.9.0"
+    finally:
+        app.destroy()

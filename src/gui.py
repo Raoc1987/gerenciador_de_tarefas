@@ -4,8 +4,10 @@ import tkinter as tk
 from tkinter import messagebox, ttk
 
 from core.log import obter_logger
+from core.paths import diretorio_plugins_embutidos
 from core.plugin_manager import PluginManager
 from core.plugin_registry import RegistroEstadoBanco
+from core.plugin_sources import FontePastasLocais
 from database import (
     adicionar_tarefa,
     buscar_tarefas,
@@ -179,7 +181,11 @@ def criar_janela() -> tk.Tk:
         JanelaPlugins(app, gerenciador)
 
     def arrancar_plugins():
-        """Ativa os plugins deixados ligados, avisando sobre os que falharam."""
+        """Semeia os plugins embutidos e ativa os que o utilizador deixou ligados."""
+        try:
+            gerenciador.semear_de_fonte(FontePastasLocais(diretorio_plugins_embutidos()))
+        except Exception:  # pragma: no cover - defensivo
+            logger.exception("Falha ao instalar os plugins embutidos.")
         gerenciador.descobrir()
         falhas = [r for r in gerenciador.ativar_habilitados() if not r.sucesso]
         if falhas:

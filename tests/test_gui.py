@@ -6,8 +6,6 @@ Se o ambiente não tiver um servidor gráfico, os testes são ignorados.
 """
 
 import json
-import tkinter as tk
-from tkinter import ttk
 
 import pytest
 
@@ -21,6 +19,9 @@ from conftest import (
 pytestmark = pytest.mark.skipif(
     not TKINTER_DISPONIVEL, reason="ambiente sem interface gráfica"
 )
+
+tk = pytest.importorskip("tkinter", reason="ambiente sem Tkinter")
+ttk = pytest.importorskip("tkinter.ttk", reason="ambiente sem Tkinter")
 
 
 CORPO_COM_ABA = '''

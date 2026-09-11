@@ -6,8 +6,6 @@ empacotar -> instalar -> validar -> registar -> carregar -> ativar -> usar.
 """
 
 import sys
-import tkinter as tk
-from tkinter import ttk
 
 import pytest
 
@@ -15,6 +13,10 @@ from conftest import TKINTER_DISPONIVEL, criar_janela_com_retentativa
 from core.plugin_api import EstadoPlugin
 from core.plugin_manager import PREFIXO_MODULO
 from tools.empacotar_plugin import empacotar
+
+# O plugin Calendar Integration constrói widgets: sem Tkinter não há o que testar.
+tk = pytest.importorskip("tkinter", reason="ambiente sem Tkinter")
+ttk = pytest.importorskip("tkinter.ttk", reason="ambiente sem Tkinter")
 
 
 @pytest.fixture

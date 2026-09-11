@@ -2,13 +2,18 @@
 
 import json
 import time
-import tkinter as tk
 import zipfile
 from pathlib import Path
 
 import pytest
 
 from core.plugin_manager import PluginManager
+
+
+try:  # o tkinter pode nem estar instalado (Linux minimo)
+    import tkinter as tk
+except ImportError:  # pragma: no cover - depende do ambiente
+    tk = None
 
 
 def _sondar_tkinter(tentativas: int = 3) -> bool:
@@ -19,6 +24,8 @@ def _sondar_tkinter(tentativas: int = 3) -> bool:
     proprios arquivos. Sem a repeticao, os testes de interface seriam
     silenciosamente ignorados por causa dessa intermitencia.
     """
+    if tk is None:  # pragma: no cover - depende do ambiente
+        return False
     for tentativa in range(tentativas):
         try:
             raiz = tk.Tk()

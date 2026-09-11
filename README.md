@@ -140,6 +140,46 @@ Visível apenas para quem tem a permissão `sistema.admin`.
 
 ---
 
+## 👤 Contas e início de sessão
+
+Na **primeira utilização** o programa pede que crie a conta de administrador.
+**Não existe palavra-passe pré-definida** — palavras-passe de fábrica são das
+formas mais fiáveis de deixar um sistema aberto.
+
+Depois disso, a aplicação pede credenciais ao abrir.
+
+| Papel | O que pode fazer |
+|---|---|
+| Administrador | tudo, incluindo contas e auditoria |
+| Gestor | tarefas, análise, relatórios (incl. exportar) e plugins |
+| Supervisor | tarefas, análise e ver relatórios |
+| Colaborador | ler e escrever tarefas |
+| Visualizador | ler tarefas, análise e relatórios |
+
+`Configurações → Utilizadores` (para quem tem `utilizadores.gerir`) permite
+criar contas, mudar papéis, ativar/desativar, redefinir palavras-passe e
+remover.
+
+Como as palavras-passe são guardadas: derivadas com **PBKDF2-HMAC-SHA256**,
+320 000 iterações e sal próprio por conta. O que fica no banco não permite
+voltar atrás, e o formato guarda o custo usado — quando o custo subir, quem
+entrar é regravado com o novo, sem perder a conta.
+
+Outras salvaguardas:
+
+- 5 tentativas falhadas bloqueiam a conta durante 5 minutos;
+- a mensagem de erro **nunca** diz se o que falhou foi o nome ou a
+  palavra-passe;
+- nunca é possível ficar sem administrador ativo: remover, desativar ou
+  despromover o último é recusado com explicação;
+- entradas, saídas e tentativas falhadas ficam na auditoria.
+
+> **Limite declarado:** o banco de dados **não é cifrado**. A autenticação
+> protege o uso da aplicação, não o ficheiro em `%APPDATA%`. Quem tiver acesso
+> à conta Windows tem acesso aos dados.
+
+---
+
 ## 🧩 Plugins
 
 ### Usar
@@ -164,6 +204,31 @@ PLUGINS                                   [+ Instalar Plugin]
   configuração e os dados desse plugin.
 
 Desativar **não** desinstala, e o estado sobrevive ao reinício.
+
+
+### Plugins incluídos
+
+| Plugin | O que faz | Estado inicial |
+|---|---|---|
+| **Calendar Integration** | calendário mensal com as tarefas de cada dia | instalado, por ativar |
+| **Verificação de Atualizações** | avisa quando há uma versão nova | instalado, **desativado** |
+
+O plugin de atualizações segue três regras:
+
+1. **Não contacta a internet sem autorização.** Na primeira vez pergunta, e
+   diz que endereço vai consultar. A resposta fica guardada e muda-se na aba
+   *Atualizações*.
+2. **Não descarrega nem instala nada.** Se aceitar a atualização, abre a
+   página oficial da versão no navegador — quem descarrega e instala é você, a
+   partir da fonte original. Um programa que se atualiza sozinho em silêncio
+   passa a executar o que lhe mandarem, se a fonte for comprometida.
+3. **Nunca interrompe o trabalho.** A verificação corre em segundo plano e,
+   se falhar, fica só no registo.
+
+Por omissão consulta os *releases* do repositório do projeto, mas aceita
+qualquer endereço HTTPS que devolva `{"versao": ..., "notas": ..., "url": ...}` —
+uma empresa pode apontar para o seu próprio servidor, em
+`%APPDATA%\GerenciadorDeTarefas\config\plugins\atualizacoes.json`.
 
 ### Criar um plugin
 
@@ -311,6 +376,8 @@ gerenciador_de_tarefas/
 │   ├── dashboard_ui.py         # aba Dashboard
 │   ├── utils.py
 │   ├── auditoria_ui.py         # tela de auditoria
+│   ├── login_ui.py             # início de sessão e primeiro administrador
+│   ├── utilizadores_ui.py      # gestão de contas
 │   ├── textos.py               # apresentação partilhada dos insights
 │   ├── analytics/              # métricas, séries, insights (sem interface)
 │   ├── reporting/              # relatórios e exportação (PDF/XLSX/CSV)
@@ -320,6 +387,8 @@ gerenciador_de_tarefas/
 │       ├── eventos.py          # barramento de eventos
 │       ├── permissoes.py       # papéis e permissões (RBAC)
 │       ├── auditoria.py        # trilha do que aconteceu
+│       ├── seguranca.py        # derivação de palavras-passe
+│       ├── utilizadores.py     # contas e autenticação
 │       ├── paths.py            # recursos vs. dados do utilizador vs. temporários
 │       ├── config.py           # configuração da app e por plugin
 │       ├── log.py
@@ -328,13 +397,15 @@ gerenciador_de_tarefas/
 │       ├── plugin_package.py   # validação e extração segura de .zip
 │       ├── plugin_registry.py  # estado dos plugins no banco
 │       └── plugin_sources.py   # fontes: zips locais, embutidos, loja (futura)
-├── plugins/available/calendar/ # plugin que acompanha a aplicação
+├── plugins/available/          # plugins que acompanham a aplicação
+│   ├── calendar/
+│   └── atualizacoes/
 ├── assets/idiomas/             # pt.json, en.json, es.json
 ├── assets/icon.ico
 ├── installer/setup.iss         # instalador Inno Setup
 ├── tools/                      # build, instalador, empacotar plugin, ícone
 ├── docs/architecture/          # visão, ADRs e roadmap
-├── tests/                      # 421 testes
+├── tests/                      # 518 testes
 ├── docs/AUDIT.md               # auditoria do estado inicial do projeto
 └── GerenciadorDeTarefas.spec   # receita do PyInstaller
 ```

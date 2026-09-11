@@ -13,6 +13,16 @@ plugins (ver `docs/architecture/`).
 
 ### Adicionado
 
+- **Contas de utilizador e início de sessão** (`core/seguranca.py`,
+  `core/utilizadores.py`): palavras-passe derivadas com PBKDF2-HMAC-SHA256 e
+  sal próprio, bloqueio após tentativas falhadas, e a garantia de nunca ficar
+  sem administrador ativo. No primeiro arranque cria-se a conta de
+  administração — não há palavra-passe pré-definida.
+- **Gestão de contas** em `Configurações → Utilizadores`.
+- **Plugin de verificação de atualizações**: avisa quando há versão nova,
+  pergunta antes de contactar a internet e nunca descarrega nem instala — abre
+  a página oficial e a decisão é do utilizador.
+- Migração de banco v5: tabela `utilizadores`.
 - **Relatórios** (`reporting/`) em PDF, XLSX e CSV, com indicadores, análise e
   lista de tarefas, exportáveis a partir do Dashboard. O XLSX e o PDF são
   escritos à mão, sem dependências no executável; os testes leem-nos de volta

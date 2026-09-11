@@ -16,6 +16,8 @@ Runtime uses the Python standard library only: no external dependencies.
 
 ## 🚀 Features
 
+- 👤 User accounts with sign-in, roles and permissions (no default password)
+- 🔔 Update checker plugin — asks before contacting the internet, never installs by itself
 - 📊 Dashboard with KPIs, charts, forecast and plain-language analysis
 - 📄 Reports exported to PDF, XLSX and CSV — written without extra dependencies
 - 🔍 Audit trail of what happened, read-only in the UI
@@ -67,7 +69,7 @@ empty — there are no runtime dependencies; `requirements-dev.txt` brings
 `pytest` and `pyinstaller`.
 
 ```bash
-python -m pytest                 # 421 tests
+python -m pytest                 # 518 tests
 python src/main.py --autoteste   # self-check of a running installation
 ```
 
@@ -201,6 +203,8 @@ gerenciador_de_tarefas/
 │   ├── dashboard_ui.py         # Dashboard tab
 │   ├── utils.py
 │   ├── auditoria_ui.py         # audit trail window
+│   ├── login_ui.py             # sign-in and first administrator
+│   ├── utilizadores_ui.py      # account management
 │   ├── textos.py               # shared insight presentation
 │   ├── analytics/              # metrics, series, insights (UI-free)
 │   ├── reporting/              # reports and export (PDF/XLSX/CSV)
@@ -210,6 +214,8 @@ gerenciador_de_tarefas/
 │       ├── eventos.py          # event bus
 │       ├── permissoes.py       # roles and permissions (RBAC)
 │       ├── auditoria.py        # audit trail
+│       ├── seguranca.py        # password derivation
+│       ├── utilizadores.py     # accounts and authentication
 │       ├── paths.py            # resources vs. user data vs. temp
 │       ├── config.py           # app settings and per-plugin settings
 │       ├── log.py
@@ -223,7 +229,7 @@ gerenciador_de_tarefas/
 ├── installer/setup.iss         # Inno Setup installer
 ├── tools/                      # build, installer, plugin packaging, icon
 ├── docs/architecture/          # vision, ADRs and roadmap
-├── tests/                      # 421 tests
+├── tests/                      # 518 tests
 └── GerenciadorDeTarefas.spec   # PyInstaller recipe
 ```
 

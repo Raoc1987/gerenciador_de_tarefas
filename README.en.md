@@ -220,10 +220,21 @@ into `Program Files`; a plugin failure never takes the app down.
 ## 🔨 Building
 
 ```bash
-python tools/build.py            # dist/GerenciadorDeTarefas/GerenciadorDeTarefas.exe
-python tools/build_installer.py  # installer/Output/GerenciadorDeTarefas-Setup.exe
-python tools/testar_atualizacao.py   # upgrade simulation, keeps user data
+python tools/build.py              # dist/GerenciadorDeTarefas/GerenciadorDeTarefas.exe
+python tools/build_installer.py    # installer/Output/GerenciadorDeTarefas-Setup.exe
+python tools/testar_atualizacao.py # upgrade simulation (no installer needed)
+python tools/testar_instalador.py  # install, upgrade and uninstall, for real
 ```
+
+Silent install and uninstall:
+
+```bat
+GerenciadorDeTarefas-Setup.exe /VERYSILENT /NORESTART /CURRENTUSER /DIR="C:\GDT"
+"C:\GDT\unins000.exe" /VERYSILENT                   :: keeps your data
+"C:\GDT\unins000.exe" /VERYSILENT /REMOVEDATA=yes   :: deletes it too
+```
+
+A silent uninstall **never** deletes your data without `/REMOVEDATA=yes`.
 
 `tools/build.py` only reports success after running the produced `.exe` with
 `--version` and `--autoteste`. The installer needs

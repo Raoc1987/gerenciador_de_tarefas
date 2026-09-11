@@ -52,8 +52,13 @@ Primeira versão funcional e distribuível.
   atualizações.
 
 **Qualidade**
-- 222 testes automatizados, incluindo testes que constroem a janela Tkinter
+- 224 testes automatizados, incluindo testes que constroem a janela Tkinter
   real e o percurso completo de um plugin, do `.zip` até à aba.
+- Executável, instalador, atualização e desinstalação verificados a correr,
+  não apenas gerados (`tools/build.py`, `tools/testar_atualizacao.py`,
+  `tools/testar_instalador.py`).
+- Integração contínua a correr os testes em Windows e Linux e a construir o
+  executável.
 - `docs/AUDIT.md` com a auditoria do estado inicial do projeto.
 
 ## [0.1.0] - 2025-06-06

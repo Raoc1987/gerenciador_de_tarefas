@@ -78,3 +78,15 @@ existe, a decisão de **menor risco** é:
 
 O `core/` da especificação fica em `src/core/`, coerente com o layout `src/` já
 existente, em vez de forçar uma raiz artificial.
+
+---
+
+## Atualização — 2026-09-11
+
+O ponto 4 acima ("Inno Setup não está instalado") deixou de se aplicar: o
+Inno Setup 6.7.3 foi instalado durante o trabalho (com autorização explícita),
+o `GerenciadorDeTarefas-Setup.exe` foi compilado e o ciclo completo de
+instalação, atualização e desinstalação foi executado e verificado por
+`tools/testar_instalador.py`.
+
+Nenhuma etapa do trabalho ficou por validar.

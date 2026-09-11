@@ -310,7 +310,29 @@ Se o `ISCC.exe` estiver noutro local, aponte a variável de ambiente `ISCC`
 para ele. `python tools/build_installer.py --verificar` confirma se o
 compilador foi encontrado.
 
-## 🔁 Testar uma atualização
+### Instalação e desinstalação automatizadas
+
+```bat
+GerenciadorDeTarefas-Setup.exe /VERYSILENT /NORESTART /CURRENTUSER /DIR="C:\GDT"
+"C:\GDT\unins000.exe" /VERYSILENT                     :: mantém os seus dados
+"C:\GDT\unins000.exe" /VERYSILENT /REMOVEDATA=yes     :: apaga também os dados
+```
+
+Uma desinstalação silenciosa **nunca** apaga dados sem `/REMOVEDATA=yes`.
+
+## ✅ Testar o instalador
+
+```bash
+python tools/testar_instalador.py
+```
+
+Instala em silêncio, confirma atalhos e desinstalador, cria dados, instala
+uma versão mais recente por cima, verifica que tarefas e plugins
+sobreviveram, desinstala (dados preservados) e, por fim, desinstala com
+`/REMOVEDATA=yes` (dados removidos). Aborta se já existir
+`%APPDATA%\GerenciadorDeTarefas`, para não mexer nos seus dados.
+
+## 🔁 Testar uma atualização sem instalador
 
 ```bash
 python tools/testar_atualizacao.py

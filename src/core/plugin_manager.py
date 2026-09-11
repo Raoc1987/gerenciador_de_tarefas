@@ -309,7 +309,14 @@ class PluginManager:
         assert registro.manifesto is not None
         caminho = registro.pasta / registro.manifesto.entry_point
         nome_modulo = PREFIXO_MODULO + registro.id
-        especificacao = importlib.util.spec_from_file_location(nome_modulo, caminho)
+        especificacao = importlib.util.spec_from_file_location(
+            nome_modulo,
+            caminho,
+            # O ponto de entrada é tratado como pacote com raiz na pasta do
+            # plugin. É o que faz `from . import ajuda` funcionar — e essa
+            # forma já nasce isolada, mesmo dentro de uma função.
+            submodule_search_locations=[str(registro.pasta)],
+        )
         if especificacao is None or especificacao.loader is None:
             raise CarregamentoPluginError(f"Não foi possível importar {caminho}.")
 
@@ -320,10 +327,12 @@ class PluginManager:
         adicionado = pasta not in sys.path
         if adicionado:
             sys.path.insert(0, pasta)
+        modulos_antes = set(sys.modules)
         try:
             especificacao.loader.exec_module(modulo)
         except Exception:
             sys.modules.pop(nome_modulo, None)
+            self._isolar_modulos_vizinhos(registro, modulos_antes)
             raise
         finally:
             if adicionado:
@@ -331,7 +340,42 @@ class PluginManager:
                     sys.path.remove(pasta)
                 except ValueError:  # pragma: no cover - defensivo
                     pass
+        self._isolar_modulos_vizinhos(registro, modulos_antes)
         return modulo
+
+    @staticmethod
+    def _isolar_modulos_vizinhos(registro: RegistroPlugin, antes: set) -> None:
+        """Põe os módulos vizinhos do plugin debaixo do nome dele.
+
+        Um plugin pode trazer um ``utils.py`` ao lado do ``plugin.py``, e dois
+        plugins podem escolher o mesmo nome. Sem isto, o primeiro a carregar
+        ficava com o nome global: o segundo recebia o módulo do primeiro, uma
+        atualização continuava a servir o ficheiro antigo, e um plugin
+        instalado escolhia o código que outro executava.
+
+        Cada um passa a viver em ``gdt_plugin_<id>.<nome>``, e o nome simples
+        fica livre para o plugin seguinte. Os plugins já carregados não notam:
+        guardam referências aos objetos, não às chaves.
+        """
+        prefixo = PREFIXO_MODULO + registro.id
+        try:
+            pasta = registro.pasta.resolve()
+        except OSError:  # pragma: no cover - defensivo
+            return
+
+        for nome in [n for n in sys.modules if n not in antes]:
+            if "." in nome or nome == prefixo:
+                continue
+            arquivo = getattr(sys.modules.get(nome), "__file__", None)
+            if not arquivo:
+                continue
+            try:
+                if not Path(arquivo).resolve().is_relative_to(pasta):
+                    continue
+            except (OSError, ValueError):  # pragma: no cover - defensivo
+                continue
+            sys.modules[f"{prefixo}.{nome}"] = sys.modules.pop(nome)
+            logger.debug("Módulo %s do plugin %s isolado.", nome, registro.id)
 
     #: Pasta opcional, dentro do plugin, com os seus arquivos de idioma.
     PASTA_IDIOMAS = "idiomas"
@@ -769,7 +813,12 @@ class PluginManager:
     def _descartar_modulo(plugin_id: str) -> None:
         from language_manager import remover_textos_plugin
 
-        sys.modules.pop(PREFIXO_MODULO + plugin_id, None)
+        prefixo = PREFIXO_MODULO + plugin_id
+        sys.modules.pop(prefixo, None)
+        # Os módulos vizinhos saem com ele: senão, reinstalar um plugin
+        # continuava a servir o código da versão anterior.
+        for nome in [n for n in sys.modules if n.startswith(prefixo + ".")]:
+            sys.modules.pop(nome, None)
         remover_textos_plugin(plugin_id)
         # Um plugin descarregado não pode continuar a reagir a eventos.
         eventos.cancelar_por_dono(plugin_id)

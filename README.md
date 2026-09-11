@@ -305,6 +305,25 @@ Nenhum plugin pode pedir `plugins.gerir`, `utilizadores.gerir` ou
 capacidades de negócio: um plugin que instala plugins deixa de ter fronteira,
 e um que cria contas concede-se a si próprio o que quiser.
 
+### Módulos auxiliares do plugin
+
+Um plugin pode trazer mais ficheiros ao lado do `plugin.py`. Importe-os com
+**import relativo**:
+
+```python
+from . import modelo          # funciona em qualquer sítio, incluindo dentro
+                              # de uma função
+```
+
+O ponto de entrada é carregado como pacote com raiz na pasta do plugin, por
+isso `from .` resolve sempre e cada plugin fica com os **seus** ficheiros —
+dois plugins podem ambos ter um `utils.py` sem se atrapalharem.
+
+`import modelo` (sem o ponto) também funciona, mas só no topo do `plugin.py`.
+Adiado para dentro de uma função, falha: o nome simples não fica reservado a
+ninguém, de propósito. Se ficasse, o primeiro plugin a carregar decidia o
+código que o segundo executa.
+
 ### Dados próprios
 
 Um módulo de negócio precisa de tabelas. Não as cria no banco da aplicação:

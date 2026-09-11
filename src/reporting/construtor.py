@@ -20,11 +20,16 @@ Tradutor = Callable[..., str]
 
 
 def _estado(tarefa: Tarefa, hoje: date, traduzir: Tradutor) -> str:
+    """Estado de UMA tarefa — no singular.
+
+    Os rótulos do dashboard ("Concluídas", "Atrasadas") contam conjuntos; numa
+    linha de tabela ficariam errados.
+    """
     if tarefa.concluida:
-        return traduzir("estado_concluidas")
+        return traduzir("estado_tarefa_concluida")
     if tarefa.esta_atrasada(hoje):
-        return traduzir("estado_atrasadas")
-    return traduzir("kpi_pendentes")
+        return traduzir("estado_tarefa_atrasada")
+    return traduzir("estado_tarefa_pendente")
 
 
 def tabela_de_tarefas(
@@ -53,7 +58,9 @@ def tabela_de_tarefas(
         titulo=traduzir("tarefas"),
         colunas=[
             traduzir("descricao_tarefa"),
-            traduzir("data_vencimento"),
+            # "data_vencimento" traz a dica de formato, útil no formulário e
+            # desproporcionada como cabeçalho de coluna.
+            traduzir("relatorio_vencimento"),
             traduzir("plugin_status"),
             traduzir("relatorio_criada_em"),
             traduzir("relatorio_concluida_em"),

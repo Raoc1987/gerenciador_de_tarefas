@@ -108,6 +108,10 @@
   "relatorio_exportado": "Informe guardado en:\n{caminho}",
   "relatorio_erro_exportar": "No se pudo guardar el informe.",
   "formato": "Formato",
+  "relatorio_vencimento": "Vencimiento",
+  "estado_tarefa_concluida": "Completada",
+  "estado_tarefa_pendente": "Pendiente",
+  "estado_tarefa_atrasada": "Atrasada",
   "meses": "Enero,Febrero,Marzo,Abril,Mayo,Junio,Julio,Agosto,Septiembre,Octubre,Noviembre,Diciembre",
   "dias_semana": "Lun,Mar,Mié,Jue,Vie,Sáb,Dom"
 }

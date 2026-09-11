@@ -92,7 +92,7 @@ def test_indicadores_batem_com_a_analise(relatorio):
 def test_tabela_poe_as_atrasadas_primeiro():
     tabela = tabela_de_tarefas(tarefas_de_exemplo(), hoje=HOJE)
     assert tabela.linhas[0][0] == "Rever orçamento & custos"
-    assert tabela.linhas[0][2] == "Atrasadas"
+    assert tabela.linhas[0][2] == "Atrasada", "estado de uma tarefa vai no singular"
 
 
 def test_tabela_respeita_o_limite():

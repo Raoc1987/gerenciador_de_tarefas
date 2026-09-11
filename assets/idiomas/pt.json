@@ -108,6 +108,10 @@
   "relatorio_exportado": "Relatório guardado em:\n{caminho}",
   "relatorio_erro_exportar": "Não foi possível guardar o relatório.",
   "formato": "Formato",
+  "relatorio_vencimento": "Vencimento",
+  "estado_tarefa_concluida": "Concluída",
+  "estado_tarefa_pendente": "Pendente",
+  "estado_tarefa_atrasada": "Atrasada",
   "meses": "Janeiro,Fevereiro,Março,Abril,Maio,Junho,Julho,Agosto,Setembro,Outubro,Novembro,Dezembro",
   "dias_semana": "Seg,Ter,Qua,Qui,Sex,Sáb,Dom"
 }

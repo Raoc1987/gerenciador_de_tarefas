@@ -108,6 +108,10 @@
   "relatorio_exportado": "Report saved to:\n{caminho}",
   "relatorio_erro_exportar": "The report could not be saved.",
   "formato": "Format",
+  "relatorio_vencimento": "Due date",
+  "estado_tarefa_concluida": "Completed",
+  "estado_tarefa_pendente": "Pending",
+  "estado_tarefa_atrasada": "Overdue",
   "meses": "January,February,March,April,May,June,July,August,September,October,November,December",
   "dias_semana": "Mon,Tue,Wed,Thu,Fri,Sat,Sun"
 }

@@ -40,15 +40,30 @@ CINZENTO = (0.42, 0.47, 0.52)
 PRETO = (0.15, 0.2, 0.25)
 AZUL = (0.145, 0.388, 0.612)
 
-#: Larguras aproximadas dos glifos da Helvetica, em milésimos de em. Chega
-#: para partir linhas e alinhar colunas sem embutir métricas completas.
+#: Largura aproximada dos glifos da Helvetica, em fração do tamanho da fonte.
+#: Não são as métricas exatas da fonte — chega para repartir colunas e partir
+#: linhas sem embutir tabelas AFM.
 _LARGURA_MEDIA = 0.52
 _LARGURA_MEDIA_NEGRITO = 0.56
+_ESTREITOS = set("iljtfrI.,:;'|!()[]-/ ")
+_LARGOS = set("mwMW@%")
+
+
+def _largura_do_glifo(caractere: str) -> float:
+    """Largura relativa de um caractere, por classe."""
+    if caractere in _ESTREITOS:
+        return 0.30
+    if caractere in _LARGOS:
+        return 0.85
+    if caractere.isdigit() or caractere.isupper():
+        return 0.60
+    return 0.52
 
 
 def _largura(texto: str, tamanho: float, negrito: bool = False) -> float:
-    fator = _LARGURA_MEDIA_NEGRITO if negrito else _LARGURA_MEDIA
-    return len(texto) * tamanho * fator
+    """Largura estimada de um texto, em pontos."""
+    escala = 1.08 if negrito else 1.0
+    return sum(_largura_do_glifo(c) for c in texto) * tamanho * escala
 
 
 def _para_winansi(texto: str) -> bytes:
@@ -63,12 +78,14 @@ def _escapar(texto: str) -> bytes:
     return bruto
 
 
-def _cortar(texto: str, largura_max: float, tamanho: float) -> str:
+def _cortar(texto: str, largura_max: float, tamanho: float, negrito: bool = False) -> str:
     """Corta o texto com reticências quando não cabe na largura dada."""
-    if _largura(texto, tamanho) <= largura_max:
+    if _largura(texto, tamanho, negrito) <= largura_max:
         return texto
-    limite = max(int(largura_max / (tamanho * _LARGURA_MEDIA)) - 1, 1)
-    return texto[:limite].rstrip() + "…"
+    cortado = texto
+    while cortado and _largura(cortado + "…", tamanho, negrito) > largura_max:
+        cortado = cortado[:-1]
+    return cortado.rstrip() + "…" if cortado else "…"
 
 
 def _quebrar(texto: str, largura_max: float, tamanho: float) -> List[str]:
@@ -282,16 +299,35 @@ def _escrever_lista(documento: _Documento, secao: Lista) -> None:
 
 
 def _larguras_das_colunas(secao: Tabela, largura_total: float) -> List[float]:
-    """Reparte a largura pelas colunas, conforme o conteúdo mais comprido."""
-    maximos = []
+    """Reparte a largura pelas colunas conforme o que cada uma precisa.
+
+    Mede a largura real do texto (não o número de caracteres) e garante um
+    mínimo por coluna, para o cabeçalho de uma não espremer as outras.
+    """
+    necessarias = []
     for indice, coluna in enumerate(secao.colunas):
-        maior = len(str(coluna))
+        maior = _largura(str(coluna), TAMANHO_TEXTO, negrito=True)
         for linha in secao.linhas:
             if indice < len(linha):
-                maior = max(maior, len(texto_seguro(linha[indice])))
-        maximos.append(max(maior, 4))
-    soma = sum(maximos)
-    return [largura_total * m / soma for m in maximos]
+                maior = max(maior, _largura(texto_seguro(linha[indice]), TAMANHO_TEXTO))
+        necessarias.append(maior + 10)  # espaço entre colunas
+
+    total = sum(necessarias)
+    if total <= largura_total:
+        # Cabe tudo: a folga vai para a coluna mais larga (normalmente a
+        # descrição), em vez de esticar as colunas de data.
+        sobra = largura_total - total
+        maior = necessarias.index(max(necessarias))
+        necessarias[maior] += sobra
+        return necessarias
+
+    minimo = 42.0
+    fixas = {i: minimo for i, l in enumerate(necessarias) if l <= minimo}
+    restante = largura_total - minimo * len(fixas)
+    soma_flexiveis = sum(l for i, l in enumerate(necessarias) if i not in fixas) or 1
+    return [
+        fixas.get(i, restante * l / soma_flexiveis) for i, l in enumerate(necessarias)
+    ]
 
 
 def _escrever_tabela(documento: _Documento, secao: Tabela) -> None:
@@ -303,7 +339,7 @@ def _escrever_tabela(documento: _Documento, secao: Tabela) -> None:
         x = MARGEM
         for indice, coluna in enumerate(secao.colunas):
             documento.pagina.texto(
-                _cortar(str(coluna), larguras[indice] - 6, TAMANHO_TEXTO),
+                _cortar(str(coluna), larguras[indice] - 6, TAMANHO_TEXTO, negrito=True),
                 x,
                 documento.y,
                 TAMANHO_TEXTO,

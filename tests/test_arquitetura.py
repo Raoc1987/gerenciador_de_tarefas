@@ -1,0 +1,214 @@
+"""Testes que fazem a arquitetura falhar quando é violada.
+
+Uma regra de arquitetura que não falha um teste é uma sugestão (ADR-0004).
+Estes testes leem o código e verificam:
+
+* que nada entra em ``src/core/`` sem justificação escrita;
+* que as camadas não se invertem;
+* que os plugins continuam do lado de fora do núcleo;
+* que os documentos de arquitetura não ficam a mentir.
+
+Falhar aqui não é um bug a tapar: é uma decisão de arquitetura por tomar.
+"""
+
+import ast
+import json
+from pathlib import Path
+
+import pytest
+
+RAIZ = Path(__file__).resolve().parent.parent
+SRC = RAIZ / "src"
+CORE = SRC / "core"
+PLUGINS = RAIZ / "plugins" / "available"
+ARQUITETURA = RAIZ / "docs" / "architecture"
+
+#: Módulos de interface. Nada abaixo da camada de UI os pode importar.
+INTERFACE = {
+    "tkinter",
+    "gui",
+    "dashboard_ui",
+    "plugin_ui",
+    "auditoria_ui",
+    "login_ui",
+    "utilizadores_ui",
+    "widgets",
+}
+
+
+def importados_por(arquivo: Path) -> set:
+    """Nomes de topo importados por um ficheiro Python."""
+    arvore = ast.parse(arquivo.read_text(encoding="utf-8"))
+    nomes = set()
+    for no in ast.walk(arvore):
+        if isinstance(no, ast.Import):
+            nomes.update(alias.name for alias in no.names)
+        elif isinstance(no, ast.ImportFrom) and no.module and no.level == 0:
+            nomes.add(no.module)
+    return nomes
+
+
+def modulos_de(pasta: Path) -> list:
+    return sorted(p for p in pasta.glob("*.py"))
+
+
+@pytest.fixture(scope="module")
+def inventario() -> dict:
+    """O inventário do Core, com a justificação de cada módulo."""
+    dados = json.loads((ARQUITETURA / "core-inventory.json").read_text(encoding="utf-8"))
+    return dados["modulos"]
+
+
+# ======================================================= INVENTÁRIO DO CORE
+
+
+def test_tudo_no_core_esta_inventariado(inventario):
+    """ADR-0004: nada entra no Core sem justificação escrita.
+
+    Se este teste falhar por causa de um módulo novo, a pergunta não é "como
+    faço passar o teste" — é "isto pertence mesmo ao Core, ou é um Service,
+    um Module ou um Plugin?". Ver docs/architecture/CLASSIFICACAO.md.
+    """
+    no_disco = {arquivo.name for arquivo in modulos_de(CORE)}
+    inventariados = set(inventario)
+
+    novos = no_disco - inventariados
+    assert not novos, (
+        f"Módulos em src/core/ sem justificação no inventário: {sorted(novos)}. "
+        "Justifique porque pertencem ao Core, ou mude-os de sítio."
+    )
+
+    desaparecidos = inventariados - no_disco
+    assert not desaparecidos, (
+        f"O inventário fala de módulos que já não existem: {sorted(desaparecidos)}."
+    )
+
+
+def test_cada_justificacao_diz_alguma_coisa(inventario):
+    """"Faz parte do Core" não é uma justificação."""
+    for modulo, razao in inventario.items():
+        if modulo == "__init__.py":  # marcador de pacote, não é uma decisão
+            continue
+        assert len(razao.split()) >= 4, f"{modulo}: a justificação é curta demais."
+        assert razao.strip().endswith("."), f"{modulo}: escreva uma frase."
+
+
+def test_o_core_e_pequeno_o_suficiente_para_ser_lido(inventario):
+    """Um Core que ninguém consegue ler inteiro deixou de ser um Core."""
+    assert len(inventario) <= 20, (
+        f"O Core tem {len(inventario)} módulos. Antes de acrescentar mais um, "
+        "veja o que devia ter saído de lá."
+    )
+
+
+# ============================================================== CAMADAS
+
+
+def test_o_core_nao_conhece_a_interface():
+    for arquivo in modulos_de(CORE):
+        for importado in importados_por(arquivo):
+            raiz = importado.split(".")[0]
+            assert raiz not in INTERFACE, f"core/{arquivo.name} importa {importado}"
+
+
+def test_o_core_nao_depende_da_analise_nem_dos_relatorios():
+    """A dependência é ao contrário: a análise usa o Core."""
+    for arquivo in modulos_de(CORE):
+        for importado in importados_por(arquivo):
+            raiz = importado.split(".")[0]
+            assert raiz not in {"analytics", "reporting"}, (
+                f"core/{arquivo.name} importa {importado}"
+            )
+
+
+@pytest.mark.parametrize("pacote", ["analytics", "reporting"])
+def test_as_camadas_de_aplicacao_nao_tocam_na_interface(pacote):
+    """ADR-0003: têm de servir a janela, um agendamento ou um plugin por igual.
+
+    Também não conhecem o motor de plugins: quem calcula não carrega código.
+    """
+    for arquivo in (SRC / pacote).rglob("*.py"):
+        for importado in importados_por(arquivo):
+            raiz = importado.split(".")[0]
+            assert raiz not in INTERFACE, f"{pacote}/{arquivo.name} importa {importado}"
+            assert importado != "core.plugin_manager", (
+                f"{pacote}/{arquivo.name} importa o motor de plugins"
+            )
+
+
+def test_so_as_fontes_da_analise_conhecem_o_banco():
+    for arquivo in (SRC / "analytics").rglob("*.py"):
+        if arquivo.name == "fontes.py":
+            continue
+        assert "database" not in importados_por(arquivo), (
+            f"analytics/{arquivo.name} devia pedir os dados a fontes.py"
+        )
+
+
+def test_a_politica_de_tarefas_vive_num_sitio_so():
+    """Quem decide o que a sessão vê é o serviço, não a interface."""
+    for arquivo in modulos_de(SRC):
+        if arquivo.name in {"tarefas_servico.py", "database.py", "main.py"}:
+            continue
+        importados = importados_por(arquivo)
+        assert "database" not in importados, (
+            f"{arquivo.name} fala com o banco diretamente; use tarefas_servico."
+        )
+
+
+# ============================================================== PLUGINS
+
+
+def test_nenhum_plugin_fura_o_contrato():
+    """Tudo o que um plugin usa da aplicação chega pelo ContextoPlugin."""
+    proibidos = {"database", "gui", "core.plugin_manager", "tarefas_servico"}
+    for manifesto in PLUGINS.glob("*/plugin.json"):
+        for arquivo in manifesto.parent.rglob("*.py"):
+            importados = importados_por(arquivo)
+            for proibido in proibidos:
+                assert proibido not in importados, (
+                    f"o plugin {manifesto.parent.name} importa {proibido}"
+                )
+
+
+def test_os_plugins_nao_dependem_uns_dos_outros():
+    nomes = {pasta.name for pasta in PLUGINS.iterdir() if pasta.is_dir()}
+    for pasta in PLUGINS.iterdir():
+        if not pasta.is_dir():
+            continue
+        for arquivo in pasta.rglob("*.py"):
+            for importado in importados_por(arquivo):
+                raiz = importado.split(".")[0]
+                assert raiz not in nomes - {pasta.name}, (
+                    f"o plugin {pasta.name} importa o plugin {raiz}"
+                )
+
+
+# ====================================================== DOCUMENTOS FIÉIS
+
+
+@pytest.fixture(scope="module")
+def classificacao() -> str:
+    return (ARQUITETURA / "CLASSIFICACAO.md").read_text(encoding="utf-8")
+
+
+def test_a_classificacao_cobre_tudo_o_que_existe(classificacao):
+    """O documento de classificação não pode ficar para trás do código."""
+    pacotes = [p.name for p in SRC.iterdir() if p.is_dir() and p.name != "__pycache__"]
+    for pacote in pacotes:
+        assert pacote in classificacao, f"{pacote}/ não está classificado."
+
+    for pasta in PLUGINS.iterdir():
+        if pasta.is_dir():
+            assert pasta.name in classificacao, f"o plugin {pasta.name} não está classificado."
+
+
+def test_cada_adr_tem_decisao_e_consequencias():
+    adrs = sorted(ARQUITETURA.glob("ADR-*.md"))
+    assert len(adrs) >= 4, "as decisões de arquitetura vivem em ADRs."
+    for adr in adrs:
+        texto = adr.read_text(encoding="utf-8")
+        assert "## Decisão" in texto, f"{adr.name} não diz o que foi decidido."
+        assert "## Consequências" in texto or "## Consequência" in texto, (
+            f"{adr.name} não diz o que isso custa."
+        )

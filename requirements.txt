@@ -1,0 +1,9 @@
+# Dependências de execução.
+#
+# A aplicação usa apenas a biblioteca padrão do Python (tkinter, sqlite3, json,
+# zipfile, logging), de propósito: mantém o executável pequeno e a instalação
+# sem compilação nativa.
+#
+# Requer Python 3.10 ou superior.
+#
+# Para desenvolvimento e empacotamento, ver requirements-dev.txt.

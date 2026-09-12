@@ -1,0 +1,21 @@
+{
+  "aba": "Actualizaciones",
+  "titulo_aba": "Actualizaciones",
+  "versao_atual": "Versión instalada: {versao}",
+  "verificar_agora": "Comprobar ahora",
+  "abrir_pagina": "Abrir página de la versión",
+  "permitir_verificacao": "Permitir consultar internet para saber si hay versiones nuevas",
+  "verificar_ao_arrancar": "Comprobar automáticamente al abrir el programa",
+  "pedir_consentimento": "¿Desea que el programa compruebe si hay versiones nuevas?\n\nEsto contacta con:\n{origem}\n\nNo se descarga ni instala nada sin su autorización. Puede cambiarlo cuando quiera en la pestaña Actualizaciones.",
+  "verificacao_desligada": "Comprobación de actualizaciones desactivada.",
+  "a_verificar": "Comprobando…",
+  "nunca_verificado": "Todavía no se ha hecho ninguna comprobación.",
+  "ultima_verificacao": "Última comprobación: {quando}",
+  "esta_atualizado": "Está en la versión más reciente ({versao}).",
+  "ha_novidade": "Existe la versión {versao}. Tiene instalada la {atual}.",
+  "falha_ao_verificar": "No se pudo comprobar ahora. Inténtelo más tarde.",
+  "resposta_inesperada": "El origen respondió algo que no es una versión.",
+  "proposta": "Hay una versión más reciente.\n\nInstalada: {atual}\nDisponible: {versao}\n\n{notas}\n\n¿Abrir la página oficial para descargarla?",
+  "sem_notas": "(sin notas de versión)",
+  "adiado": "Se queda en la {versao}. Puede actualizar cuando quiera desde esta pestaña."
+}

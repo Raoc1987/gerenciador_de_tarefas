@@ -1,0 +1,21 @@
+{
+  "aba": "Updates",
+  "titulo_aba": "Updates",
+  "versao_atual": "Installed version: {versao}",
+  "verificar_agora": "Check now",
+  "abrir_pagina": "Open release page",
+  "permitir_verificacao": "Allow checking the internet for new versions",
+  "verificar_ao_arrancar": "Check automatically when the program starts",
+  "pedir_consentimento": "Should the program check for new versions?\n\nThis contacts:\n{origem}\n\nNothing is downloaded or installed without your approval. You can change this any time in the Updates tab.",
+  "verificacao_desligada": "Update checking is off.",
+  "a_verificar": "Checking…",
+  "nunca_verificado": "No check has been made yet.",
+  "ultima_verificacao": "Last check: {quando}",
+  "esta_atualizado": "You are on the latest version ({versao}).",
+  "ha_novidade": "Version {versao} is available. You have {atual}.",
+  "falha_ao_verificar": "Could not check right now. Try again later.",
+  "resposta_inesperada": "The source replied with something that is not a version.",
+  "proposta": "A newer version is available.\n\nInstalled: {atual}\nAvailable: {versao}\n\n{notas}\n\nOpen the official page to download it?",
+  "sem_notas": "(no release notes)",
+  "adiado": "Staying on {versao}. You can update whenever you want from this tab."
+}

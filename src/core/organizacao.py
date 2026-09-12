@@ -1,0 +1,410 @@
+"""Estrutura da organização: quem está sob quem.
+
+Permissões por âmbito, propriedade de dados e multiempresa dependem todas de
+saber onde cada pessoa está. É por isso que isto é Core e não um módulo: não
+serve um domínio, serve todos.
+
+**Uma árvore só.** Não há uma tabela para empresas, outra para departamentos e
+outra para equipas. Há nós com um ``tipo``, e um nó tem um pai. As empresas não
+são todas iguais — há divisões, regiões, filiais, turnos — e com uma tabela por
+nível cada formato novo seria uma migração no banco de toda a gente. Aqui é uma
+linha. E a travessia escreve-se uma vez em vez de três.
+
+As regras que este módulo garante:
+
+* uma empresa é uma raiz; tudo o resto tem de ter um pai;
+* dois irmãos não podem ter o mesmo nome;
+* nenhuma unidade pode ficar debaixo de si própria, direta ou indiretamente;
+* uma unidade com conteúdo não desaparece por engano.
+
+Quem não usa estrutura nenhuma não tem de a criar: a tabela vazia é um estado
+válido, e o resto da aplicação funciona sem ela.
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from datetime import datetime
+from enum import Enum
+from typing import List, Optional
+
+from core import eventos
+from core.log import obter_logger
+
+logger = obter_logger(__name__)
+
+#: Separador usado ao escrever um caminho legível.
+SEPARADOR_CAMINHO = " > "
+
+
+class TipoUnidade(str, Enum):
+    """O que uma unidade é.
+
+    O tipo é descritivo: a estrutura vive na relação pai/filho, não aqui. Só
+    :attr:`EMPRESA` tem uma regra própria — é raiz.
+    """
+
+    EMPRESA = "empresa"
+    DEPARTAMENTO = "departamento"
+    EQUIPA = "equipa"
+
+
+# --------------------------------------------------------------------- erros
+
+
+class OrganizacaoError(Exception):
+    """Erro base da estrutura da organização."""
+
+    chave_mensagem = "organizacao_erro"
+
+
+class UnidadeNaoEncontradaError(OrganizacaoError):
+    """A unidade indicada não existe."""
+
+    chave_mensagem = "unidade_nao_encontrada"
+
+
+class NomeDuplicadoError(OrganizacaoError):
+    """Já existe uma unidade com esse nome no mesmo sítio."""
+
+    chave_mensagem = "unidade_nome_duplicado"
+
+
+class EstruturaInvalidaError(OrganizacaoError):
+    """A relação pedida não é possível: uma empresa com pai, ou um ciclo."""
+
+    chave_mensagem = "unidade_estrutura_invalida"
+
+
+class UnidadeComConteudoError(OrganizacaoError):
+    """A unidade tem sub-unidades e não pode ser removida assim."""
+
+    chave_mensagem = "unidade_com_conteudo"
+
+
+# -------------------------------------------------------------------- modelo
+
+
+@dataclass(frozen=True)
+class Unidade:
+    """Um nó da estrutura."""
+
+    id: int
+    nome: str
+    tipo: TipoUnidade
+    pai_id: Optional[int]
+    ativa: bool
+    criada_em: str
+
+    @property
+    def e_raiz(self) -> bool:
+        """Se não tem nada acima dela."""
+        return self.pai_id is None
+
+
+_COLUNAS = "id, nome, tipo, pai_id, ativa, criada_em"
+
+
+def _para_unidade(linha) -> Unidade:
+    return Unidade(
+        id=linha[0],
+        nome=linha[1],
+        tipo=TipoUnidade(linha[2]),
+        pai_id=linha[3],
+        ativa=bool(linha[4]),
+        criada_em=linha[5],
+    )
+
+
+def _conectar():
+    import database
+
+    database.criar_tabela()
+    return database.conectar()
+
+
+# -------------------------------------------------------------------- leitura
+
+
+def obter(unidade_id: int) -> Optional[Unidade]:
+    """Uma unidade pelo id, ou ``None``."""
+    with _conectar() as conexao:
+        linha = conexao.execute(
+            f"SELECT {_COLUNAS} FROM unidades WHERE id = ?", (unidade_id,)
+        ).fetchone()
+    return _para_unidade(linha) if linha else None
+
+
+def exigir(unidade_id: int) -> Unidade:
+    """A unidade, ou :class:`UnidadeNaoEncontradaError`."""
+    unidade = obter(unidade_id)
+    if unidade is None:
+        raise UnidadeNaoEncontradaError(f"Unidade {unidade_id} não existe.")
+    return unidade
+
+
+def listar(incluir_inativas: bool = False) -> List[Unidade]:
+    """Toda a estrutura, dos pais para os filhos e por nome."""
+    consulta = f"SELECT {_COLUNAS} FROM unidades"
+    if not incluir_inativas:
+        consulta += " WHERE ativa = 1"
+    consulta += " ORDER BY COALESCE(pai_id, 0), nome COLLATE NOCASE"
+    with _conectar() as conexao:
+        return [_para_unidade(linha) for linha in conexao.execute(consulta)]
+
+
+def raizes(incluir_inativas: bool = False) -> List[Unidade]:
+    """As unidades sem pai — tipicamente as empresas."""
+    return [u for u in listar(incluir_inativas) if u.e_raiz]
+
+
+def filhos(unidade_id: int, incluir_inativas: bool = False) -> List[Unidade]:
+    """Os filhos diretos, por nome."""
+    consulta = f"SELECT {_COLUNAS} FROM unidades WHERE pai_id = ?"
+    if not incluir_inativas:
+        consulta += " AND ativa = 1"
+    consulta += " ORDER BY nome COLLATE NOCASE"
+    with _conectar() as conexao:
+        return [
+            _para_unidade(linha) for linha in conexao.execute(consulta, (unidade_id,))
+        ]
+
+
+def descendentes(
+    unidade_id: int, incluir_propria: bool = True, incluir_inativas: bool = False
+) -> List[Unidade]:
+    """A sub-árvore inteira, a qualquer profundidade.
+
+    É a pergunta que as permissões por âmbito fazem: *o que é que esta pessoa
+    alcança a partir daqui?* Resolvida no banco, numa consulta, para o custo
+    não crescer com o tamanho da empresa.
+    """
+    consulta = f"""
+        WITH RECURSIVE arvore(id) AS (
+            SELECT id FROM unidades WHERE id = ?
+            UNION ALL
+            SELECT u.id FROM unidades u JOIN arvore a ON u.pai_id = a.id
+        )
+        SELECT {_COLUNAS} FROM unidades
+        WHERE id IN (SELECT id FROM arvore)
+    """
+    parametros: List = [unidade_id]
+    if not incluir_propria:
+        consulta += " AND id <> ?"
+        parametros.append(unidade_id)
+    if not incluir_inativas:
+        consulta += " AND ativa = 1"
+    consulta += " ORDER BY COALESCE(pai_id, 0), nome COLLATE NOCASE"
+
+    with _conectar() as conexao:
+        return [_para_unidade(linha) for linha in conexao.execute(consulta, parametros)]
+
+
+def ancestrais(unidade_id: int) -> List[Unidade]:
+    """Da raiz até ao pai, sem incluir a própria unidade."""
+    cadeia: List[Unidade] = []
+    atual = obter(unidade_id)
+    vistos = set()
+    while atual is not None and atual.pai_id is not None:
+        if atual.pai_id in vistos:  # pragma: no cover - defensivo
+            logger.error("Ciclo detetado acima da unidade %s.", unidade_id)
+            break
+        vistos.add(atual.pai_id)
+        atual = obter(atual.pai_id)
+        if atual is not None:
+            cadeia.append(atual)
+    return list(reversed(cadeia))
+
+
+def caminho(unidade_id: int) -> str:
+    """O caminho legível, ex.: ``"Acme > Engenharia > Plataforma"``."""
+    unidade = obter(unidade_id)
+    if unidade is None:
+        return ""
+    nomes = [u.nome for u in ancestrais(unidade_id)] + [unidade.nome]
+    return SEPARADOR_CAMINHO.join(nomes)
+
+
+def empresa_de(unidade_id: int) -> Optional[Unidade]:
+    """A raiz a que esta unidade pertence."""
+    unidade = obter(unidade_id)
+    if unidade is None:
+        return None
+    if unidade.e_raiz:
+        return unidade
+    cadeia = ancestrais(unidade_id)
+    return cadeia[0] if cadeia else None
+
+
+def esta_sob(unidade_id: int, ancestral_id: int) -> bool:
+    """Se ``unidade_id`` está em qualquer nível abaixo de ``ancestral_id``.
+
+    Uma unidade está sob si própria: quem manda numa unidade manda nela.
+    """
+    if unidade_id == ancestral_id:
+        return True
+    return any(u.id == ancestral_id for u in ancestrais(unidade_id))
+
+
+# -------------------------------------------------------------------- escrita
+
+
+def _validar_lugar(tipo: TipoUnidade, pai_id: Optional[int]) -> None:
+    if tipo == TipoUnidade.EMPRESA:
+        if pai_id is not None:
+            raise EstruturaInvalidaError("Uma empresa não tem unidade acima dela.")
+        return
+    if pai_id is None:
+        raise EstruturaInvalidaError(
+            f"Uma unidade do tipo {tipo.value!r} tem de pertencer a alguma coisa."
+        )
+    exigir(pai_id)
+
+
+def _exigir_nome_livre(
+    nome: str, pai_id: Optional[int], excluir: Optional[int] = None
+) -> None:
+    """Dois irmãos com o mesmo nome tornam a estrutura ilegível."""
+    parametros: List = []
+    if pai_id is None:
+        consulta = "SELECT 1 FROM unidades WHERE pai_id IS NULL"
+    else:
+        consulta = "SELECT 1 FROM unidades WHERE pai_id = ?"
+        parametros.append(pai_id)
+    consulta += " AND nome = ? COLLATE NOCASE"
+    parametros.append(nome)
+    if excluir is not None:
+        consulta += " AND id <> ?"
+        parametros.append(excluir)
+
+    with _conectar() as conexao:
+        if conexao.execute(consulta, parametros).fetchone():
+            raise NomeDuplicadoError(f"Já existe {nome!r} neste sítio.")
+
+
+def criar(
+    nome: str,
+    tipo: TipoUnidade = TipoUnidade.DEPARTAMENTO,
+    pai_id: Optional[int] = None,
+) -> Unidade:
+    """Cria uma unidade.
+
+    Raises:
+        ValueError: se o nome for vazio.
+        EstruturaInvalidaError: empresa com pai, ou sub-unidade sem pai.
+        NomeDuplicadoError: se já existir um irmão com o mesmo nome.
+    """
+    nome = (nome or "").strip()
+    if not nome:
+        raise ValueError("A unidade precisa de um nome.")
+    tipo = TipoUnidade(tipo)
+    _validar_lugar(tipo, pai_id)
+    _exigir_nome_livre(nome, pai_id)
+
+    agora = datetime.now().isoformat(timespec="seconds")
+    with _conectar() as conexao:
+        cursor = conexao.execute(
+            "INSERT INTO unidades (nome, tipo, pai_id, ativa, criada_em) "
+            "VALUES (?, ?, ?, 1, ?)",
+            (nome, tipo.value, pai_id, agora),
+        )
+        novo_id = cursor.lastrowid
+
+    logger.info("Unidade criada: %s (%s)", nome, tipo.value)
+    eventos.publicar(
+        eventos.UNIDADE_CRIADA,
+        origem="organizacao",
+        id=novo_id,
+        unidade=nome,
+        tipo=tipo.value,
+    )
+    return exigir(novo_id)
+
+
+def renomear(unidade_id: int, nome: str) -> Unidade:
+    """Muda o nome, mantendo o lugar."""
+    nome = (nome or "").strip()
+    if not nome:
+        raise ValueError("A unidade precisa de um nome.")
+    unidade = exigir(unidade_id)
+    _exigir_nome_livre(nome, unidade.pai_id, excluir=unidade_id)
+
+    with _conectar() as conexao:
+        conexao.execute("UPDATE unidades SET nome = ? WHERE id = ?", (nome, unidade_id))
+    eventos.publicar(
+        eventos.UNIDADE_ALTERADA, origem="organizacao", id=unidade_id, unidade=nome
+    )
+    return exigir(unidade_id)
+
+
+def mover(unidade_id: int, novo_pai_id: Optional[int]) -> Unidade:
+    """Muda a unidade de lugar, com a sub-árvore inteira atrás dela.
+
+    Raises:
+        EstruturaInvalidaError: se o destino estiver dentro da própria
+            sub-árvore — uma unidade não pode ficar debaixo de si própria.
+    """
+    unidade = exigir(unidade_id)
+    _validar_lugar(unidade.tipo, novo_pai_id)
+
+    if novo_pai_id is not None:
+        dentro = {u.id for u in descendentes(unidade_id, incluir_inativas=True)}
+        if novo_pai_id in dentro:
+            raise EstruturaInvalidaError(
+                "Uma unidade não pode passar a estar debaixo de si própria."
+            )
+
+    _exigir_nome_livre(unidade.nome, novo_pai_id, excluir=unidade_id)
+    with _conectar() as conexao:
+        conexao.execute(
+            "UPDATE unidades SET pai_id = ? WHERE id = ?", (novo_pai_id, unidade_id)
+        )
+    logger.info("Unidade %s movida para %s.", unidade_id, novo_pai_id)
+    eventos.publicar(
+        eventos.UNIDADE_ALTERADA,
+        origem="organizacao",
+        id=unidade_id,
+        pai_id=novo_pai_id,
+    )
+    return exigir(unidade_id)
+
+
+def definir_ativa(unidade_id: int, ativa: bool = True) -> Unidade:
+    """Desativa (ou reativa) uma unidade sem apagar o histórico.
+
+    Uma equipa que deixou de existir não devia desaparecer dos registos do que
+    fez. Desativar é a resposta certa quase sempre; :func:`remover` é para
+    quando a unidade foi um engano.
+    """
+    exigir(unidade_id)
+    with _conectar() as conexao:
+        conexao.execute(
+            "UPDATE unidades SET ativa = ? WHERE id = ?",
+            (1 if ativa else 0, unidade_id),
+        )
+    eventos.publicar(
+        eventos.UNIDADE_ALTERADA, origem="organizacao", id=unidade_id, ativa=ativa
+    )
+    return exigir(unidade_id)
+
+
+def remover(unidade_id: int) -> None:
+    """Apaga uma unidade vazia.
+
+    Raises:
+        UnidadeComConteudoError: se tiver sub-unidades. Apagar em cascata a
+            estrutura de uma empresa nunca é o que alguém queria fazer num
+            clique; mova ou desative primeiro.
+    """
+    exigir(unidade_id)
+    restantes = filhos(unidade_id, incluir_inativas=True)
+    if restantes:
+        raise UnidadeComConteudoError(
+            f"A unidade tem {len(restantes)} sub-unidade(s). "
+            "Mova-as ou remova-as primeiro."
+        )
+
+    with _conectar() as conexao:
+        conexao.execute("DELETE FROM unidades WHERE id = ?", (unidade_id,))
+    logger.info("Unidade removida: %s", unidade_id)
+    eventos.publicar(eventos.UNIDADE_REMOVIDA, origem="organizacao", id=unidade_id)

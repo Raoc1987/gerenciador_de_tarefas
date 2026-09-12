@@ -1,2 +1,14 @@
 __pycache__/
+*.pyc
 tarefas.db
+
+# Artefatos de build
+build/
+dist/
+*.spec.bak
+
+# Testes
+.pytest_cache/
+
+# Instalador
+installer/Output/

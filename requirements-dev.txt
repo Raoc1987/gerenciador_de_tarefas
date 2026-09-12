@@ -1,0 +1,13 @@
+# Dependências de desenvolvimento, testes e empacotamento.
+-r requirements.txt
+
+pytest>=8.0
+pyinstaller>=6.10
+
+# Só para VALIDAR nos testes o XLSX e o PDF que escrevemos à mão.
+# Não entram no executável — ver docs/architecture/ADR-0002.
+openpyxl>=3.1
+pypdf>=4.0
+
+# Só para regenerar assets/icon.ico (tools/gerar_icone.py).
+pillow>=10.0

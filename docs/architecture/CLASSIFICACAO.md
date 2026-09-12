@@ -32,6 +32,7 @@ interface) · **Module** (domínio de negócio, como plugin) · **Plugin**
 | Calendar Integration | Plugin | `plugins/available/calendar/` |
 | Verificação de atualizações | Plugin | `plugins/available/atualizacoes/` |
 | **Estoque** (inventário) | **Module** | `plugins/available/estoque/` |
+| **Calculadora** (simples, científica, conversões, financeira) | **Plugin** | `plugins/available/calculadora/` |
 | Permissões trazidas por um módulo | Core (contrato) | `core/permissoes.py`, `core/plugin_api.py` |
 
 ## O que foi proposto
@@ -75,6 +76,22 @@ o contrato só aceitava as permissões do núcleo. A resposta certa era melhorar
 o contrato, não abrir uma exceção (ADR-0004). Um módulo passa a poder
 declarar permissões **no seu próprio espaço de nomes** — o pior que consegue
 conceder é acesso aos seus próprios dados.
+
+### Porque é que a Calculadora é Plugin e não Module
+
+As quatro perguntas do ADR-0004, respondidas antes de escrever: nenhum módulo
+precisa dela (não é Core); o produto funciona sem ela (não é Core); só calcula,
+não decide (não é Agent); e não tem domínio de negócio nem dados de ninguém —
+é uma ferramenta, não um Module como o Estoque.
+
+Não pede **nenhuma** permissão e não traz nenhuma. A única coisa que guarda é
+a preferência de graus/radianos, na sua própria configuração. Desinstalar não
+deixa nada.
+
+Duas fronteiras deliberadas: **sem `eval()`**, porque uma caixa de texto ligada
+ao `eval` numa aplicação com dados de empresa é um buraco por onde entra tudo;
+e **sem moedas**, porque taxas de câmbio exigem rede e um fornecedor, e uma
+taxa gravada no código daria um número errado com ar de certo.
 
 ### Fica em espera — e porquê
 

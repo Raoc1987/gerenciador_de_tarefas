@@ -1,0 +1,10 @@
+{
+  "id": "calculadora",
+  "name": "Calculadora",
+  "version": "1.0.0",
+  "author": "Gerenciador de Tarefas",
+  "description": "Calculadora simples, científica, de conversões e financeira. Não acede a nenhum dos seus dados.",
+  "min_app_version": "1.0.0",
+  "entry_point": "plugin.py",
+  "permissions": []
+}

@@ -17,6 +17,7 @@ from dashboard_ui import PainelDashboard
 import tarefas_servico
 from backup_ui import JanelaBackup
 from funcionalidades_ui import JanelaFuncionalidades
+from workflow_ui import JanelaAutomacoes
 from organizacao_ui import JanelaOrganizacao
 from language_manager import (
     IDIOMAS_SUPORTADOS,
@@ -263,6 +264,9 @@ def criar_janela(raiz: tk.Tk | None = None) -> tk.Tk:
     def abrir_funcionalidades():
         JanelaFuncionalidades(app)
 
+    def abrir_automacoes():
+        JanelaAutomacoes(app)
+
     def arrancar_plugins():
         """Semeia os plugins embutidos e ativa os que o utilizador deixou ligados."""
         try:
@@ -311,6 +315,9 @@ def criar_janela(raiz: tk.Tk | None = None) -> tk.Tk:
             )
             configuracoes.add_command(
                 label=carregar_texto("backup") + "...", command=abrir_backup
+            )
+            configuracoes.add_command(
+                label=carregar_texto("automacoes") + "...", command=abrir_automacoes
             )
             configuracoes.add_command(
                 label=carregar_texto("funcionalidades") + "...",

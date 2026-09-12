@@ -164,15 +164,82 @@ def test_o_motor_de_automacao_nao_conhece_dominios():
                 assert raiz != "database", f"workflow/{arquivo.name} importa database"
 
 
+#: O que só :mod:`tarefas_servico` pode fazer ao armazenamento.
+FUNCOES_DE_TAREFAS = {
+    "adicionar_tarefa", "buscar_tarefas", "buscar_tarefas_completas",
+    "tarefas_por_data", "obter_tarefa", "concluir_tarefa", "remover_tarefa",
+    "dono_de", "unidade_de",
+}
+
+#: Quem pode mexer nas tarefas: a política, o próprio armazenamento, e o
+#: arranque da aplicação (que só cria o esquema).
+PODEM_TOCAR_EM_TAREFAS = {"tarefas_servico.py", "database.py", "main.py"}
+
+
 def test_a_politica_de_tarefas_vive_num_sitio_so():
-    """Quem decide o que a sessão vê é o serviço, não a interface."""
+    """Quem decide o que a sessão vê é o serviço, não a interface.
+
+    A regra é sobre as **tarefas**, não sobre o armazenamento em geral: um
+    serviço que guarda o seu próprio estado numa tabela sua não está a furar
+    nada. O que não pode é ler ou escrever tarefas por fora, porque aí saltava
+    a visibilidade por dono e por unidade.
+
+    Duas maneiras de furar, e as duas são verificadas: chamar as funções de
+    tarefas do armazenamento, ou escrever SQL contra a tabela.
+    """
     for arquivo in modulos_de(SRC):
-        if arquivo.name in {"tarefas_servico.py", "database.py", "main.py"}:
+        if arquivo.name in PODEM_TOCAR_EM_TAREFAS:
             continue
-        importados = importados_por(arquivo)
-        assert "database" not in importados, (
-            f"{arquivo.name} fala com o banco diretamente; use tarefas_servico."
-        )
+        codigo = arquivo.read_text(encoding="utf-8")
+        arvore = ast.parse(codigo)
+
+        for no in ast.walk(arvore):
+            if isinstance(no, ast.Attribute) and no.attr in FUNCOES_DE_TAREFAS:
+                origem = getattr(no.value, "id", "")
+                assert origem != "database", (
+                    f"{arquivo.name} chama database.{no.attr}; use tarefas_servico."
+                )
+            elif isinstance(no, ast.ImportFrom) and no.module == "database":
+                trazidos = {alias.name for alias in no.names} & FUNCOES_DE_TAREFAS
+                assert not trazidos, (
+                    f"{arquivo.name} importa {sorted(trazidos)} de database."
+                )
+            elif isinstance(no, ast.Constant) and isinstance(no.value, str):
+                sql = " ".join(no.value.lower().split())
+                for padrao in ("from tarefas", "into tarefas", "update tarefas"):
+                    assert padrao not in sql, (
+                        f"{arquivo.name} consulta a tabela tarefas diretamente."
+                    )
+
+
+def test_a_regra_das_tarefas_apanharia_uma_fuga():
+    """O teste acima só vale se falhar quando alguém fura mesmo.
+
+    Verificado aqui em vez de acreditado: as duas maneiras de chegar às
+    tarefas por fora têm de ser detetadas.
+    """
+    pela_funcao = [
+        "import database",
+        "def ler():",
+        "    return database.buscar_tarefas()",
+    ]
+    pelo_sql = [
+        "import database",
+        "def ler():",
+        "    with database.conectar() as c:",
+        "        return c.execute('SELECT id FROM tarefas').fetchall()",
+    ]
+
+    for fuga in (pela_funcao, pelo_sql):
+        arvore = ast.parse(chr(10).join(fuga))
+        apanhado = False
+        for no in ast.walk(arvore):
+            if isinstance(no, ast.Attribute) and no.attr in FUNCOES_DE_TAREFAS:
+                apanhado = True
+            elif isinstance(no, ast.Constant) and isinstance(no.value, str):
+                if "from tarefas" in " ".join(no.value.lower().split()):
+                    apanhado = True
+        assert apanhado, f"esta fuga passava despercebida: {fuga[-1]!r}"
 
 
 # ============================================================== PLUGINS

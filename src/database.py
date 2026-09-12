@@ -160,6 +160,20 @@ _MIGRACOES: List[Sequence[str]] = [
         """,
         "CREATE INDEX IF NOT EXISTS idx_regras_evento ON regras (evento)",
     ),
+    # v10 — o que a vigilância já avisou (ver src/alertas.py).
+    #
+    # Sem isto, cada arranque voltaria a anunciar as mesmas conclusões, e uma
+    # regra ligada a elas criaria as mesmas tarefas outra vez. Um alerta que
+    # se repete é um alerta que se deixa de ler.
+    (
+        """
+        CREATE TABLE IF NOT EXISTS alertas_vistos (
+            chave     TEXT PRIMARY KEY,
+            nivel     TEXT NOT NULL,
+            visto_em  TEXT NOT NULL
+        )
+        """,
+    ),
 ]
 
 #: Colunas devolvidas por :func:`buscar_tarefas` — contrato estável de que a

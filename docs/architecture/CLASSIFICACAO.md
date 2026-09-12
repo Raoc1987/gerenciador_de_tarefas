@@ -28,6 +28,7 @@ interface) · **Module** (domínio de negócio, como plugin) · **Plugin**
 | Análise (métricas, séries, insights) | Service | `src/analytics/` |
 | Relatórios e exportação | Service | `src/reporting/` |
 | **Automação por regras** | **Service** | `src/workflow/` |
+| **Vigilância (análise -> alerta)** | **Service** | `src/alertas.py` |
 | Ações que a aplicação oferece às regras | Ligação | `src/automacoes.py` |
 | Tela das automações | UI | `src/workflow_ui.py` |
 | Gráficos | Service (UI) | `src/widgets/` |
@@ -54,7 +55,7 @@ Ordenado por **valor sobre custo**, não pela ordem em que foi proposto.
 | # | Bloco | Categoria | Nota honesta |
 |---|---|---|---|
 | 5 | KPI Engine (indicadores declarativos) | **Service** | Bom desenho. Só compensa quando houver mais do que um domínio a medir |
-| 1 | Decision Engine (insight → recomendação → ação) | **Service** | Metade existe (insights). A outra metade *é* o Workflow: fazer os dois juntos |
+| 1 | Decision Engine — ~~insight → recomendação → ação~~ | **feito** | A cadeia está fechada: a análise publica alertas, uma regra age. O que falta é a recomendação ser gerada em vez de escrita à mão na regra |
 | 12 | Pesquisa global | **Core** (registo) + UI | Cada módulo regista o que sabe pesquisar. Barato e muito visível |
 | 22 | Entitlement engine | **Core** | Licenciamento a sério. As feature flags já estão feitas; falta haver módulos que valha a pena licenciar |
 | 8 | Import Wizard | **Service** + UI | Muito útil a PMEs. Independente de tudo o resto |

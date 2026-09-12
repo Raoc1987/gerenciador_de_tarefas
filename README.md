@@ -233,7 +233,41 @@ PLUGINS                                   [+ Instalar Plugin]
 Desativar **não** desinstala, e o estado sobrevive ao reinício.
 
 
-### Automação por regras
+### Da análise ao alerta
+
+A análise sabia dizer que há tarefas atrasadas, que o ritmo caiu ou que um dia
+foge ao padrão — mas só o dizia a quem abrisse o painel. A vigilância
+(`src/alertas.py`) fecha o último elo:
+
+```
+tarefa -> evento -> métrica -> painel -> modelo -> previsão -> alerta -> regra -> ação
+```
+
+Publica `analise.alerta` e `analise.resolvido`. A partir daí uma regra pode
+agir, sem que a análise saiba que a automação existe.
+
+**O problema difícil aqui não é detetar: é não repetir.** "Há 15 tarefas
+atrasadas" continua verdade amanhã. Se cada avaliação anunciasse, uma regra
+ligada a ela criava a mesma tarefa todos os dias — e um alerta que se repete é
+um alerta que se deixa de ler. Por isso a vigilância lembra-se do que já disse:
+
+| Situação | O que acontece |
+|---|---|
+| Conclusão nova | É anunciada |
+| A mesma, na mesma gravidade | Silêncio — mesmo que os números mudem |
+| A gravidade **agrava** | Anunciada outra vez: atenção → crítico é notícia |
+| Melhora sem resolver | Silêncio |
+| Deixa de se aplicar | Anuncia-se que passou, e esquece |
+
+O estado é guardado no banco, não em memória: senão cada arranque anunciava
+tudo outra vez. Boas notícias não disparam automações — ficam no painel, que é
+onde se vai vê-las.
+
+Reavalia quando uma tarefa é criada, concluída, reaberta ou removida. É uma
+análise completa de cada vez: para o volume de uma aplicação de secretária
+chega bem, e se um dia não chegar, o sítio para tratar disso é aqui e só aqui.
+
+## Automação por regras
 
 **Quando** acontece X, **se** Y, **então** faz Z. É um Service: atravessa os
 módulos, não tem domínio próprio e não é um Agent — executa regras que uma

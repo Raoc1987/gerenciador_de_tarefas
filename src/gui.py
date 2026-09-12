@@ -4,6 +4,7 @@ import tkinter as tk
 from tkinter import messagebox, ttk
 
 from auditoria_ui import JanelaAuditoria
+import alertas
 import automacoes
 from core import auditoria, eventos, funcionalidades, permissoes
 from workflow import motor as workflow_motor
@@ -82,6 +83,9 @@ def criar_janela(raiz: tk.Tk | None = None) -> tk.Tk:
     # A automação depois dela: assim o que uma regra faz também fica na trilha.
     automacoes.registar_incluidas()
     workflow_motor.ativar()
+    # A vigilancia depois do motor: assim o que ela anuncia ja encontra as
+    # regras a ouvir.
+    alertas.ativar()
     eventos.publicar(eventos.APP_INICIADA, origem="gui")
 
     app = raiz if raiz is not None else tk.Tk()

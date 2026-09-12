@@ -46,10 +46,12 @@ def dados_isolados(tmp_path, monkeypatch):
 
 def _limpar_automacao() -> None:
     """O motor e o catálogo de ações são globais, como o barramento."""
+    import alertas
     from workflow import acoes, motor
 
     motor.reiniciar()
     acoes.limpar()
+    alertas.desativar()
 
 
 @pytest.fixture

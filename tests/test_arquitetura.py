@@ -121,7 +121,7 @@ def test_o_core_nao_depende_da_analise_nem_dos_relatorios():
             )
 
 
-@pytest.mark.parametrize("pacote", ["analytics", "reporting"])
+@pytest.mark.parametrize("pacote", ["analytics", "reporting", "workflow"])
 def test_as_camadas_de_aplicacao_nao_tocam_na_interface(pacote):
     """ADR-0003: têm de servir a janela, um agendamento ou um plugin por igual.
 
@@ -143,6 +143,25 @@ def test_so_as_fontes_da_analise_conhecem_o_banco():
         assert "database" not in importados_por(arquivo), (
             f"analytics/{arquivo.name} devia pedir os dados a fontes.py"
         )
+
+
+def test_o_motor_de_automacao_nao_conhece_dominios():
+    """Se o motor souber o que é uma tarefa, deixou de ser um motor.
+
+    O que ele executa são ações que outros registaram. Conhecer um domínio
+    seria o primeiro passo para se tornar o sítio onde todos se encontram —
+    um monólito com outro nome.
+    """
+    dominios = {"tarefas_servico", "analytics", "reporting", "organizacao"}
+    for arquivo in (SRC / "workflow").rglob("*.py"):
+        for importado in importados_por(arquivo):
+            raiz = importado.split(".")[0]
+            assert raiz not in dominios, f"workflow/{arquivo.name} importa {importado}"
+            # O armazenamento é infraestrutura, não um domínio — a auditoria e
+            # a organização também o usam. Mas só o repositório: o motor que
+            # soubesse ler o banco começaria a lê-lo para decidir.
+            if arquivo.name != "repositorio.py":
+                assert raiz != "database", f"workflow/{arquivo.name} importa database"
 
 
 def test_a_politica_de_tarefas_vive_num_sitio_so():

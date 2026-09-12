@@ -27,6 +27,8 @@ interface) · **Module** (domínio de negócio, como plugin) · **Plugin**
 | Regra de quem vê que tarefas | Service | `src/tarefas_servico.py` |
 | Análise (métricas, séries, insights) | Service | `src/analytics/` |
 | Relatórios e exportação | Service | `src/reporting/` |
+| **Automação por regras** | **Service** | `src/workflow/` |
+| Ações que a aplicação oferece às regras | Ligação | `src/automacoes.py` |
 | Gráficos | Service (UI) | `src/widgets/` |
 | Interface | UI | `src/*_ui.py`, `gui.py` |
 | Calendar Integration | Plugin | `plugins/available/calendar/` |
@@ -44,7 +46,6 @@ Ordenado por **valor sobre custo**, não pela ordem em que foi proposto.
 | # | Bloco | Categoria | Porquê agora | Depende de |
 |---|---|---|---|---|
 | 3 | ABAC (regras por atributo) | **Core** | O caso que mais pesava — "o gestor vê o seu departamento" — já está feito com a hierarquia. O que falta do ABAC é o caso geral: regras por atributo arbitrário | hierarquia |
-| 7 | Workflow Engine | **Service** | O diferencial que nomeou, e o barramento de eventos já dá a base. Nada de novo é preciso | eventos |
 | 4 | Auditoria com antes/depois | Core (extensão) | A trilha existe; falta o valor anterior e o novo | — |
 
 ### Faz-se depois, por esta ordem

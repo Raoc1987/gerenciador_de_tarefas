@@ -233,7 +233,49 @@ PLUGINS                                   [+ Instalar Plugin]
 Desativar **não** desinstala, e o estado sobrevive ao reinício.
 
 
-### Funcionalidades da instalação
+### Automação por regras
+
+**Quando** acontece X, **se** Y, **então** faz Z. É um Service: atravessa os
+módulos, não tem domínio próprio e não é um Agent — executa regras que uma
+pessoa escreveu, não decide nada.
+
+O motor **não conhece tarefas nem inventário**. Quem tem uma ação para
+oferecer regista-a; o motor liga o que aconteceu ao que fazer. É isso que
+permite a um módulo novo participar sem tocar no motor, e que impede o motor
+de se tornar o sítio onde todos os domínios se encontram.
+
+Exemplo real, com dois módulos que não se conhecem:
+
+> Quando `estoque.em_falta` **e** `saldo < 5` → criar a tarefa
+> `"Encomendar item {id} (restam {saldo})"`
+
+### O que impede uma regra de se comer a si própria
+
+"Quando uma tarefa é criada, cria uma tarefa" é fácil de escrever sem dar por
+isso, e sem defesa bloqueia a aplicação no primeiro disparo com o banco a
+encher. Três defesas, todas com teste:
+
+| | |
+|---|---|
+| **Profundidade máxima** | Uma cadeia de regras diferentes pára ao 5.º nível |
+| **Uma regra não se repete na mesma cadeia** | Apanha o ciclo A→B→A, que é o que passa despercebido |
+| **Reagir a `*` é recusado** | Ao guardar a regra: reagir a tudo inclui reagir ao que a própria regra provoca |
+
+Atingir um limite é dito em voz alta (evento e registo): parar em silêncio
+seria pior do que o ciclo, porque as regras deixavam de correr sem ninguém
+perceber porquê.
+
+Uma ação que falha é registada e as restantes continuam — uma automação
+partida não pode impedir alguém de criar uma tarefa. E a ação corre com as
+permissões de quem provocou o evento: **uma regra não é a forma de fazer por
+automação o que não se pode fazer à mão.**
+
+As condições são declarativas (campo, operador, valor) e o texto das ações é
+preenchido por substituição escrita à mão — não há `str.format`, que navegaria
+dentro dos objetos, nem `eval`. Uma regra guardada no banco é texto que alguém
+pode alterar, e texto alterável não deve virar código a correr.
+
+## Funcionalidades da instalação
 
 `Configurações → Funcionalidades` (administradores). Liga e desliga partes do
 produto **nesta instalação**.

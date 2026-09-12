@@ -4,7 +4,9 @@ import tkinter as tk
 from tkinter import messagebox, ttk
 
 from auditoria_ui import JanelaAuditoria
+import automacoes
 from core import auditoria, eventos, funcionalidades, permissoes
+from workflow import motor as workflow_motor
 from core.log import obter_logger
 from core.paths import caminho_recurso, diretorio_plugins_embutidos
 from core.plugin_manager import PluginManager
@@ -76,6 +78,9 @@ def criar_janela(raiz: tk.Tk | None = None) -> tk.Tk:
     restaurar_idioma_guardado()
     # A auditoria liga-se ao barramento antes de qualquer coisa acontecer.
     auditoria.ativar()
+    # A automação depois dela: assim o que uma regra faz também fica na trilha.
+    automacoes.registar_incluidas()
+    workflow_motor.ativar()
     eventos.publicar(eventos.APP_INICIADA, origem="gui")
 
     app = raiz if raiz is not None else tk.Tk()

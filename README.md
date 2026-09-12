@@ -400,6 +400,37 @@ Adiado para dentro de uma função, falha: o nome simples não fica reservado a
 ninguém, de propósito. Se ficasse, o primeiro plugin a carregar decidia o
 código que o segundo executa.
 
+### Permissões do próprio módulo
+
+Um módulo de negócio tem permissões que o núcleo não pode conhecer — não há
+`estoque.ler` no `Permissao` da aplicação, nem devia haver. O manifesto
+declara-as:
+
+```json
+"provides_permissions": {
+  "estoque.ler":     ["administrador", "gestor", "colaborador", "visualizador"],
+  "estoque.escrever": ["administrador", "gestor", "colaborador"]
+}
+```
+
+Passam a existir **enquanto o módulo estiver carregado**, e saem com ele.
+
+A regra de segurança é o espaço de nomes: um módulo só pode definir permissões
+com o seu próprio id à frente. O pior que consegue conceder é acesso aos
+**seus** dados — as tarefas, as contas e o sistema continuam a ser decisão de
+quem administra, e um manifesto que tente `tarefas.ver_todas` é recusado na
+instalação.
+
+Uma permissão que ninguém registou é negada a toda a gente, **incluindo ao
+administrador**: dizer que sim a um nome que não existe esconderia um erro de
+escrita de quem administra e mostrá-lo-ia só a quem não administra.
+
+```python
+if self.contexto.pode("estoque.escrever"):   # esconder o botão
+    ...
+self.contexto.exigir("estoque.escrever")     # ou recusar no serviço
+```
+
 ### Dados próprios
 
 Um módulo de negócio precisa de tabelas. Não as cria no banco da aplicação:

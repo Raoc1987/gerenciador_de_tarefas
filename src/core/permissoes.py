@@ -40,8 +40,11 @@ _CHAVE_UTILIZADOR = "utilizador"
 class PermissaoNegadaError(PermissionError):
     """A sessão atual não tem a permissão exigida."""
 
-    def __init__(self, permissao: "Permissao") -> None:
-        super().__init__(f"Permissão necessária: {permissao.value}")
+    def __init__(self, permissao) -> None:
+        # Também serve as permissões de módulos, que são nomes e não membros
+        # do enum: a mensagem é a mesma e quem apanha não tem de distinguir.
+        nome = getattr(permissao, "value", permissao)
+        super().__init__(f"Permissão necessária: {nome}")
         self.permissao = permissao
         self.chave_mensagem = "permissao_negada"
 
@@ -167,6 +170,72 @@ PAPEIS: Dict[str, Papel] = {
 PAPEL_PADRAO = "administrador"
 
 
+# ------------------------------------------------- permissões de um módulo
+
+#: Permissões que os módulos de negócio trazem consigo: ``{nome: {papéis}}``.
+#:
+#: O núcleo não conhece "estoque" nem "recursos humanos", e não devia. Um
+#: módulo declara as suas no manifesto e elas passam a existir enquanto ele
+#: estiver carregado.
+#:
+#: A regra de segurança é o espaço de nomes: um módulo só pode definir
+#: permissões com o seu próprio id à frente (``estoque.ler``). Assim o pior
+#: que consegue conceder é acesso aos **seus** dados — nunca às tarefas, às
+#: contas ou ao sistema, que continuam a ser decisão de quem administra.
+_DE_MODULOS: Dict[str, Dict[str, FrozenSet[str]]] = {}
+
+
+def registar_permissoes_de_modulo(
+    plugin_id: str, mapa: Dict[str, Iterable[str]]
+) -> None:
+    """Regista as permissões que um módulo traz, com os papéis que as têm.
+
+    Raises:
+        ValueError: se alguma permissão não estiver no espaço de nomes do
+            módulo, ou colidir com uma permissão do núcleo.
+    """
+    prefixo = f"{plugin_id}."
+    do_nucleo = {p.value for p in Permissao}
+    registo: Dict[str, FrozenSet[str]] = {}
+
+    for nome, papeis in (mapa or {}).items():
+        if not nome.startswith(prefixo):
+            raise ValueError(
+                f"O módulo {plugin_id!r} não pode definir {nome!r}: "
+                f"as suas permissões começam por {prefixo!r}."
+            )
+        if nome in do_nucleo:
+            raise ValueError(f"{nome!r} é uma permissão do núcleo.")
+        registo[nome] = frozenset(str(papel) for papel in papeis)
+
+    _DE_MODULOS[plugin_id] = registo
+    if registo:
+        logger.info("Permissões do módulo %s: %s", plugin_id, ", ".join(sorted(registo)))
+
+
+def esquecer_permissoes_de_modulo(plugin_id: str) -> None:
+    """Tira do registo as permissões de um módulo descarregado."""
+    _DE_MODULOS.pop(plugin_id, None)
+
+
+def limpar_permissoes_de_modulos() -> None:
+    """Esquece todas as permissões de módulos.
+
+    O registo é global, como o barramento e a sessão. Num processo novo está
+    vazio; nos testes tem de voltar a estar, senão um módulo carregado num
+    teste concede permissões no seguinte.
+    """
+    _DE_MODULOS.clear()
+
+
+def permissoes_de_modulos() -> Dict[str, FrozenSet[str]]:
+    """Todas as permissões de módulos atualmente registadas."""
+    juntas: Dict[str, FrozenSet[str]] = {}
+    for registo in _DE_MODULOS.values():
+        juntas.update(registo)
+    return juntas
+
+
 @dataclass(frozen=True)
 class Sessao:
     """Quem está a usar a aplicação neste momento."""
@@ -235,21 +304,40 @@ def terminar_sessao() -> None:
     _sessao = None
 
 
-def pode(permissao: Permissao) -> bool:
-    """Se a sessão atual tem a permissão."""
-    return sessao().pode(permissao)
+def pode(permissao) -> bool:
+    """Se a sessão atual tem a permissão.
+
+    Aceita uma :class:`Permissao` do núcleo ou o nome de uma permissão de
+    módulo (``"estoque.ler"``). Uma permissão de módulo que ninguém registou
+    é negada: ou o módulo não está carregado, ou o nome está errado — e nos
+    dois casos a resposta certa é não.
+    """
+    if isinstance(permissao, Permissao):
+        return sessao().pode(permissao)
+
+    papeis = permissoes_de_modulos().get(str(permissao))
+    if papeis is None:
+        # Não registada: ou o módulo não está carregado, ou o nome está
+        # errado. **Nem o administrador a tem** — dizer que sim a uma
+        # permissão que não existe esconderia um erro de escrita de quem
+        # administra e mostrá-lo-ia só a quem não administra.
+        return False
+
+    atual = sessao()
+    if Permissao.SISTEMA_ADMIN in atual.papel.permissoes:
+        return True
+    return atual.papel.nome in papeis
 
 
-def exigir(permissao: Permissao) -> None:
+def exigir(permissao) -> None:
     """Garante a permissão.
 
     Raises:
         PermissaoNegadaError: se a sessão não a tiver.
     """
     if not pode(permissao):
-        logger.warning(
-            "Permissão negada: %s (papel %s)", permissao.value, sessao().papel.nome
-        )
+        nome = permissao.value if isinstance(permissao, Permissao) else str(permissao)
+        logger.warning("Permissão negada: %s (papel %s)", nome, sessao().papel.nome)
         raise PermissaoNegadaError(permissao)
 
 

@@ -17,7 +17,7 @@ interface) · **Module** (domínio de negócio, como plugin) · **Plugin**
 | Permissões (RBAC) | Core | `core/permissoes.py` |
 | Funcionalidades da instalacao | Core | `core/funcionalidades.py` |
 | Contas e autenticação | Core | `core/utilizadores.py`, `core/seguranca.py` |
-| Auditoria | Core | `core/auditoria.py` |
+| Auditoria, com antes/depois | Core | `core/auditoria.py` |
 | Estrutura da organizacao | Core | `core/organizacao.py` |
 | Copia de seguranca e restauro | Core | `core/backup.py` |
 | Visibilidade por unidade | Service | `src/tarefas_servico.py` |
@@ -48,7 +48,6 @@ Ordenado por **valor sobre custo**, não pela ordem em que foi proposto.
 | # | Bloco | Categoria | Porquê agora | Depende de |
 |---|---|---|---|---|
 | 3 | ABAC (regras por atributo) | **Core** | O caso que mais pesava — "o gestor vê o seu departamento" — já está feito com a hierarquia. O que falta do ABAC é o caso geral: regras por atributo arbitrário | hierarquia |
-| 4 | Auditoria com antes/depois | Core (extensão) | A trilha existe; falta o valor anterior e o novo | — |
 
 ### Faz-se depois, por esta ordem
 

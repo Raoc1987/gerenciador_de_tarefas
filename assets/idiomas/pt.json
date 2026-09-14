@@ -277,5 +277,15 @@
   "op_comeca_com": "começa por",
   "op_existe": "existe",
   "op_vazio": "está vazio",
-  "auditoria_coluna_mudanca": "Mudança"
+  "auditoria_coluna_mudanca": "Mudança",
+  "pesquisa": "Pesquisar",
+  "pesquisa_ajuda": "Escreva pelo menos {minimo} letras. Procura nas tarefas, na estrutura e no que os módulos instalados souberem procurar.",
+  "pesquisa_encontrado": "Encontrado",
+  "pesquisa_contexto": "Onde / quando",
+  "pesquisa_resumo": "{total} resultado(s) em {fontes} sítio(s).",
+  "pesquisa_sem_resultados": "Nada encontrado para “{termo}”.",
+  "pesquisa_fonte_tarefas": "Tarefas",
+  "pesquisa_fonte_unidades": "Estrutura",
+  "pesquisa_fonte_contas": "Contas",
+  "pesquisa_fonte_regras": "Automações"
 }

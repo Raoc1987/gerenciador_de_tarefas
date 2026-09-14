@@ -28,6 +28,7 @@ interface) · **Module** (domínio de negócio, como plugin) · **Plugin**
 | Análise (métricas, séries, insights) | Service | `src/analytics/` |
 | Relatórios e exportação | Service | `src/reporting/` |
 | **Automação por regras** | **Service** | `src/regras/` |
+| **Pesquisa global** | **Service** | `src/pesquisa.py` |
 | **Vigilância (análise -> alerta)** | **Service** | `src/alertas.py` |
 | Ações que a aplicação oferece às regras | Ligação | `src/automacoes.py` |
 | Tela das automações | UI | `src/regras_ui.py` |
@@ -55,7 +56,7 @@ Ordenado por **valor sobre custo**, não pela ordem em que foi proposto.
 |---|---|---|---|
 | 5 | KPI Engine (indicadores declarativos) | **Service** | Bom desenho. Só compensa quando houver mais do que um domínio a medir |
 | 1 | Decision Engine — ~~insight → recomendação → ação~~ | **feito** | A cadeia está fechada: a análise publica alertas, uma regra age. O que falta é a recomendação ser gerada em vez de escrita à mão na regra |
-| 12 | Pesquisa global | **Core** (registo) + UI | Cada módulo regista o que sabe pesquisar. Barato e muito visível |
+| 12 | Pesquisa global | ~~Core~~ → **Service** | Feito. A classificação estava errada: um registo destes vive bem fora do núcleo, como o das ações já tinha mostrado, e o núcleo não precisava de crescer para isto existir |
 | 22 | Entitlement engine | **Core** | Licenciamento a sério. As feature flags já estão feitas; falta haver módulos que valha a pena licenciar |
 | 8 | Import Wizard | **Service** + UI | Muito útil a PMEs. Independente de tudo o resto |
 | 6 | OKR / metas | **Module** | Liga tarefas à estratégia; precisa do KPI Engine para não ser uma lista bonita |

@@ -277,5 +277,15 @@
   "op_comeca_com": "starts with",
   "op_existe": "exists",
   "op_vazio": "is empty",
-  "auditoria_coluna_mudanca": "Change"
+  "auditoria_coluna_mudanca": "Change",
+  "pesquisa": "Search",
+  "pesquisa_ajuda": "Type at least {minimo} letters. Searches tasks, the company structure, and whatever the installed modules know how to search.",
+  "pesquisa_encontrado": "Found",
+  "pesquisa_contexto": "Where / when",
+  "pesquisa_resumo": "{total} result(s) across {fontes} place(s).",
+  "pesquisa_sem_resultados": "Nothing found for “{termo}”.",
+  "pesquisa_fonte_tarefas": "Tasks",
+  "pesquisa_fonte_unidades": "Structure",
+  "pesquisa_fonte_contas": "Accounts",
+  "pesquisa_fonte_regras": "Automations"
 }

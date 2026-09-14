@@ -121,3 +121,25 @@ def test_nomes_das_permissoes_seguem_area_ponto_acao():
         assert permissao.value.count(".") == 1, permissao
         area, acao = permissao.value.split(".")
         assert area and acao
+
+
+def test_um_nome_do_nucleo_em_texto_vale_o_mesmo_que_o_enum():
+    """`pode("tarefas.ler")` tem de responder como `pode(Permissao.TAREFAS_LER)`.
+
+    As permissoes de modulo sao nomes em texto, e sem esta resolucao um nome
+    do nucleo escrito assim era tratado como um modulo nao registado -- negado
+    em silencio, ate a quem administra. Um "nao" sem razao e a pior resposta
+    que este modulo pode dar.
+    """
+    permissoes.definir_sessao("ana", "colaborador", persistir=False)
+    assert permissoes.pode("tarefas.ler") is permissoes.pode(Permissao.TAREFAS_LER) is True
+    assert (
+        permissoes.pode("utilizadores.gerir")
+        is permissoes.pode(Permissao.UTILIZADORES_GERIR)
+        is False
+    )
+
+
+def test_um_nome_que_nao_existe_continua_a_ser_negado():
+    permissoes.definir_sessao("ana", "administrador", persistir=False)
+    assert permissoes.pode("inventada.completamente") is False

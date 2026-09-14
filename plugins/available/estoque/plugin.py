@@ -266,7 +266,33 @@ class EstoquePlugin(Plugin):
         self.inventario = Inventario(self.contexto.dados)
         self.inventario.preparar()
         self.servico = ServicoEstoque(self.inventario, self.contexto)
+        self._declarar_indicadores()
         self.contexto.logger.info("Estoque pronto.")
+
+    def _declarar_indicadores(self) -> None:
+        """Põe dois números deste módulo no painel da aplicação.
+
+        O painel não sabe o que é um item de inventário. Declarar é tudo o
+        que este módulo faz — e sai do painel quando for desinstalado.
+        """
+        from indicadores import Valor
+
+        def em_inventario() -> Valor:
+            return Valor(len(self.servico.listar()), sufixo=" un")
+
+        def em_falta() -> Valor:
+            return Valor(len(self.servico.em_falta()))
+
+        self.contexto.registar_indicador(
+            "itens", em_inventario, "indicador_estoque_itens", permissao=LER
+        )
+        self.contexto.registar_indicador(
+            "em_falta",
+            em_falta,
+            "indicador_estoque_em_falta",
+            subir_e_bom=False,
+            permissao=LER,
+        )
 
     def ativar(self) -> None:
         self.contexto.ui.registrar_aba(

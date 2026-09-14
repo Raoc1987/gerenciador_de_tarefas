@@ -543,6 +543,35 @@ class ContextoPlugin:
 
             raise PermissaoNegadaError(permissao)
 
+    def registar_indicador(
+        self,
+        chave: str,
+        calcular,
+        chave_titulo: str = "",
+        subir_e_bom: bool = True,
+        permissao=None,
+    ):
+        """Declara um número que este módulo sabe medir, para o painel mostrar.
+
+        A chave é prefixada com o id do plugin automaticamente: dois módulos
+        que escolham "total" deixavam de se poder distinguir, e o último a
+        carregar apagava o outro sem aviso.
+
+        O indicador sai do painel quando o plugin é descarregado.
+        """
+        import indicadores
+
+        prefixo = f"{self.manifesto.id}."
+        nome = chave if str(chave).startswith(prefixo) else prefixo + str(chave)
+        return indicadores.registar(
+            nome,
+            calcular,
+            chave_titulo=chave_titulo,
+            subir_e_bom=subir_e_bom,
+            permissao=permissao,
+            dono=self.manifesto.id,
+        )
+
     def utilizador(self) -> str:
         """Quem está em sessão, para o módulo registar quem fez o quê."""
         from core import permissoes as _permissoes

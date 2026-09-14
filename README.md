@@ -233,7 +233,34 @@ PLUGINS                                   [+ Instalar Plugin]
 Desativar **não** desinstala, e o estado sobrevive ao reinício.
 
 
-### Pesquisa global (Ctrl+F)
+### Indicadores: cada módulo declara o que sabe medir
+
+O painel mostrava tarefas porque foi escrito para tarefas. Um módulo de
+negócio instalado não aparecia lá — e "a análise atravessa todo o produto"
+ficava por cumprir no sítio onde mais se nota.
+
+Agora cada parte da aplicação **declara** um indicador, e o painel mostra sem
+saber o que é. O Estoque declara os seus em três linhas:
+
+```python
+self.contexto.registar_indicador("itens", em_inventario, permissao=LER)
+self.contexto.registar_indicador("em_falta", contar_em_falta, subir_e_bom=False, permissao=LER)
+```
+
+A chave é prefixada com o id do plugin automaticamente — dois módulos que
+escolham "total" deixavam de se poder distinguir, e o último a carregar
+apagava o outro sem aviso. Os cartões **saem do painel quando o módulo é
+desinstalado**.
+
+Três regras que valem a pena:
+
+| | |
+|---|---|
+| Um indicador que rebenta é omitido | Uma divisão por zero num módulo não pode tapar os números de todos os outros |
+| Um indicador pode exigir permissão | Um número é informação: "há 3 itens abaixo do mínimo" diz que existe um inventário e como está. Quem não pode vê-lo **não vê o cartão** — um "—" já diria que ele existe |
+| Sem dados diz-se "—", não "0" | Mostrar zero quando não se sabe é mentir com um número, que é a forma mais convincente de mentir |
+
+## Pesquisa global (Ctrl+F)
 
 Uma caixa que procura em tudo o que existir. **Cada parte da aplicação regista
 o que sabe procurar**; a pesquisa junta as respostas e agrupa-as por origem —

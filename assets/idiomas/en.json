@@ -287,5 +287,10 @@
   "pesquisa_fonte_tarefas": "Tasks",
   "pesquisa_fonte_unidades": "Structure",
   "pesquisa_fonte_contas": "Accounts",
-  "pesquisa_fonte_regras": "Automations"
+  "pesquisa_fonte_regras": "Automations",
+  "indicador_tarefas_total": "Tasks",
+  "indicador_tarefas_atrasadas": "Overdue",
+  "indicador_tarefas_taxa": "Completion",
+  "indicador_estoque_itens": "Items in stock",
+  "indicador_estoque_em_falta": "Below minimum"
 }

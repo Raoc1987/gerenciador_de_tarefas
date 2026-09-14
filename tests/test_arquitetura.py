@@ -121,7 +121,7 @@ def test_o_core_nao_depende_da_analise_nem_dos_relatorios():
             )
 
 
-@pytest.mark.parametrize("pacote", ["analytics", "reporting", "workflow"])
+@pytest.mark.parametrize("pacote", ["analytics", "reporting", "regras"])
 def test_as_camadas_de_aplicacao_nao_tocam_na_interface(pacote):
     """ADR-0003: têm de servir a janela, um agendamento ou um plugin por igual.
 
@@ -153,15 +153,15 @@ def test_o_motor_de_automacao_nao_conhece_dominios():
     um monólito com outro nome.
     """
     dominios = {"tarefas_servico", "analytics", "reporting", "organizacao"}
-    for arquivo in (SRC / "workflow").rglob("*.py"):
+    for arquivo in (SRC / "regras").rglob("*.py"):
         for importado in importados_por(arquivo):
             raiz = importado.split(".")[0]
-            assert raiz not in dominios, f"workflow/{arquivo.name} importa {importado}"
+            assert raiz not in dominios, f"regras/{arquivo.name} importa {importado}"
             # O armazenamento é infraestrutura, não um domínio — a auditoria e
             # a organização também o usam. Mas só o repositório: o motor que
             # soubesse ler o banco começaria a lê-lo para decidir.
             if arquivo.name != "repositorio.py":
-                assert raiz != "database", f"workflow/{arquivo.name} importa database"
+                assert raiz != "database", f"regras/{arquivo.name} importa database"
 
 
 #: O que só :mod:`tarefas_servico` pode fazer ao armazenamento.

@@ -138,7 +138,7 @@ _MIGRACOES: List[Sequence[str]] = [
         "ALTER TABLE tarefas ADD COLUMN unidade_id INTEGER REFERENCES unidades(id)",
         "CREATE INDEX IF NOT EXISTS idx_tarefas_unidade ON tarefas (unidade_id)",
     ),
-    # v9 — regras de automação (ver src/workflow/).
+    # v9 — regras de automação (ver src/regras/).
     #
     # As condições e as ações ficam em JSON: são listas de tamanho variável e
     # de forma própria de cada ação, e normalizá-las em tabelas daria três

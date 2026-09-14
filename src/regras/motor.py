@@ -26,9 +26,9 @@ from typing import Any, Dict, List, Optional, Set
 
 from core import auditoria, eventos
 from core.log import obter_logger
-from workflow import acoes as registo_de_acoes
-from workflow import repositorio
-from workflow.modelo import Regra
+from regras import acoes as registo_de_acoes
+from regras import repositorio
+from regras.modelo import Regra
 
 logger = obter_logger(__name__)
 
@@ -38,7 +38,7 @@ logger = obter_logger(__name__)
 #: outro) e corta qualquer ciclo cedo. Um número maior só adia o problema.
 PROFUNDIDADE_MAXIMA = 5
 
-DONO = "workflow"
+DONO = "regras"
 
 
 @dataclass

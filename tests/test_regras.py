@@ -13,9 +13,9 @@ import pytest
 
 import database as db
 from core import auditoria, eventos, permissoes
-from workflow import acoes, repositorio
-from workflow.modelo import Acao, Condicao, Operador, Regra, RegraInvalidaError
-from workflow.motor import PROFUNDIDADE_MAXIMA, Motor
+from regras import acoes, repositorio
+from regras.modelo import Acao, Condicao, Operador, Regra, RegraInvalidaError
+from regras.motor import PROFUNDIDADE_MAXIMA, Motor
 
 
 @pytest.fixture(autouse=True)

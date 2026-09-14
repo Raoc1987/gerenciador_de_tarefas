@@ -18,8 +18,8 @@ tk = pytest.importorskip("tkinter", reason="ambiente sem Tkinter")
 
 import database as db  # noqa: E402
 from core import eventos, permissoes  # noqa: E402
-from workflow import acoes, repositorio  # noqa: E402
-from workflow.modelo import Acao, Condicao, Operador  # noqa: E402
+from regras import acoes, repositorio  # noqa: E402
+from regras.modelo import Acao, Condicao, Operador  # noqa: E402
 
 
 @pytest.fixture
@@ -45,7 +45,7 @@ def com_acoes():
 
 @pytest.fixture
 def janela(com_acoes, raiz):
-    from workflow_ui import JanelaAutomacoes
+    from regras_ui import JanelaAutomacoes
 
     tela = JanelaAutomacoes(raiz)
     yield tela
@@ -62,7 +62,7 @@ def test_sem_regras_explica_o_que_fazer(janela):
 
 
 def test_as_regras_aparecem_com_o_que_fazem(com_acoes, raiz):
-    from workflow_ui import JanelaAutomacoes
+    from regras_ui import JanelaAutomacoes
 
     repositorio.criar(
         "Repor material",
@@ -82,7 +82,7 @@ def test_as_regras_aparecem_com_o_que_fazem(com_acoes, raiz):
 
 
 def test_uma_regra_sem_condicoes_diz_sempre(com_acoes, raiz):
-    from workflow_ui import JanelaAutomacoes
+    from regras_ui import JanelaAutomacoes
 
     repositorio.criar("R", "tarefa.criada", acoes=[Acao("registar")])
     tela = JanelaAutomacoes(raiz)
@@ -98,22 +98,22 @@ def test_uma_regra_sem_condicoes_diz_sempre(com_acoes, raiz):
 
 def test_os_eventos_vem_do_sistema(janela):
     """Escrever o nome à mão daria regras que nunca disparam."""
-    import workflow_ui
+    import regras_ui
 
-    disponiveis = workflow_ui.eventos_disponiveis()
+    disponiveis = regras_ui.eventos_disponiveis()
     assert "tarefa.criada" in disponiveis
     assert "tarefa.*" in disponiveis
 
 
 def test_os_eventos_do_motor_nao_sao_oferecidos(janela):
     """Uma regra sobre os eventos do motor seria um ciclo à espera de acontecer."""
-    import workflow_ui
+    import regras_ui
 
-    assert not [e for e in workflow_ui.eventos_disponiveis() if e.startswith("workflow.")]
+    assert not [e for e in regras_ui.eventos_disponiveis() if e.startswith("workflow.")]
 
 
 def test_so_as_acoes_registadas_sao_oferecidas(com_acoes, janela):
-    from workflow_ui import DialogoRegra
+    from regras_ui import DialogoRegra
 
     dialogo = DialogoRegra(janela)
     try:
@@ -133,7 +133,7 @@ def test_sem_acoes_registadas_avisa_em_vez_de_abrir(janela):
 
 
 def test_criar_uma_regra_pela_janela(com_acoes, janela):
-    from workflow_ui import DialogoRegra
+    from regras_ui import DialogoRegra
 
     dialogo = DialogoRegra(janela)
     dialogo.entrada_nome.insert(0, "Repor material")
@@ -152,7 +152,7 @@ def test_criar_uma_regra_pela_janela(com_acoes, janela):
 
 
 def test_uma_regra_sem_nome_fica_na_janela_e_nao_rebenta(com_acoes, janela):
-    from workflow_ui import DialogoRegra
+    from regras_ui import DialogoRegra
 
     dialogo = DialogoRegra(janela)
     try:
@@ -166,7 +166,7 @@ def test_uma_regra_sem_nome_fica_na_janela_e_nao_rebenta(com_acoes, janela):
 
 
 def test_sem_condicao_a_regra_aplica_se_sempre(com_acoes, janela):
-    from workflow_ui import DialogoRegra
+    from regras_ui import DialogoRegra
 
     dialogo = DialogoRegra(janela)
     dialogo.entrada_nome.insert(0, "Sempre")
@@ -194,11 +194,11 @@ def test_ligar_e_desligar_uma_regra(com_acoes, janela):
 
 
 def test_remover_pede_confirmacao(com_acoes, janela, monkeypatch):
-    import workflow_ui
+    import regras_ui
 
     regra = repositorio.criar("R", "tarefa.criada", acoes=[Acao("registar")])
     janela.recarregar()
-    monkeypatch.setattr(workflow_ui.messagebox, "askyesno", lambda *a, **k: False)
+    monkeypatch.setattr(regras_ui.messagebox, "askyesno", lambda *a, **k: False)
     janela.tabela.selection_set(str(regra.id))
     janela.remover()
 
@@ -206,11 +206,11 @@ def test_remover_pede_confirmacao(com_acoes, janela, monkeypatch):
 
 
 def test_remover_a_serio(com_acoes, janela, monkeypatch):
-    import workflow_ui
+    import regras_ui
 
     regra = repositorio.criar("R", "tarefa.criada", acoes=[Acao("registar")])
     janela.recarregar()
-    monkeypatch.setattr(workflow_ui.messagebox, "askyesno", lambda *a, **k: True)
+    monkeypatch.setattr(regras_ui.messagebox, "askyesno", lambda *a, **k: True)
     janela.tabela.selection_set(str(regra.id))
     janela.remover()
 
@@ -221,7 +221,7 @@ def test_remover_a_serio(com_acoes, janela, monkeypatch):
 
 
 def test_quem_nao_administra_nao_mexe(com_acoes, raiz):
-    from workflow_ui import JanelaAutomacoes
+    from regras_ui import JanelaAutomacoes
 
     repositorio.criar("R", "tarefa.criada", acoes=[Acao("registar")])
     permissoes.definir_sessao("bruno", "colaborador", persistir=False)

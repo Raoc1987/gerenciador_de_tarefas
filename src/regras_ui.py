@@ -18,10 +18,10 @@ from core import eventos, permissoes
 from core.log import obter_logger
 from core.permissoes import Permissao
 from language_manager import carregar_texto
-from workflow import acoes as registo_de_acoes
-from workflow import motor as motor_workflow
-from workflow import repositorio
-from workflow.modelo import Acao, Condicao, Operador, Regra, RegraInvalidaError
+from regras import acoes as registo_de_acoes
+from regras import motor as motor_de_regras
+from regras import repositorio
+from regras.modelo import Acao, Condicao, Operador, Regra, RegraInvalidaError
 
 logger = obter_logger(__name__)
 

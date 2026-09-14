@@ -7,7 +7,7 @@ from auditoria_ui import JanelaAuditoria
 import alertas
 import automacoes
 from core import auditoria, eventos, funcionalidades, permissoes
-from workflow import motor as workflow_motor
+from regras import motor as motor_de_regras
 from core.log import obter_logger
 from core.paths import caminho_recurso, diretorio_plugins_embutidos
 from core.plugin_manager import PluginManager
@@ -18,7 +18,7 @@ from dashboard_ui import PainelDashboard
 import tarefas_servico
 from backup_ui import JanelaBackup
 from funcionalidades_ui import JanelaFuncionalidades
-from workflow_ui import JanelaAutomacoes
+from regras_ui import JanelaAutomacoes
 from organizacao_ui import JanelaOrganizacao
 from language_manager import (
     IDIOMAS_SUPORTADOS,
@@ -82,7 +82,7 @@ def criar_janela(raiz: tk.Tk | None = None) -> tk.Tk:
     auditoria.ativar()
     # A automação depois dela: assim o que uma regra faz também fica na trilha.
     automacoes.registar_incluidas()
-    workflow_motor.ativar()
+    motor_de_regras.ativar()
     # A vigilancia depois do motor: assim o que ela anuncia ja encontra as
     # regras a ouvir.
     alertas.ativar()

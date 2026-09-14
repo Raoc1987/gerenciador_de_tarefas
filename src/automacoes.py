@@ -1,6 +1,6 @@
 """As ações que esta aplicação oferece às regras de automação.
 
-O motor (:mod:`workflow`) não conhece tarefas. Este módulo é a ligação entre
+O motor (:mod:`regras`) não conhece tarefas. Este módulo é a ligação entre
 os dois: sabe o que a aplicação faz e regista isso no catálogo de ações. Um
 módulo de negócio regista as suas do mesmo modo, sem passar por aqui.
 
@@ -14,7 +14,7 @@ import re
 from typing import Any, Dict
 
 from core.log import obter_logger
-from workflow import acoes
+from regras import acoes
 
 logger = obter_logger(__name__)
 

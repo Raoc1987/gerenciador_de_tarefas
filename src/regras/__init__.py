@@ -5,7 +5,7 @@ não tem interface. Não é um Agent — não decide nada. Executa regras que um
 pessoa escreveu, e só ações que alguém registou.
 
 O motor não conhece tarefas nem inventário. Quem tem uma ação para oferecer
-regista-a (:mod:`workflow.acoes`); o motor liga o que aconteceu ao que fazer,
+regista-a (:mod:`regras.acoes`); o motor liga o que aconteceu ao que fazer,
 e mais nada. É o que permite a um módulo novo participar em automações sem
 tocar aqui.
 """

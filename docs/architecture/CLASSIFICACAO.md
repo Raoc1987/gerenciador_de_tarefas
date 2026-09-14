@@ -27,10 +27,10 @@ interface) · **Module** (domínio de negócio, como plugin) · **Plugin**
 | Regra de quem vê que tarefas | Service | `src/tarefas_servico.py` |
 | Análise (métricas, séries, insights) | Service | `src/analytics/` |
 | Relatórios e exportação | Service | `src/reporting/` |
-| **Automação por regras** | **Service** | `src/workflow/` |
+| **Automação por regras** | **Service** | `src/regras/` |
 | **Vigilância (análise -> alerta)** | **Service** | `src/alertas.py` |
 | Ações que a aplicação oferece às regras | Ligação | `src/automacoes.py` |
-| Tela das automações | UI | `src/workflow_ui.py` |
+| Tela das automações | UI | `src/regras_ui.py` |
 | Gráficos | Service (UI) | `src/widgets/` |
 | Interface | UI | `src/*_ui.py`, `gui.py` |
 | Calendar Integration | Plugin | `plugins/available/calendar/` |

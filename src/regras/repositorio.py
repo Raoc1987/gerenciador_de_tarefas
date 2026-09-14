@@ -17,7 +17,7 @@ from datetime import datetime
 from typing import Any, Dict, Iterable, List, Optional
 
 from core.log import obter_logger
-from workflow.modelo import Acao, Condicao, Regra, RegraInvalidaError, validar_evento
+from regras.modelo import Acao, Condicao, Regra, RegraInvalidaError, validar_evento
 
 logger = obter_logger(__name__)
 

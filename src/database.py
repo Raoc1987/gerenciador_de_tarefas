@@ -174,6 +174,19 @@ _MIGRACOES: List[Sequence[str]] = [
         )
         """,
     ),
+    # v11 — o valor antes e depois de uma alteracao auditada.
+    #
+    # A trilha ja dizia que alguem mudou o papel de uma conta; nao dizia de
+    # que papel para que papel. Numa auditoria a serio e essa a pergunta.
+    #
+    # JSON em vez de colunas: os campos mudam conforme o evento, e uma tabela
+    # de pares seria uma juncao para ler uma linha que nunca se consulta por
+    # partes. As linhas antigas ficam com objetos vazios, que e a verdade --
+    # nao se sabe o que estava la antes.
+    (
+        "ALTER TABLE auditoria ADD COLUMN antes TEXT NOT NULL DEFAULT '{}'",
+        "ALTER TABLE auditoria ADD COLUMN depois TEXT NOT NULL DEFAULT '{}'",
+    ),
 ]
 
 #: Colunas devolvidas por :func:`buscar_tarefas` — contrato estável de que a

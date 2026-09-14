@@ -233,7 +233,30 @@ PLUGINS                                   [+ Instalar Plugin]
 Desativar **não** desinstala, e o estado sobrevive ao reinício.
 
 
-### Da análise ao alerta
+### Auditoria: de quê para quê
+
+A trilha dizia que alguém mudou o papel de uma conta. Não dizia **de que papel
+para que papel** — e numa auditoria a sério é essa a pergunta.
+
+Os eventos passam a levar `antes` e `depois`, e a trilha mostra a mudança:
+
+```
+utilizador.alterado   bruno    papel: colaborador -> gestor
+unidade.alterada      2        nome: Engenharia -> Engenharia e Produto
+funcionalidade.alterada painel ligada: sim -> não
+```
+
+**Não basta quem publica mandar.** Cada evento declara que campos podem ter o
+valor guardado, e o resto é descartado — a mesma lista de permissões que já
+protegia o detalhe. Sem ela, um publicador distraído punha uma senha ou o
+conteúdo de uma tarefa na trilha, e a auditoria passava a ser a maior fuga de
+dados da aplicação. Verificado: um evento com `senha_hash` e notas privadas
+sai da trilha apenas com `papel: gestor -> administrador`.
+
+O que **não** está na lista é deliberado: nada de tarefas. Que a tarefa 12 foi
+concluída é um facto auditável; o que ela dizia não é assunto da trilha.
+
+## Da análise ao alerta
 
 A análise sabia dizer que há tarefas atrasadas, que o ritmo caiu ou que um dia
 foge ao padrão — mas só o dizia a quem abrisse o painel. A vigilância

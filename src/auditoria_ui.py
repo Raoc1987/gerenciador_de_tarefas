@@ -74,9 +74,12 @@ class JanelaAuditoria(tk.Toplevel):
         moldura = ttk.Frame(self)
         moldura.pack(fill=tk.BOTH, expand=True, padx=12)
 
-        colunas = ("momento", "evento", "utilizador", "alvo", "detalhe")
+        colunas = ("momento", "evento", "utilizador", "alvo", "mudanca", "detalhe")
         self.tabela = ttk.Treeview(moldura, columns=colunas, show="headings", height=16)
-        larguras = {"momento": 140, "evento": 150, "utilizador": 90, "alvo": 70, "detalhe": 260}
+        larguras = {
+            "momento": 130, "evento": 140, "utilizador": 85, "alvo": 65,
+            "mudanca": 210, "detalhe": 190,
+        }
         for coluna in colunas:
             self.tabela.heading(
                 coluna, text=carregar_texto(f"auditoria_coluna_{coluna}"), anchor=tk.W
@@ -125,6 +128,7 @@ class JanelaAuditoria(tk.Toplevel):
                     registo.evento,
                     registo.utilizador,
                     registo.alvo,
+                    registo.resumo_da_mudanca(),
                     registo.detalhe,
                 ),
             )

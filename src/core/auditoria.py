@@ -18,9 +18,10 @@ Decisões que valem a pena explicar:
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+import json
+from dataclasses import dataclass, field
 from datetime import datetime, timedelta
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from core import eventos
 from core.eventos import Evento
@@ -80,6 +81,22 @@ _DETALHES = {
     eventos.UTILIZADOR_ALTERADO: ("alteracao",),
 }
 
+#: Que campos podem ter o valor **antes e depois** guardado, por evento.
+#:
+#: É a mesma defesa do ``_DETALHES``, e pela mesma razão: não basta quem
+#: publica mandar um ``antes``/``depois``: o campo tem de constar aqui. Sem
+#: esta lista, um publicador distraído punha o conteúdo de uma tarefa — ou
+#: uma senha — na trilha, e a auditoria passava a ser a maior fuga de dados
+#: da aplicação.
+#:
+#: Repare no que **não** está: nada de tarefas. Que a tarefa 12 foi concluída
+#: é um facto auditável; o que ela dizia não é assunto da trilha.
+_ALTERACOES = {
+    eventos.UTILIZADOR_ALTERADO: ("papel", "unidade", "ativo"),
+    eventos.UNIDADE_ALTERADA: ("nome", "pai_id", "ativa"),
+    eventos.FUNCIONALIDADE_ALTERADA: ("ligada",),
+}
+
 #: Corte do detalhe, para um traceback não inchar a tabela.
 LIMITE_DETALHE = 500
 
@@ -95,6 +112,29 @@ class RegistoAuditoria:
     alvo: str
     detalhe: str
     origem: str
+    antes: Dict[str, Any] = field(default_factory=dict)
+    depois: Dict[str, Any] = field(default_factory=dict)
+
+    def mudancas(self) -> List[Tuple[str, Any, Any]]:
+        """Os campos que mudaram, com o valor de cada lado.
+
+        Só os que **mudaram mesmo**: repetir um valor igual dos dois lados
+        obrigava quem lê a comparar tudo à vista para encontrar o que
+        interessa.
+        """
+        campos = sorted(set(self.antes) | set(self.depois))
+        return [
+            (campo, self.antes.get(campo), self.depois.get(campo))
+            for campo in campos
+            if self.antes.get(campo) != self.depois.get(campo)
+        ]
+
+    def resumo_da_mudanca(self) -> str:
+        """As mudanças em texto: ``papel: colaborador -> gestor``."""
+        return "; ".join(
+            f"{campo}: {_legivel(antes)} -> {_legivel(depois)}"
+            for campo, antes, depois in self.mudancas()
+        )
 
     @property
     def quando(self) -> Optional[datetime]:
@@ -112,6 +152,48 @@ def _utilizador_atual() -> str:
         return permissoes.sessao().utilizador
     except Exception:  # pragma: no cover - defensivo
         return ""
+
+
+def _para_registo(linha) -> RegistoAuditoria:
+    """Converte uma linha do banco num registo.
+
+    Um JSON ilegível — de uma versão anterior, ou de um ficheiro mexido à mão
+    — vale objeto vazio. Uma trilha que não abre por causa de uma linha má é
+    pior do que uma linha sem detalhe.
+    """
+    def ler(bruto) -> Dict[str, Any]:
+        try:
+            valor = json.loads(bruto or "{}")
+        except (json.JSONDecodeError, TypeError):
+            return {}
+        return valor if isinstance(valor, dict) else {}
+
+    return RegistoAuditoria(*linha[:7], antes=ler(linha[7]), depois=ler(linha[8]))
+
+
+def _legivel(valor: Any) -> str:
+    """Um valor como se escreve num relatório, não como se imprime em Python."""
+    if valor is None or valor == "":
+        return "—"
+    if isinstance(valor, bool):
+        return "sim" if valor else "não"
+    return str(valor)
+
+
+def _alteracoes_de(evento: Evento) -> Tuple[Dict[str, Any], Dict[str, Any]]:
+    """O antes e o depois, reduzidos aos campos que este evento pode guardar."""
+    permitidos = _ALTERACOES.get(evento.nome, ())
+    if not permitidos:
+        return {}, {}
+
+    def filtrar(chave: str) -> Dict[str, Any]:
+        bruto = evento.obter(chave) or {}
+        if not isinstance(bruto, dict):
+            logger.warning("%s: %r devia ser um objeto.", evento.nome, chave)
+            return {}
+        return {c: bruto[c] for c in permitidos if c in bruto}
+
+    return filtrar("antes"), filtrar("depois")
 
 
 def _detalhe_de(evento: Evento) -> str:
@@ -142,8 +224,8 @@ def registar(evento: Evento) -> bool:
         database.criar_tabela()
         with database.conectar() as conexao:
             conexao.execute(
-                "INSERT INTO auditoria (momento, evento, utilizador, alvo, detalhe, origem)"
-                " VALUES (?, ?, ?, ?, ?, ?)",
+                "INSERT INTO auditoria (momento, evento, utilizador, alvo, detalhe,"
+                " origem, antes, depois) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
                 (
                     evento.momento or datetime.now().isoformat(timespec="seconds"),
                     evento.nome,
@@ -151,6 +233,10 @@ def registar(evento: Evento) -> bool:
                     alvo,
                     _detalhe_de(evento),
                     evento.origem,
+                    *(
+                        json.dumps(lado, ensure_ascii=False, default=str)[:LIMITE_DETALHE]
+                        for lado in _alteracoes_de(evento)
+                    ),
                 ),
             )
         return True
@@ -225,7 +311,10 @@ def consultar(
         condicoes.append("momento >= ?")
         parametros.append(desde.isoformat(timespec="seconds"))
 
-    consulta = "SELECT id, momento, evento, utilizador, alvo, detalhe, origem FROM auditoria"
+    consulta = (
+        "SELECT id, momento, evento, utilizador, alvo, detalhe, origem, antes, depois"
+        " FROM auditoria"
+    )
     if condicoes:
         consulta += " WHERE " + " AND ".join(condicoes)
     consulta += " ORDER BY id DESC LIMIT ?"
@@ -239,7 +328,7 @@ def consultar(
         logger.exception("Falha ao consultar a auditoria.")
         return []
 
-    return [RegistoAuditoria(*linha) for linha in linhas]
+    return [_para_registo(linha) for linha in linhas]
 
 
 def contar() -> int:

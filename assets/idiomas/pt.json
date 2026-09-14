@@ -276,5 +276,6 @@
   "op_contem": "contém",
   "op_comeca_com": "começa por",
   "op_existe": "existe",
-  "op_vazio": "está vazio"
+  "op_vazio": "está vazio",
+  "auditoria_coluna_mudanca": "Mudança"
 }

@@ -276,5 +276,6 @@
   "op_contem": "contains",
   "op_comeca_com": "starts with",
   "op_existe": "exists",
-  "op_vazio": "is empty"
+  "op_vazio": "is empty",
+  "auditoria_coluna_mudanca": "Change"
 }

@@ -315,6 +315,8 @@ def definir_papel(nome_utilizador: str, papel: str) -> bool:
         origem="utilizadores",
         id=utilizador.nome_utilizador,
         alteracao=f"papel={papel}",
+        antes={"papel": utilizador.papel_nome},
+        depois={"papel": papel},
     )
     return True
 
@@ -348,6 +350,8 @@ def definir_unidade(nome_utilizador: str, unidade_id: Optional[int]) -> bool:
         origem="utilizadores",
         id=utilizador.nome_utilizador,
         alteracao=f"unidade={unidade_id}",
+        antes={"unidade": utilizador.unidade_id},
+        depois={"unidade": unidade_id},
     )
     return True
 

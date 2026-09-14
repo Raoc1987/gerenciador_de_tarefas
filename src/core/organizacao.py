@@ -332,7 +332,12 @@ def renomear(unidade_id: int, nome: str) -> Unidade:
     with _conectar() as conexao:
         conexao.execute("UPDATE unidades SET nome = ? WHERE id = ?", (nome, unidade_id))
     eventos.publicar(
-        eventos.UNIDADE_ALTERADA, origem="organizacao", id=unidade_id, unidade=nome
+        eventos.UNIDADE_ALTERADA,
+        origem="organizacao",
+        id=unidade_id,
+        unidade=nome,
+        antes={"nome": unidade.nome},
+        depois={"nome": nome},
     )
     return exigir(unidade_id)
 
@@ -365,6 +370,8 @@ def mover(unidade_id: int, novo_pai_id: Optional[int]) -> Unidade:
         origem="organizacao",
         id=unidade_id,
         pai_id=novo_pai_id,
+        antes={"pai_id": unidade.pai_id},
+        depois={"pai_id": novo_pai_id},
     )
     return exigir(unidade_id)
 
@@ -376,14 +383,19 @@ def definir_ativa(unidade_id: int, ativa: bool = True) -> Unidade:
     fez. Desativar é a resposta certa quase sempre; :func:`remover` é para
     quando a unidade foi um engano.
     """
-    exigir(unidade_id)
+    anterior = exigir(unidade_id)
     with _conectar() as conexao:
         conexao.execute(
             "UPDATE unidades SET ativa = ? WHERE id = ?",
             (1 if ativa else 0, unidade_id),
         )
     eventos.publicar(
-        eventos.UNIDADE_ALTERADA, origem="organizacao", id=unidade_id, ativa=ativa
+        eventos.UNIDADE_ALTERADA,
+        origem="organizacao",
+        id=unidade_id,
+        ativa=ativa,
+        antes={"ativa": anterior.ativa},
+        depois={"ativa": bool(ativa)},
     )
     return exigir(unidade_id)
 

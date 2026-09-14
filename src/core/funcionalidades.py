@@ -214,7 +214,8 @@ def definir(chave: str, ligada: bool) -> bool:
             f"A funcionalidade {chave!r} é essencial e não pode ser desligada."
         )
 
-    if ativa(chave) == ligada and chave in _decisoes():
+    estava = ativa(chave)
+    if estava == ligada and chave in _decisoes():
         return False
 
     decisoes = _decisoes()
@@ -227,6 +228,8 @@ def definir(chave: str, ligada: bool) -> bool:
         origem="funcionalidades",
         id=chave,
         ligada=bool(ligada),
+        antes={"ligada": estava},
+        depois={"ligada": bool(ligada)},
     )
     return True
 

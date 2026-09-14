@@ -4,7 +4,10 @@ import tkinter as tk
 from tkinter import messagebox, ttk
 
 from auditoria_ui import JanelaAuditoria
+import alertas
+import automacoes
 from core import auditoria, eventos, funcionalidades, permissoes
+from regras import motor as motor_de_regras
 from core.log import obter_logger
 from core.paths import caminho_recurso, diretorio_plugins_embutidos
 from core.plugin_manager import PluginManager
@@ -15,6 +18,7 @@ from dashboard_ui import PainelDashboard
 import tarefas_servico
 from backup_ui import JanelaBackup
 from funcionalidades_ui import JanelaFuncionalidades
+from regras_ui import JanelaAutomacoes
 from organizacao_ui import JanelaOrganizacao
 from language_manager import (
     IDIOMAS_SUPORTADOS,
@@ -76,6 +80,12 @@ def criar_janela(raiz: tk.Tk | None = None) -> tk.Tk:
     restaurar_idioma_guardado()
     # A auditoria liga-se ao barramento antes de qualquer coisa acontecer.
     auditoria.ativar()
+    # A automação depois dela: assim o que uma regra faz também fica na trilha.
+    automacoes.registar_incluidas()
+    motor_de_regras.ativar()
+    # A vigilancia depois do motor: assim o que ela anuncia ja encontra as
+    # regras a ouvir.
+    alertas.ativar()
     eventos.publicar(eventos.APP_INICIADA, origem="gui")
 
     app = raiz if raiz is not None else tk.Tk()
@@ -258,6 +268,9 @@ def criar_janela(raiz: tk.Tk | None = None) -> tk.Tk:
     def abrir_funcionalidades():
         JanelaFuncionalidades(app)
 
+    def abrir_automacoes():
+        JanelaAutomacoes(app)
+
     def arrancar_plugins():
         """Semeia os plugins embutidos e ativa os que o utilizador deixou ligados."""
         try:
@@ -306,6 +319,9 @@ def criar_janela(raiz: tk.Tk | None = None) -> tk.Tk:
             )
             configuracoes.add_command(
                 label=carregar_texto("backup") + "...", command=abrir_backup
+            )
+            configuracoes.add_command(
+                label=carregar_texto("automacoes") + "...", command=abrir_automacoes
             )
             configuracoes.add_command(
                 label=carregar_texto("funcionalidades") + "...",

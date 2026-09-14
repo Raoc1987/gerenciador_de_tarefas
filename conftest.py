@@ -35,11 +35,23 @@ def dados_isolados(tmp_path, monkeypatch):
     eventos.barramento().limpar()
     permissoes.terminar_sessao()
     permissoes.limpar_permissoes_de_modulos()
+    _limpar_automacao()
     yield destino
     auditoria.desativar()
     eventos.barramento().limpar()
     permissoes.terminar_sessao()
     permissoes.limpar_permissoes_de_modulos()
+    _limpar_automacao()
+
+
+def _limpar_automacao() -> None:
+    """O motor e o catálogo de ações são globais, como o barramento."""
+    import alertas
+    from regras import acoes, motor
+
+    motor.reiniciar()
+    acoes.limpar()
+    alertas.desativar()
 
 
 @pytest.fixture

@@ -192,3 +192,42 @@ def test_remocao_de_dados_so_com_pedido_explicito(iss):
     posicao_pergunta = codigo.index("MB_YESNO")
     primeiro, segundo = [m.start() for m in re.finditer("DelTree", codigo)]
     assert posicao_param < primeiro < posicao_pergunta < segundo
+
+
+# ==================================== NOMES QUE COLIDEM COM O EMPACOTADOR
+
+
+def test_nenhum_modulo_da_aplicacao_colide_com_um_hook_do_pyinstaller():
+    """Um nome de topo generico colide com um pacote do PyPI, e o build parte.
+
+    Aconteceu: `src/workflow/` bateu com o pacote `workflow` do PyPI, para o
+    qual o PyInstaller traz um hook. O hook tenta importar *esse* pacote,
+    falha, e o executavel deixa de ser construido -- mas os 1045 testes
+    continuavam verdes, porque o problema so existe ao empacotar.
+
+    Este teste tira o erro da CI e traz-no para ca.
+    """
+    from pathlib import Path
+
+    import pytest
+
+    contrib = pytest.importorskip(
+        "_pyinstaller_hooks_contrib", reason="PyInstaller nao instalado"
+    )
+    stdhooks = Path(contrib.__file__).parent / "stdhooks"
+    if not stdhooks.is_dir():  # pragma: no cover - instalacao diferente
+        pytest.skip("hooks do PyInstaller nao encontrados")
+
+    raiz = Path(__file__).resolve().parent.parent / "src"
+    nossos = {p.stem for p in raiz.glob("*.py")} | {
+        p.name for p in raiz.iterdir() if p.is_dir() and p.name != "__pycache__"
+    }
+
+    colisoes = sorted(
+        nome for nome in nossos if (stdhooks / f"hook-{nome}.py").exists()
+    )
+    assert not colisoes, (
+        f"Estes modulos tem o nome de um pacote do PyPI com hook proprio: "
+        f"{colisoes}. O PyInstaller vai tentar aplicar-lhes o hook desse "
+        f"pacote e o build falha. Escolha outro nome."
+    )

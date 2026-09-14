@@ -70,6 +70,12 @@ UNIDADE_REMOVIDA = "unidade.removida"
 
 FUNCIONALIDADE_ALTERADA = "funcionalidade.alterada"
 
+ANALISE_ALERTA = "analise.alerta"
+ANALISE_RESOLVIDO = "analise.resolvido"
+
+WORKFLOW_EXECUTADA = "workflow.regra_executada"
+WORKFLOW_LIMITE = "workflow.limite_atingido"
+
 # Aplicação
 APP_INICIADA = "app.iniciada"
 APP_ENCERRADA = "app.encerrada"
@@ -83,7 +89,8 @@ EVENTOS_DO_NUCLEO = (
     PLUGIN_ATUALIZADO, PLUGIN_REMOVIDO, PLUGIN_ERRO, SESSAO_INICIADA,
     SESSAO_TERMINADA, SESSAO_FALHADA, UTILIZADOR_CRIADO, UTILIZADOR_ALTERADO,
     UTILIZADOR_REMOVIDO, UNIDADE_CRIADA, UNIDADE_ALTERADA, UNIDADE_REMOVIDA,
-    FUNCIONALIDADE_ALTERADA,
+    FUNCIONALIDADE_ALTERADA, ANALISE_ALERTA, ANALISE_RESOLVIDO,
+    WORKFLOW_EXECUTADA, WORKFLOW_LIMITE,
     APP_INICIADA, APP_ENCERRADA, IDIOMA_ALTERADO,
 )
 
@@ -228,7 +235,12 @@ class BarramentoEventos:
 
     @staticmethod
     def _corresponde(padrao: str, nome: str) -> bool:
-        return padrao == nome or fnmatch.fnmatchcase(nome, padrao)
+        return corresponde(nome, padrao)
+
+    def inscricoes(self) -> List[Inscricao]:
+        """As subscrições ativas — para quem precise de confirmar a sua."""
+        with self._tranca:
+            return list(self._inscricoes)
 
 
 # ------------------------------------------------- barramento da aplicação
@@ -239,6 +251,15 @@ _barramento = BarramentoEventos()
 def barramento() -> BarramentoEventos:
     """O barramento partilhado pela aplicação."""
     return _barramento
+
+
+def corresponde(nome: str, padrao: str) -> bool:
+    """Se um nome de evento cai num padrão (``"tarefa.*"``).
+
+    Pública de propósito: o motor de automação faz a mesma pergunta, e ter
+    duas implementações da mesma regra é ter duas que acabam por discordar.
+    """
+    return padrao == nome or fnmatch.fnmatchcase(nome, padrao)
 
 
 def subscrever(padrao: str, ouvinte: Ouvinte, dono: str = "") -> Inscricao:

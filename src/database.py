@@ -138,6 +138,42 @@ _MIGRACOES: List[Sequence[str]] = [
         "ALTER TABLE tarefas ADD COLUMN unidade_id INTEGER REFERENCES unidades(id)",
         "CREATE INDEX IF NOT EXISTS idx_tarefas_unidade ON tarefas (unidade_id)",
     ),
+    # v9 — regras de automação (ver src/regras/).
+    #
+    # As condições e as ações ficam em JSON: são listas de tamanho variável e
+    # de forma própria de cada ação, e normalizá-las em tabelas daria três
+    # junções para ler uma regra que nunca se consulta por partes.
+    #
+    # Aditiva e vazia: quem não escrever regra nenhuma não nota.
+    (
+        """
+        CREATE TABLE IF NOT EXISTS regras (
+            id         INTEGER PRIMARY KEY AUTOINCREMENT,
+            nome       TEXT    NOT NULL,
+            evento     TEXT    NOT NULL,
+            condicoes  TEXT    NOT NULL DEFAULT '[]',
+            acoes      TEXT    NOT NULL DEFAULT '[]',
+            ativa      INTEGER NOT NULL DEFAULT 1,
+            criada_em  TEXT    NOT NULL,
+            criada_por TEXT    NOT NULL DEFAULT ''
+        )
+        """,
+        "CREATE INDEX IF NOT EXISTS idx_regras_evento ON regras (evento)",
+    ),
+    # v10 — o que a vigilância já avisou (ver src/alertas.py).
+    #
+    # Sem isto, cada arranque voltaria a anunciar as mesmas conclusões, e uma
+    # regra ligada a elas criaria as mesmas tarefas outra vez. Um alerta que
+    # se repete é um alerta que se deixa de ler.
+    (
+        """
+        CREATE TABLE IF NOT EXISTS alertas_vistos (
+            chave     TEXT PRIMARY KEY,
+            nivel     TEXT NOT NULL,
+            visto_em  TEXT NOT NULL
+        )
+        """,
+    ),
 ]
 
 #: Colunas devolvidas por :func:`buscar_tarefas` — contrato estável de que a

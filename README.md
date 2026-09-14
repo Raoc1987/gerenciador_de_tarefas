@@ -233,7 +233,83 @@ PLUGINS                                   [+ Instalar Plugin]
 Desativar **não** desinstala, e o estado sobrevive ao reinício.
 
 
-### Funcionalidades da instalação
+### Da análise ao alerta
+
+A análise sabia dizer que há tarefas atrasadas, que o ritmo caiu ou que um dia
+foge ao padrão — mas só o dizia a quem abrisse o painel. A vigilância
+(`src/alertas.py`) fecha o último elo:
+
+```
+tarefa -> evento -> métrica -> painel -> modelo -> previsão -> alerta -> regra -> ação
+```
+
+Publica `analise.alerta` e `analise.resolvido`. A partir daí uma regra pode
+agir, sem que a análise saiba que a automação existe.
+
+**O problema difícil aqui não é detetar: é não repetir.** "Há 15 tarefas
+atrasadas" continua verdade amanhã. Se cada avaliação anunciasse, uma regra
+ligada a ela criava a mesma tarefa todos os dias — e um alerta que se repete é
+um alerta que se deixa de ler. Por isso a vigilância lembra-se do que já disse:
+
+| Situação | O que acontece |
+|---|---|
+| Conclusão nova | É anunciada |
+| A mesma, na mesma gravidade | Silêncio — mesmo que os números mudem |
+| A gravidade **agrava** | Anunciada outra vez: atenção → crítico é notícia |
+| Melhora sem resolver | Silêncio |
+| Deixa de se aplicar | Anuncia-se que passou, e esquece |
+
+O estado é guardado no banco, não em memória: senão cada arranque anunciava
+tudo outra vez. Boas notícias não disparam automações — ficam no painel, que é
+onde se vai vê-las.
+
+Reavalia quando uma tarefa é criada, concluída, reaberta ou removida. É uma
+análise completa de cada vez: para o volume de uma aplicação de secretária
+chega bem, e se um dia não chegar, o sítio para tratar disso é aqui e só aqui.
+
+## Automação por regras
+
+**Quando** acontece X, **se** Y, **então** faz Z. É um Service: atravessa os
+módulos, não tem domínio próprio e não é um Agent — executa regras que uma
+pessoa escreveu, não decide nada.
+
+O motor **não conhece tarefas nem inventário**. Quem tem uma ação para
+oferecer regista-a; o motor liga o que aconteceu ao que fazer. É isso que
+permite a um módulo novo participar sem tocar no motor, e que impede o motor
+de se tornar o sítio onde todos os domínios se encontram.
+
+Exemplo real, com dois módulos que não se conhecem:
+
+> Quando `estoque.em_falta` **e** `saldo < 5` → criar a tarefa
+> `"Encomendar item {id} (restam {saldo})"`
+
+### O que impede uma regra de se comer a si própria
+
+"Quando uma tarefa é criada, cria uma tarefa" é fácil de escrever sem dar por
+isso, e sem defesa bloqueia a aplicação no primeiro disparo com o banco a
+encher. Três defesas, todas com teste:
+
+| | |
+|---|---|
+| **Profundidade máxima** | Uma cadeia de regras diferentes pára ao 5.º nível |
+| **Uma regra não se repete na mesma cadeia** | Apanha o ciclo A→B→A, que é o que passa despercebido |
+| **Reagir a `*` é recusado** | Ao guardar a regra: reagir a tudo inclui reagir ao que a própria regra provoca |
+
+Atingir um limite é dito em voz alta (evento e registo): parar em silêncio
+seria pior do que o ciclo, porque as regras deixavam de correr sem ninguém
+perceber porquê.
+
+Uma ação que falha é registada e as restantes continuam — uma automação
+partida não pode impedir alguém de criar uma tarefa. E a ação corre com as
+permissões de quem provocou o evento: **uma regra não é a forma de fazer por
+automação o que não se pode fazer à mão.**
+
+As condições são declarativas (campo, operador, valor) e o texto das ações é
+preenchido por substituição escrita à mão — não há `str.format`, que navegaria
+dentro dos objetos, nem `eval`. Uma regra guardada no banco é texto que alguém
+pode alterar, e texto alterável não deve virar código a correr.
+
+## Funcionalidades da instalação
 
 `Configurações → Funcionalidades` (administradores). Liga e desliga partes do
 produto **nesta instalação**.

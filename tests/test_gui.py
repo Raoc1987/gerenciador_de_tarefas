@@ -606,8 +606,15 @@ def test_auditoria_mostra_o_que_aconteceu(janela):
 
     linhas = tela.tabela.get_children()
     assert len(linhas) == len(tela.registos())
-    valores = tela.tabela.item(linhas[0], "values")
-    assert valores[1] == "tarefa.concluida", "o mais recente vem primeiro"
+
+    # A ordem é do mais recente para o mais antigo. Fixar *qual* é o mais
+    # recente partiria sempre que a aplicação passasse a registar mais um
+    # evento — como passou, com os alertas da análise.
+    momentos = [tela.tabela.item(l, "values")[0] for l in linhas]
+    assert momentos == sorted(momentos, reverse=True)
+
+    mostrados = [r.evento for r in tela.registos()]
+    assert mostrados.index("tarefa.concluida") < mostrados.index("tarefa.criada")
     tela.destroy()
 
 

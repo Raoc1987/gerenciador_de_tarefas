@@ -55,6 +55,14 @@ EVENTOS_AUDITAVEIS: Dict[str, str] = {
     eventos.UNIDADE_REMOVIDA: "id",
     # Ligar ou desligar uma parte do produto muda o que toda a gente vê.
     eventos.FUNCIONALIDADE_ALTERADA: "id",
+    # Uma automação que correu fez alguma coisa em nome de alguém: fica na
+    # trilha, senão haveria alterações sem autor aparente.
+    # Um alerta é uma afirmação da aplicação sobre o trabalho de alguém: fica
+    # registado quando foi feita, e quando deixou de se aplicar.
+    eventos.ANALISE_ALERTA: "id",
+    eventos.ANALISE_RESOLVIDO: "id",
+    eventos.WORKFLOW_EXECUTADA: "id",
+    eventos.WORKFLOW_LIMITE: "id",
     eventos.APP_INICIADA: "",
     eventos.APP_ENCERRADA: "",
 }

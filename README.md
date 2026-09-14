@@ -265,6 +265,50 @@ opção que deixa ficar sem rede não é uma opção); e a trilha de auditoria t
 o seu próprio mecanismo — parar de registar é uma decisão de conformidade, não
 uma preferência.
 
+## Módulos e ferramentas incluídos
+
+Todos entram como plugins, todos se desinstalam, e nenhum tem uma linha no
+núcleo a saber que existe.
+
+| | Categoria | O que faz | O que pede |
+|---|---|---|---|
+| **Calendar** | Plugin | Tarefas num calendário mensal | `tarefas.ler`, `tarefas.escrever` |
+| **Atualizações** | Plugin | Avisa de versões novas, com consentimento | nada |
+| **Estoque** | Module | Itens, entradas, saídas, aviso de mínimo | nada ao núcleo; traz `estoque.ler` e `estoque.escrever` |
+| **Calculadora** | Plugin | Simples, científica, conversões, financeira | nada |
+
+### Calculadora
+
+Quatro modalidades numa aba: **simples** (com memória), **científica**
+(expressões por extenso, graus/radianos, histórico), **conversões**
+(comprimento, massa, área, volume, tempo, dados, velocidade, temperatura) e
+**financeira** (prestação, tabela de amortização completa, juros compostos,
+IVA, variação percentual).
+
+Três decisões que explicam o resto:
+
+**Sem `eval()`.** A forma rápida de avaliar `2+3*4` em Python é `eval`, e é a
+errada: `eval` executa *código*, não aritmética. Numa aplicação com tarefas,
+contas e inventário de uma empresa, uma caixa de texto ligada ao `eval` é um
+buraco por onde entra tudo. Há um analisador escrito à mão que só conhece
+números, operadores e uma lista fechada de funções — e um teste que falha se
+algum dia aparecer um `eval` na pasta.
+
+**Dinheiro em `Decimal`, nunca `float`.** `0.1 + 0.2` não dá `0.3` em binário,
+e numa tabela a 360 meses esse erro acumula até as parcelas deixarem de somar
+o empréstimo. A última parcela absorve os cêntimos do arredondamento, para o
+saldo final ser **exatamente** zero.
+
+**Sem moedas.** Converter euros em dólares exige taxas de hoje, e isso exige
+rede, uma chave de API e um fornecedor — coisas que esta aplicação não tem, e
+que fariam sair da máquina o que alguém está a calcular. Uma taxa gravada no
+código seria pior: daria um número errado com ar de certo. As unidades que
+estão aqui são definições exatas ou constantes físicas, e não mudam.
+
+Também escolhe entre taxa mensal **nominal** (anual ÷ 12) e **equivalente**
+(composta) — são números diferentes, e quem calcula é que decide, em vez de
+descobrir mais tarde que o programa escolheu por si.
+
 ## Cópia de segurança
 
 `Configurações → Cópia de segurança` (administradores). Guarda num ZIP as
@@ -399,6 +443,37 @@ dois plugins podem ambos ter um `utils.py` sem se atrapalharem.
 Adiado para dentro de uma função, falha: o nome simples não fica reservado a
 ninguém, de propósito. Se ficasse, o primeiro plugin a carregar decidia o
 código que o segundo executa.
+
+### Permissões do próprio módulo
+
+Um módulo de negócio tem permissões que o núcleo não pode conhecer — não há
+`estoque.ler` no `Permissao` da aplicação, nem devia haver. O manifesto
+declara-as:
+
+```json
+"provides_permissions": {
+  "estoque.ler":     ["administrador", "gestor", "colaborador", "visualizador"],
+  "estoque.escrever": ["administrador", "gestor", "colaborador"]
+}
+```
+
+Passam a existir **enquanto o módulo estiver carregado**, e saem com ele.
+
+A regra de segurança é o espaço de nomes: um módulo só pode definir permissões
+com o seu próprio id à frente. O pior que consegue conceder é acesso aos
+**seus** dados — as tarefas, as contas e o sistema continuam a ser decisão de
+quem administra, e um manifesto que tente `tarefas.ver_todas` é recusado na
+instalação.
+
+Uma permissão que ninguém registou é negada a toda a gente, **incluindo ao
+administrador**: dizer que sim a um nome que não existe esconderia um erro de
+escrita de quem administra e mostrá-lo-ia só a quem não administra.
+
+```python
+if self.contexto.pode("estoque.escrever"):   # esconder o botão
+    ...
+self.contexto.exigir("estoque.escrever")     # ou recusar no serviço
+```
 
 ### Dados próprios
 

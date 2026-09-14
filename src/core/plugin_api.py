@@ -171,6 +171,13 @@ class ManifestoPlugin:
     autor: str = ""
     descricao: str = ""
     permissoes: FrozenSet[Permissao] = frozenset()
+    permissoes_proprias: Dict[str, FrozenSet[str]] = field(default_factory=dict)
+    """Permissões que este módulo traz, e os papéis que as recebem.
+
+    Um módulo de negócio tem permissões do seu domínio que o núcleo não pode
+    conhecer. Só pode defini-las no seu próprio espaço de nomes, por isso o
+    pior que consegue conceder é acesso aos **seus** dados.
+    """
     """O que o plugin declarou precisar. Declarar não concede: limita.
 
     O plugin recebe a interseção disto com o que a sessão pode fazer.
@@ -235,10 +242,14 @@ class ManifestoPlugin:
                 raise ManifestoInvalidoError(f"Campo {campo!r} deve ser uma string.")
 
         permissoes = cls._permissoes_pedidas(dados.get("permissions", []))
+        proprias = cls._permissoes_proprias(
+            identificador, dados.get("provides_permissions", {})
+        )
 
         conhecidos = {
             "id", "name", "version", "entry_point", "min_app_version",
             "max_app_version", "author", "description", "permissions",
+            "provides_permissions",
         }
         extras = {c: v for c, v in dados.items() if c not in conhecidos}
 
@@ -252,6 +263,7 @@ class ManifestoPlugin:
             autor=str(dados.get("author", "")).strip(),
             descricao=str(dados.get("description", "")).strip(),
             permissoes=permissoes,
+            permissoes_proprias=proprias,
             extras=extras,
         )
 
@@ -283,6 +295,41 @@ class ManifestoPlugin:
                 )
             permissoes.add(permissao)
         return frozenset(permissoes)
+
+    @staticmethod
+    def _permissoes_proprias(
+        plugin_id: str, dados: Any
+    ) -> Dict[str, FrozenSet[str]]:
+        """Valida o campo ``provides_permissions``.
+
+        Raises:
+            ManifestoInvalidoError: se não for ``{permissão: [papéis]}``, se a
+                permissão sair do espaço de nomes do módulo, ou se colidir com
+                uma do núcleo.
+        """
+        if not isinstance(dados, dict):
+            raise ManifestoInvalidoError("provides_permissions deve ser um objeto.")
+
+        prefixo = f"{plugin_id}."
+        do_nucleo = {p.value for p in Permissao}
+        resultado: Dict[str, FrozenSet[str]] = {}
+
+        for nome, papeis in dados.items():
+            if not isinstance(nome, str) or not nome.startswith(prefixo):
+                raise ManifestoInvalidoError(
+                    f"O módulo {plugin_id!r} não pode definir {nome!r}: as suas "
+                    f"permissões começam por {prefixo!r}."
+                )
+            if nome in do_nucleo:
+                raise ManifestoInvalidoError(f"{nome!r} é uma permissão do núcleo.")
+            if not isinstance(papeis, list) or not all(
+                isinstance(papel, str) for papel in papeis
+            ):
+                raise ManifestoInvalidoError(
+                    f"Os papéis de {nome!r} devem ser uma lista de nomes."
+                )
+            resultado[nome] = frozenset(papel.strip() for papel in papeis)
+        return resultado
 
     @staticmethod
     def _entry_point_seguro(entry_point: str) -> bool:
@@ -334,6 +381,10 @@ class ManifestoPlugin:
         }
         if self.permissoes:
             dados["permissions"] = sorted(p.value for p in self.permissoes)
+        if self.permissoes_proprias:
+            dados["provides_permissions"] = {
+                nome: sorted(papeis) for nome, papeis in sorted(self.permissoes_proprias.items())
+            }
         if self.max_app_version:
             dados["max_app_version"] = self.max_app_version
         dados.update(self.extras)
@@ -464,17 +515,39 @@ class ContextoPlugin:
         """O que este plugin declarou no manifesto."""
         return self.manifesto.permissoes
 
-    def pode(self, permissao: Permissao) -> bool:
-        """Se o plugin declarou a permissão **e** a sessão a tem.
+    def pode(self, permissao) -> bool:
+        """Se o plugin pode fazer isto, agora, com esta sessão.
 
-        Use isto para esconder um botão em vez de o deixar falhar: perguntar
-        é mais barato do que apanhar a exceção.
+        Duas origens, uma resposta:
+
+        * uma permissão do núcleo tem de ter sido **declarada** no manifesto
+          (senão o plugin está a pedir o que não disse que precisava);
+        * uma permissão **do próprio módulo** não precisa de ser declarada —
+          é dele — e responde pelos papéis que o manifesto lhe atribuiu.
+
+        Use isto para esconder um botão em vez de o deixar falhar.
         """
-        if permissao not in self.manifesto.permissoes:
-            return False
         from core import permissoes as _permissoes
 
+        if isinstance(permissao, Permissao):
+            if permissao not in self.manifesto.permissoes:
+                return False
+        elif str(permissao) not in self.manifesto.permissoes_proprias:
+            return False
         return _permissoes.pode(permissao)
+
+    def exigir(self, permissao) -> None:
+        """Levanta :class:`~core.permissoes.PermissaoNegadaError` se não puder."""
+        if not self.pode(permissao):
+            from core.permissoes import PermissaoNegadaError
+
+            raise PermissaoNegadaError(permissao)
+
+    def utilizador(self) -> str:
+        """Quem está em sessão, para o módulo registar quem fez o quê."""
+        from core import permissoes as _permissoes
+
+        return _permissoes.sessao().utilizador
 
     def config(self) -> Dict[str, Any]:
         """Configuração privada do plugin (dicionário vazio se ainda não existir)."""

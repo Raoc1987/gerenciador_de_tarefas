@@ -31,6 +31,9 @@ interface) · **Module** (domínio de negócio, como plugin) · **Plugin**
 | Interface | UI | `src/*_ui.py`, `gui.py` |
 | Calendar Integration | Plugin | `plugins/available/calendar/` |
 | Verificação de atualizações | Plugin | `plugins/available/atualizacoes/` |
+| **Estoque** (inventário) | **Module** | `plugins/available/estoque/` |
+| **Calculadora** (simples, científica, conversões, financeira) | **Plugin** | `plugins/available/calculadora/` |
+| Permissões trazidas por um módulo | Core (contrato) | `core/permissoes.py`, `core/plugin_api.py` |
 
 ## O que foi proposto
 
@@ -59,6 +62,36 @@ Ordenado por **valor sobre custo**, não pela ordem em que foi proposto.
 | 10 | Integrações (Calendar, Outlook, ERP…) | **Plugin**, uma a uma | Nunca no Core. Cada integração é um plugin, e morre sozinha se falhar |
 | 15 | Laboratório de dados | **Module** | O caso perfeito para o escape do ADR-0002: traz numpy/pandas como dependência **sua** |
 | 23 | Telemetria | **Service**, opt-in | Só faz sentido com utilizadores reais para medir |
+
+### O que o primeiro módulo de negócio ensinou
+
+O **Estoque** foi escrito para testar a arquitetura, não para encher o
+produto. Correu bem em quase tudo: dados próprios, eventos próprios, aba
+própria, zero linhas no núcleo a saber que ele existe, e **nada pedido ao
+núcleo** — não toca em tarefas.
+
+Falhou num ponto, e valeu a pena: um módulo de negócio tem permissões do seu
+domínio (`estoque.ler`, `estoque.escrever`) que o núcleo não pode conhecer, e
+o contrato só aceitava as permissões do núcleo. A resposta certa era melhorar
+o contrato, não abrir uma exceção (ADR-0004). Um módulo passa a poder
+declarar permissões **no seu próprio espaço de nomes** — o pior que consegue
+conceder é acesso aos seus próprios dados.
+
+### Porque é que a Calculadora é Plugin e não Module
+
+As quatro perguntas do ADR-0004, respondidas antes de escrever: nenhum módulo
+precisa dela (não é Core); o produto funciona sem ela (não é Core); só calcula,
+não decide (não é Agent); e não tem domínio de negócio nem dados de ninguém —
+é uma ferramenta, não um Module como o Estoque.
+
+Não pede **nenhuma** permissão e não traz nenhuma. A única coisa que guarda é
+a preferência de graus/radianos, na sua própria configuração. Desinstalar não
+deixa nada.
+
+Duas fronteiras deliberadas: **sem `eval()`**, porque uma caixa de texto ligada
+ao `eval` numa aplicação com dados de empresa é um buraco por onde entra tudo;
+e **sem moedas**, porque taxas de câmbio exigem rede e um fornecedor, e uma
+taxa gravada no código daria um número errado com ar de certo.
 
 ### Fica em espera — e porquê
 

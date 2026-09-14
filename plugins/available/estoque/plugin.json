@@ -1,0 +1,27 @@
+{
+  "id": "estoque",
+  "name": "Estoque",
+  "version": "1.0.0",
+  "author": "Gerenciador de Tarefas",
+  "description": "Inventário: itens, entradas, saídas e aviso do que está abaixo do mínimo.",
+  "min_app_version": "1.0.0",
+  "entry_point": "plugin.py",
+  "permissions": [],
+  "provides_permissions": {
+    "estoque.ler": [
+      "administrador",
+      "gestor",
+      "gestor_de_unidade",
+      "supervisor",
+      "colaborador",
+      "visualizador"
+    ],
+    "estoque.escrever": [
+      "administrador",
+      "gestor",
+      "gestor_de_unidade",
+      "supervisor",
+      "colaborador"
+    ]
+  }
+}

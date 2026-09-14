@@ -34,10 +34,12 @@ def dados_isolados(tmp_path, monkeypatch):
     auditoria.desativar()
     eventos.barramento().limpar()
     permissoes.terminar_sessao()
+    permissoes.limpar_permissoes_de_modulos()
     yield destino
     auditoria.desativar()
     eventos.barramento().limpar()
     permissoes.terminar_sessao()
+    permissoes.limpar_permissoes_de_modulos()
 
 
 @pytest.fixture

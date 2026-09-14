@@ -22,6 +22,7 @@ from typing import Dict, List, Optional
 
 from core import config as config_app
 from core import eventos
+from core import permissoes as permissoes_core
 from core import plugin_package
 from core.log import obter_logger
 from core.paths import (
@@ -297,6 +298,16 @@ class PluginManager:
             self._marcar_erro(registro, erro, "carregar")
             self._descartar_modulo(plugin_id)
             return ResultadoOperacao(False, "plugin_erro_carregar", plugin_id, str(erro))
+
+        # As permissões que o módulo traz passam a existir enquanto ele estiver
+        # carregado. Só no espaço de nomes dele — a validação do manifesto já
+        # recusou qualquer outra coisa.
+        try:
+            permissoes_core.registar_permissoes_de_modulo(
+                registro.id, registro.manifesto.permissoes_proprias
+            )
+        except ValueError as erro:  # pragma: no cover - manifesto já validado
+            logger.error("Permissões do módulo %s recusadas: %s", registro.id, erro)
 
         registro.modulo = modulo
         registro.instancia = instancia
@@ -820,5 +831,7 @@ class PluginManager:
         for nome in [n for n in sys.modules if n.startswith(prefixo + ".")]:
             sys.modules.pop(nome, None)
         remover_textos_plugin(plugin_id)
+        # Um módulo descarregado deixa de conceder o que quer que fosse.
+        permissoes_core.esquecer_permissoes_de_modulo(plugin_id)
         # Um plugin descarregado não pode continuar a reagir a eventos.
         eventos.cancelar_por_dono(plugin_id)

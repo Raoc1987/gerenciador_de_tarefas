@@ -6,7 +6,9 @@ from tkinter import messagebox, ttk
 from auditoria_ui import JanelaAuditoria
 import alertas
 import automacoes
+import pesquisas_incluidas
 from core import auditoria, eventos, funcionalidades, permissoes
+from pesquisa_ui import JanelaPesquisa
 from regras import motor as motor_de_regras
 from core.log import obter_logger
 from core.paths import caminho_recurso, diretorio_plugins_embutidos
@@ -82,6 +84,7 @@ def criar_janela(raiz: tk.Tk | None = None) -> tk.Tk:
     auditoria.ativar()
     # A automação depois dela: assim o que uma regra faz também fica na trilha.
     automacoes.registar_incluidas()
+    pesquisas_incluidas.registar_incluidas()
     motor_de_regras.ativar()
     # A vigilancia depois do motor: assim o que ela anuncia ja encontra as
     # regras a ouvir.
@@ -271,6 +274,9 @@ def criar_janela(raiz: tk.Tk | None = None) -> tk.Tk:
     def abrir_automacoes():
         JanelaAutomacoes(app)
 
+    def abrir_pesquisa(_evento=None):
+        JanelaPesquisa(app)
+
     def arrancar_plugins():
         """Semeia os plugins embutidos e ativa os que o utilizador deixou ligados."""
         try:
@@ -328,11 +334,20 @@ def criar_janela(raiz: tk.Tk | None = None) -> tk.Tk:
                 command=abrir_funcionalidades,
             )
         barra.add_cascade(label=carregar_texto("configuracoes"), menu=configuracoes)
+        # Fora de Configurações: pesquisar é uma ação de todos os dias, não
+        # uma definição. E tem atalho, que é como se usa uma pesquisa.
+        barra.add_command(
+            label=carregar_texto("pesquisa") + "  (Ctrl+F)", command=abrir_pesquisa
+        )
         app.config(menu=barra)
 
     def mudar_idioma():
         definir_idioma(rotulos_idioma[idioma_var.get()])
         atualizar_textos()
+    # Ctrl+F é como se usa uma pesquisa; um menu sem atalho é uma pesquisa
+    # que ninguém usa.
+    app.bind_all("<Control-f>", abrir_pesquisa)
+    app.bind_all("<Control-F>", abrir_pesquisa)
 
     def atualizar_textos():
         """Reaplica todos os textos visíveis conforme o idioma atual."""

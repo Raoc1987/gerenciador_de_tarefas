@@ -233,7 +233,39 @@ PLUGINS                                   [+ Instalar Plugin]
 Desativar **não** desinstala, e o estado sobrevive ao reinício.
 
 
-### Auditoria: de quê para quê
+### Pesquisa global (Ctrl+F)
+
+Uma caixa que procura em tudo o que existir. **Cada parte da aplicação regista
+o que sabe procurar**; a pesquisa junta as respostas e agrupa-as por origem —
+sem o agrupamento, "Engenharia" três vezes não diz se são três unidades ou uma
+unidade, uma tarefa e uma regra.
+
+O módulo de pesquisa não sabe o que é uma tarefa. É o mesmo padrão do catálogo
+de ações do motor de regras, e permite a um módulo novo aparecer aqui sem
+tocar numa linha dele.
+
+**Uma pesquisa é a porta lateral mais fácil de abrir sem querer.** Junta tudo
+o que existe numa lista, e se uma fonte não aplicar as permissões de onde os
+dados vêm, um colaborador que procure "orçamento" vê a tarefa do colega — e a
+aplicação passa a contradizer-se a si própria. Por isso cada fonte passa pela
+camada que aplica as permissões, nunca pelo banco, e há um teste que verifica
+que é assim que continua a ser.
+
+Na prática, com o mesmo termo:
+
+| Quem procura | O que encontra |
+|---|---|
+| Administrador | tarefas, contas, automações |
+| Gestor | tarefas (todas) |
+| Colaborador | só as suas tarefas |
+
+Encontra sem acentos e sem maiúsculas — obrigar a escrever "orçamento" com
+cedilha para encontrar o que já se sabe que existe é hostil. Um termo com
+menos de duas letras não devolve nada: "tudo" não é um resultado de pesquisa,
+é a base de dados no ecrã. E procura **quando a escrita pára**, não a cada
+tecla.
+
+## Auditoria: de quê para quê
 
 A trilha dizia que alguém mudou o papel de uma conta. Não dizia **de que papel
 para que papel** — e numa auditoria a sério é essa a pergunta.

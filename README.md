@@ -233,7 +233,51 @@ PLUGINS                                   [+ Instalar Plugin]
 Desativar **não** desinstala, e o estado sobrevive ao reinício.
 
 
-### Indicadores: cada módulo declara o que sabe medir
+### Importar de um ficheiro
+
+`Configurações → Importar de um ficheiro`. Quatro passos, na ordem em que uma
+pessoa pensa: **que ficheiro**, **para onde**, **que coluna é o quê**, e — antes
+de qualquer coisa ser escrita — **o que vai acontecer**.
+
+### Ler os ficheiros como eles realmente vêm
+
+Uma importação decide-se na leitura. Um leitor que só aceite UTF-8 separado
+por vírgulas falha no primeiro ficheiro exportado de um Excel português — que
+vem em `cp1252`, separado por ponto e vírgula — e a pessoa conclui que o
+programa não serve, o que é razoável a partir do que viu.
+
+| | |
+|---|---|
+| Codificação | `utf-8-sig`, `utf-8`, `cp1252`, `latin-1` — por tentativa, e a última aceita tudo |
+| Separador | ponto e vírgula, vírgula, tabulação ou barra vertical, descoberto pelo conteúdo. Uma vírgula dentro de uma frase não confunde: um separador a sério é **regular** |
+| XLSX | Lido à mão, sem dependências (ADR-0002). As células vazias que o Excel omite não deslocam as outras |
+
+### Nunca escrever às cegas
+
+A pré-visualização corre as mesmas validações que a importação, sem escrever
+nada. Mostra quantas linhas entram, quais ficam de fora e **porquê** — com os
+problemas primeiro, que é o que precisa de decisão.
+
+Uma linha má não cancela as boas: 300 linhas não podem ficar reféns de uma
+data mal escrita na linha 7.
+
+### Um ficheiro de fora não pode fazer mal à máquina
+
+Um XLSX é um ZIP com XML dentro, e o analisador da biblioteca padrão expande
+entidades declaradas no documento — 1 KB capaz de esgotar a memória (*billion
+laughs*). A solução habitual, `defusedxml`, é uma dependência externa que esta
+aplicação não tem. A defesa é **recusar antes de analisar**: uma folha de
+cálculo a sério não traz `DOCTYPE` nem declarações de entidades. Um ficheiro
+que traga não é uma folha de cálculo.
+
+### Cada módulo declara para onde sabe importar
+
+O Estoque aceita itens; um módulo novo declara o seu destino pelo contexto do
+plugin, e ele sai da lista quando o módulo é desinstalado. Um destino que
+exige uma permissão que a sessão não tem **não aparece** — oferecer para
+depois recusar é pior do que não oferecer.
+
+## Indicadores: cada módulo declara o que sabe medir
 
 O painel mostrava tarefas porque foi escrito para tarefas. Um módulo de
 negócio instalado não aparecia lá — e "a análise atravessa todo o produto"

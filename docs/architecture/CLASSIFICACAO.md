@@ -30,6 +30,7 @@ interface) · **Module** (domínio de negócio, como plugin) · **Plugin**
 | **Automação por regras** | **Service** | `src/regras/` |
 | **Pesquisa global** | **Service** | `src/pesquisa.py` |
 | **Indicadores declarados** | **Service** | `src/indicadores.py` |
+| **Importação de ficheiros** | **Service** | `src/importacao/` |
 | **Vigilância (análise -> alerta)** | **Service** | `src/alertas.py` |
 | Ações que a aplicação oferece às regras | Ligação | `src/automacoes.py` |
 | Tela das automações | UI | `src/regras_ui.py` |
@@ -59,7 +60,7 @@ Ordenado por **valor sobre custo**, não pela ordem em que foi proposto.
 | 1 | Decision Engine — ~~insight → recomendação → ação~~ | **feito** | A cadeia está fechada: a análise publica alertas, uma regra age. O que falta é a recomendação ser gerada em vez de escrita à mão na regra |
 | 12 | Pesquisa global | ~~Core~~ → **Service** | Feito. A classificação estava errada: um registo destes vive bem fora do núcleo, como o das ações já tinha mostrado, e o núcleo não precisava de crescer para isto existir |
 | 22 | Entitlement engine | **Core** | Licenciamento a sério. As feature flags já estão feitas; falta haver módulos que valha a pena licenciar |
-| 8 | Import Wizard | **Service** + UI | Muito útil a PMEs. Independente de tudo o resto |
+| 8 | Import Wizard | **feito** | CSV e XLSX, com deteção de codificação e separador, mapeamento de colunas e pré-visualização antes de escrever |
 | 6 | OKR / metas | **Module** | Liga tarefas à estratégia; precisa do KPI Engine para não ser uma lista bonita |
 | 11 | Gestão documental | **Module** | Precisa de armazenamento de ficheiros no SDK, além de dados |
 | 16 / 17 | Previsão e anomalias avançadas | **Service** ou **Plugin** | O básico já existe (regressão, MAD). Modelos pesados entram como plugin com as suas dependências |

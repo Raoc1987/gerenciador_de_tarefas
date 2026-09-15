@@ -572,6 +572,30 @@ class ContextoPlugin:
             dono=self.manifesto.id,
         )
 
+    def registar_destino_de_importacao(
+        self, nome: str, campos, validar, criar, chave_titulo: str = "", permissao=None
+    ):
+        """Declara para onde este módulo sabe importar dados de um ficheiro.
+
+        Como nos indicadores, o nome é prefixado com o id do plugin: dois
+        módulos com um destino "itens" deixavam de se poder distinguir.
+
+        O destino sai da lista quando o plugin é descarregado.
+        """
+        from importacao import motor
+
+        prefixo = f"{self.manifesto.id}."
+        completo = nome if str(nome).startswith(prefixo) else prefixo + str(nome)
+        return motor.registar(
+            completo,
+            campos,
+            validar,
+            criar,
+            chave_titulo=chave_titulo,
+            permissao=permissao,
+            dono=self.manifesto.id,
+        )
+
     def utilizador(self) -> str:
         """Quem está em sessão, para o módulo registar quem fez o quê."""
         from core import permissoes as _permissoes

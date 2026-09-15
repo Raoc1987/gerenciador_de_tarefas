@@ -1,0 +1,25 @@
+# Atualizações propostas em PR, para não dependerem de alguém se lembrar.
+#
+# A aplicação não tem dependências de execução (ADR-0002); o que aqui se
+# atualiza são as ferramentas de desenvolvimento, testes e empacotamento, e as
+# Actions do CI — que estão fixadas por SHA e, sem isto, ficariam paradas.
+version: 2
+
+updates:
+  - package-ecosystem: pip
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(deps)"
+
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(ci)"

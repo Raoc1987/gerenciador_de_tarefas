@@ -9,6 +9,8 @@ dist/
 
 # Testes
 .pytest_cache/
+.coverage
+htmlcov/
 
 # Instalador
 installer/Output/

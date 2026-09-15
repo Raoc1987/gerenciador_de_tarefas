@@ -5,6 +5,11 @@ Além de abrir a interface, aceita duas opções de linha de comandos:
 ``--version``
     Escreve a versão e sai.
 
+``--verificar-banco``
+    Corre ``PRAGMA integrity_check`` e mostra a versão do schema, **sem tocar
+    no banco**: é o primeiro passo do diagnóstico quando alguém suspeita de
+    dados corrompidos ou de uma migração que ficou a meio.
+
 ``--autoteste [--relatorio ARQUIVO]``
     Verifica, sem intervenção do utilizador, que a aplicação está inteira:
     banco, idiomas, recursos, plugins e criação da janela. Foi feito para
@@ -27,8 +32,29 @@ _DIRETORIO_SRC = Path(__file__).resolve().parent
 if str(_DIRETORIO_SRC) not in sys.path:
     sys.path.insert(0, str(_DIRETORIO_SRC))
 
-from core.log import configurar_logging, obter_logger  # noqa: E402
+from core.log import (  # noqa: E402
+    configurar_logging,
+    instalar_captura_de_excecoes,
+    obter_logger,
+    registar_excecao_nao_tratada,
+)
 from core.version import APP_NAME, APP_VERSION  # noqa: E402
+
+
+def instalar_captura_do_tk() -> None:
+    """Encaminha para o log os erros dos *callbacks* da interface.
+
+    O Tk apanha a exceção de um *callback*, imprime-a no ``stderr`` e continua.
+    Empacotada em modo gráfico, a aplicação não tem ``stderr``: o botão não faz
+    nada e não fica registo nenhum de porquê. Daí este gancho — o núcleo não o
+    pode instalar sozinho porque não importa a interface (ADR-0001).
+    """
+    import tkinter as tk
+
+    def relatar(self, tipo, valor, tb) -> None:  # assinatura exigida pelo Tk
+        registar_excecao_nao_tratada(tipo, valor, tb, "interface")
+
+    tk.Tk.report_callback_exception = relatar
 
 
 def autoteste(relatorio: Path | None = None) -> int:
@@ -170,6 +196,51 @@ def autoteste(relatorio: Path | None = None) -> int:
     return 1 if falhas else 0
 
 
+def verificar_banco() -> int:
+    """Diz se o banco está íntegro e em que versão de schema está.
+
+    Abre em modo **só de leitura**, de propósito: um diagnóstico que aplica
+    migrações deixa de ser um diagnóstico. Sem isto, a única forma de ver o
+    estado do banco de um utilizador era abrir a aplicação — que é
+    precisamente o que já não estava a funcionar.
+
+    Returns:
+        0 se o banco está íntegro (ou ainda não existe), 1 caso contrário.
+    """
+    import sqlite3
+
+    from core.paths import caminho_banco
+
+    caminho = caminho_banco()
+    linhas = [f"banco: {caminho}"]
+
+    if not caminho.exists():
+        linhas.append("ainda não existe — nada para verificar.")
+        print("\n".join(linhas))
+        return 0
+
+    try:
+        with sqlite3.connect(f"{caminho.as_uri()}?mode=ro", uri=True) as conexao:
+            versao = int(conexao.execute("PRAGMA user_version").fetchone()[0])
+            integridade = str(conexao.execute("PRAGMA integrity_check").fetchone()[0])
+    except sqlite3.Error as erro:
+        linhas.append(f"FALHA ao abrir o banco: {erro}")
+        print("\n".join(linhas))
+        obter_logger("main").error("Verificação do banco falhou: %s", erro)
+        return 1
+
+    linhas.append(f"versão do schema (user_version): {versao}")
+    linhas.append(f"integrity_check: {integridade}")
+
+    intacto = integridade == "ok"
+    linhas.append("BANCO OK" if intacto else "BANCO COM PROBLEMAS")
+    print("\n".join(linhas))
+    obter_logger("main").info(
+        "Verificação do banco: %s (schema v%d)", integridade, versao
+    )
+    return 0 if intacto else 1
+
+
 def main(argumentos: list[str] | None = None) -> int:
     """Inicializa os serviços e abre a interface. Devolve o código de saída."""
     argumentos = list(sys.argv[1:] if argumentos is None else argumentos)
@@ -179,8 +250,17 @@ def main(argumentos: list[str] | None = None) -> int:
         return 0
 
     configurar_logging()
+    instalar_captura_de_excecoes()
+    instalar_captura_do_tk()
     logger = obter_logger("main")
     logger.info("%s %s a iniciar (pid=%s)", APP_NAME, APP_VERSION, os.getpid())
+
+    if "--verificar-banco" in argumentos:
+        try:
+            return verificar_banco()
+        except Exception:
+            logger.exception("Falha ao verificar o banco.")
+            return 1
 
     if "--autoteste" in argumentos:
         relatorio = None
@@ -340,6 +420,12 @@ def abrir_aplicacao(ao_abrir_sessao=None, ao_abrir_principal=None) -> int:
 
     logger = obter_logger("main")
     auditoria.ativar()
+    # A trilha só encolhe aqui, e só se houver política definida. Falhar a
+    # aplicá-la nunca impede a aplicação de abrir.
+    try:
+        auditoria.aplicar_retencao_configurada()
+    except Exception:  # pragma: no cover - defensivo
+        logger.exception("Falha ao aplicar a retenção da auditoria.")
 
     raiz = tk.Tk()
     raiz.withdraw()

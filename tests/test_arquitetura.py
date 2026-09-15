@@ -13,6 +13,7 @@ Falhar aqui não é um bug a tapar: é uma decisão de arquitetura por tomar.
 
 import ast
 import json
+import sys
 from pathlib import Path
 
 import pytest
@@ -242,6 +243,52 @@ def test_a_regra_das_tarefas_apanharia_uma_fuga():
         assert apanhado, f"esta fuga passava despercebida: {fuga[-1]!r}"
 
 
+# =============================================== SEM DEPENDÊNCIAS EXTERNAS
+
+
+def _nomes_locais() -> set:
+    """Módulos e pacotes que a própria aplicação fornece."""
+    nomes = {caminho.stem for caminho in SRC.rglob("*.py")}
+    nomes |= {p.name for p in SRC.iterdir() if p.is_dir()}
+    # Cada plugin importa os seus próprios módulos irmãos.
+    nomes |= {caminho.stem for caminho in PLUGINS.rglob("*.py")}
+    return nomes
+
+
+def test_a_aplicacao_so_usa_a_biblioteca_padrao():
+    """Nada do que é distribuído pode importar de fora da stdlib (ADR-0002).
+
+    É a regra que mantém o executável pequeno e a instalação sem compilação
+    nativa. Sem um teste, ela dependia de alguém reparar no `import` novo na
+    revisão — e uma dependência entra uma vez e fica.
+    """
+    locais = _nomes_locais()
+    for pasta in (SRC, PLUGINS):
+        for arquivo in pasta.rglob("*.py"):
+            if "__pycache__" in arquivo.parts:
+                continue
+            for importado in importados_por(arquivo):
+                raiz = importado.split(".")[0]
+                assert raiz in sys.stdlib_module_names or raiz in locais, (
+                    f"{arquivo.relative_to(RAIZ)} importa {importado}, "
+                    "que não vem da biblioteca padrão nem da aplicação."
+                )
+
+
+def test_nao_ha_dependencias_de_execucao_declaradas():
+    """`requirements.txt` vazio é a mesma regra, do lado da instalação."""
+    linhas = (RAIZ / "requirements.txt").read_text(encoding="utf-8").splitlines()
+    declaradas = [
+        linha.strip()
+        for linha in linhas
+        if linha.strip() and not linha.strip().startswith("#")
+    ]
+    assert not declaradas, (
+        f"requirements.txt declara dependências de execução: {declaradas}. "
+        "Ver docs/architecture/ADR-0002."
+    )
+
+
 # ============================================================== PLUGINS
 
 
@@ -255,6 +302,28 @@ def test_nenhum_plugin_fura_o_contrato():
                 assert proibido not in importados, (
                     f"o plugin {manifesto.parent.name} importa {proibido}"
                 )
+
+
+def test_os_plugins_embutidos_abrem_nesta_versao():
+    """Um plugin que acompanha a aplicação tem de ser compatível com ela.
+
+    `compativel_com` estava testado com manifestos inventados; os manifestos
+    reais não. Subir a versão da aplicação para lá do `max_app_version` de um
+    plugin embutido entregava-o desativado a toda a gente, sem nada falhar aqui.
+    """
+    from core.plugin_api import ManifestoPlugin
+    from core.version import APP_VERSION
+
+    manifestos = sorted(PLUGINS.glob("*/plugin.json"))
+    assert manifestos, "não há plugins embutidos para verificar."
+    for caminho in manifestos:
+        dados = json.loads(caminho.read_text(encoding="utf-8"))
+        manifesto = ManifestoPlugin.de_dicionario(dados)
+        assert manifesto.compativel_com(APP_VERSION), (
+            f"o plugin {caminho.parent.name} exige "
+            f"{manifesto.min_app_version}..{manifesto.max_app_version or 'sem limite'} "
+            f"e a aplicação está em {APP_VERSION}."
+        )
 
 
 def test_os_plugins_nao_dependem_uns_dos_outros():

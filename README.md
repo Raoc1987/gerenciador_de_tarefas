@@ -65,6 +65,23 @@ python -m pytest
 Alguns testes constroem janelas Tkinter reais e são automaticamente ignorados
 em ambientes sem interface gráfica.
 
+Para ver onde a suíte não chega:
+
+```bash
+python -m pytest --cov=src --cov-report=term-missing
+```
+
+### Verificar o banco de dados
+
+```bash
+python src/main.py --verificar-banco
+```
+
+Mostra a versão do schema e o resultado de `PRAGMA integrity_check`. Abre o
+banco **só de leitura**: é um diagnóstico, não aplica migrações nem repara
+nada. É o primeiro passo quando se suspeita de dados corrompidos — ver
+`docs/MANUTENCAO.md`.
+
 ### Verificar uma instalação
 
 ```bash

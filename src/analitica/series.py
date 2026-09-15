@@ -16,7 +16,7 @@ from dataclasses import dataclass
 from datetime import date, timedelta
 from typing import Dict, Iterable, List, Optional, Sequence
 
-from analytics.datas import lista_de_dias, para_data
+from analitica.datas import lista_de_dias, para_data
 
 #: Mínimo de pontos para arriscar uma tendência ou uma previsão.
 MINIMO_PARA_TENDENCIA = 4

@@ -95,12 +95,12 @@ def autoteste(relatorio: Path | None = None) -> int:
 
     # --- banco de dados
     try:
-        import database
+        import banco_de_dados
 
-        database.criar_tabela()
-        tarefa_id = database.adicionar_tarefa("autoteste", "2030-01-01")
-        encontrada = database.obter_tarefa(tarefa_id)
-        database.remover_tarefa(tarefa_id)
+        banco_de_dados.criar_tabela()
+        tarefa_id = banco_de_dados.adicionar_tarefa("autoteste", "2030-01-01")
+        encontrada = banco_de_dados.obter_tarefa(tarefa_id)
+        banco_de_dados.remover_tarefa(tarefa_id)
         verificar("banco de dados", encontrada is not None, str(caminho_banco()))
     except Exception as erro:  # pragma: no cover - caminho de diagnóstico
         verificar("banco de dados", False, repr(erro))

@@ -389,7 +389,7 @@ def test_as_contas_nao_conhecem_a_interface():
 
 
 def test_nao_importa_o_que_nao_pode():
-    proibidos = {"database", "gui", "tarefas_servico", "core.plugin_manager"}
+    proibidos = {"banco_de_dados", "gui", "tarefas_servico", "core.plugin_manager"}
     for arquivo in PASTA.rglob("*.py"):
         arvore = ast.parse(arquivo.read_text(encoding="utf-8"))
         for no in ast.walk(arvore):

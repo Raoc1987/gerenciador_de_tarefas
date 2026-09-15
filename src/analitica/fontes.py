@@ -1,6 +1,6 @@
 """A ponte entre a análise e os dados.
 
-É o **único** módulo de :mod:`analytics` que conhece o banco de dados. Trocar
+É o **único** módulo de :mod:`analitica` que conhece o banco de dados. Trocar
 SQLite por outra coisa mexe aqui e em mais lado nenhum.
 """
 
@@ -10,10 +10,10 @@ from dataclasses import dataclass
 from datetime import date
 from typing import List, Optional, Sequence
 
-from analytics.datas import intervalo_de_dias, periodo_anterior
-from analytics.insights import Insight, gerar
-from analytics.metricas import KPIs, Tarefa, calcular_kpis, normalizar
-from analytics.series import (
+from analitica.datas import intervalo_de_dias, periodo_anterior
+from analitica.insights import Insight, gerar
+from analitica.metricas import KPIs, Tarefa, calcular_kpis, normalizar
+from analitica.series import (
     Ponto,
     media_movel,
     prever,
@@ -94,13 +94,13 @@ def carregar_tarefas() -> List[Tarefa]:
     só as suas.
 
     Raises:
-        PermissaoNegadaError: se a sessão não puder ler analytics ou tarefas.
+        PermissaoNegadaError: se a sessão não puder ler analitica ou tarefas.
     """
-    import database
+    import banco_de_dados
     import tarefas_servico
 
     exigir(Permissao.ANALYTICS_LER)
-    database.criar_tabela()
+    banco_de_dados.criar_tabela()
     return normalizar(tarefas_servico.listar_completas())
 
 

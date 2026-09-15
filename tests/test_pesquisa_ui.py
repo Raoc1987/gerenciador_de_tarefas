@@ -10,7 +10,7 @@ pytestmark = pytest.mark.skipif(
 
 tk = pytest.importorskip("tkinter", reason="ambiente sem Tkinter")
 
-import database as db  # noqa: E402
+import banco_de_dados as db  # noqa: E402
 import pesquisa  # noqa: E402
 import pesquisas_incluidas  # noqa: E402
 from core import permissoes  # noqa: E402

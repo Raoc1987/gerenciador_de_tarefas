@@ -161,7 +161,7 @@ def test_menu_de_configuracoes_tem_plugins(janela):
 
 
 def test_adicionar_tarefa_pela_interface(janela):
-    import database
+    import banco_de_dados
 
     painel = tarefas(janela)
     campos = entradas(painel)
@@ -170,12 +170,12 @@ def test_adicionar_tarefa_pela_interface(janela):
     botoes(painel)["Adicionar"].invoke()
     janela.update()
 
-    assert [t[1] for t in database.buscar_tarefas()] == ["Tarefa da GUI"]
+    assert [t[1] for t in banco_de_dados.buscar_tarefas()] == ["Tarefa da GUI"]
     assert "Tarefa da GUI" in listbox(painel).get(0)
 
 
 def test_data_invalida_avisa_e_nao_grava(janela, dialogos):
-    import database
+    import banco_de_dados
 
     painel = tarefas(janela)
     campos = entradas(painel)
@@ -183,11 +183,11 @@ def test_data_invalida_avisa_e_nao_grava(janela, dialogos):
     campos[1].insert(0, "01/05/2026")
     botoes(painel)["Adicionar"].invoke()
     assert dialogos["aviso"]
-    assert database.buscar_tarefas() == []
+    assert banco_de_dados.buscar_tarefas() == []
 
 
 def test_concluir_e_remover_pela_interface(janela, dialogos):
-    import database
+    import banco_de_dados
 
     painel = tarefas(janela)
     entradas(painel)[0].insert(0, "Para concluir")
@@ -195,12 +195,12 @@ def test_concluir_e_remover_pela_interface(janela, dialogos):
     lista = listbox(painel)
     lista.selection_set(0)
     botoes(painel)["Concluir"].invoke()
-    assert database.buscar_tarefas()[0][3] == 1
+    assert banco_de_dados.buscar_tarefas()[0][3] == 1
     assert "✔" in lista.get(0)
 
     lista.selection_set(0)
     botoes(painel)["Remover"].invoke()
-    assert database.buscar_tarefas() == []
+    assert banco_de_dados.buscar_tarefas() == []
 
 
 def test_troca_de_idioma_atualiza_a_interface(janela):
@@ -591,13 +591,13 @@ def test_abrir_a_estrutura_pelo_menu(janela):
 
 
 def test_auditoria_mostra_o_que_aconteceu(janela):
-    import database
+    import banco_de_dados
     from core import auditoria
 
     auditoria.ativar()
-    database.criar_tabela()
-    tarefa_id = database.adicionar_tarefa("Tarefa auditada pela GUI")
-    database.concluir_tarefa(tarefa_id)
+    banco_de_dados.criar_tabela()
+    tarefa_id = banco_de_dados.adicionar_tarefa("Tarefa auditada pela GUI")
+    banco_de_dados.concluir_tarefa(tarefa_id)
 
     tela = abrir_auditoria(janela)
     eventos_mostrados = [r.evento for r in tela.registos()]
@@ -619,13 +619,13 @@ def test_auditoria_mostra_o_que_aconteceu(janela):
 
 
 def test_auditoria_filtra_por_familia(janela):
-    import database
+    import banco_de_dados
     from core import auditoria, eventos as eventos_modulo
     from core.eventos import Evento
 
     auditoria.ativar()
-    database.criar_tabela()
-    database.adicionar_tarefa("Uma tarefa")
+    banco_de_dados.criar_tabela()
+    banco_de_dados.adicionar_tarefa("Uma tarefa")
     auditoria.registar(
         Evento(
             nome=eventos_modulo.PLUGIN_ATIVADO,
@@ -651,12 +651,12 @@ def test_auditoria_filtra_por_familia(janela):
 
 def test_auditoria_nao_apaga_nada(janela):
     """A tela é de leitura: nenhum botão remove registos."""
-    import database
+    import banco_de_dados
     from core import auditoria
 
     auditoria.ativar()
-    database.criar_tabela()
-    database.adicionar_tarefa("Fica registada")
+    banco_de_dados.criar_tabela()
+    banco_de_dados.adicionar_tarefa("Fica registada")
 
     antes = auditoria.contar()
     tela = abrir_auditoria(janela)

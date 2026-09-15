@@ -6,8 +6,11 @@ from tkinter import messagebox, ttk
 from auditoria_ui import JanelaAuditoria
 import alertas
 import automacoes
+import importacoes_incluidas
+import indicadores_incluidos
 import pesquisas_incluidas
 from core import auditoria, eventos, funcionalidades, permissoes
+from importacao_ui import JanelaImportacao
 from pesquisa_ui import JanelaPesquisa
 from regras import motor as motor_de_regras
 from core.log import obter_logger
@@ -85,6 +88,8 @@ def criar_janela(raiz: tk.Tk | None = None) -> tk.Tk:
     # A automação depois dela: assim o que uma regra faz também fica na trilha.
     automacoes.registar_incluidas()
     pesquisas_incluidas.registar_incluidas()
+    indicadores_incluidos.registar_incluidos()
+    importacoes_incluidas.registar_incluidos()
     motor_de_regras.ativar()
     # A vigilancia depois do motor: assim o que ela anuncia ja encontra as
     # regras a ouvir.
@@ -277,6 +282,9 @@ def criar_janela(raiz: tk.Tk | None = None) -> tk.Tk:
     def abrir_pesquisa(_evento=None):
         JanelaPesquisa(app)
 
+    def abrir_importacao():
+        JanelaImportacao(app)
+
     def arrancar_plugins():
         """Semeia os plugins embutidos e ativa os que o utilizador deixou ligados."""
         try:
@@ -307,6 +315,9 @@ def criar_janela(raiz: tk.Tk | None = None) -> tk.Tk:
         configuracoes = tk.Menu(barra, tearoff=0)
         configuracoes.add_command(
             label=carregar_texto("plugins") + "...", command=abrir_plugins
+        )
+        configuracoes.add_command(
+            label=carregar_texto("importar") + "...", command=abrir_importacao
         )
         if permissoes.pode(Permissao.UTILIZADORES_GERIR):
             configuracoes.add_command(

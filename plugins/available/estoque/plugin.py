@@ -199,7 +199,7 @@ ESCREVER = "estoque.escrever"
 class ServicoEstoque:
     """O inventário, com a permissão verificada antes de cada operação.
 
-    A separação é a mesma que a aplicação faz entre ``database`` e
+    A separação é a mesma que a aplicação faz entre ``banco_de_dados`` e
     ``tarefas_servico``: o domínio não sabe quem está a usá-lo, e a política
     vive num sítio só.
     """
@@ -266,7 +266,86 @@ class EstoquePlugin(Plugin):
         self.inventario = Inventario(self.contexto.dados)
         self.inventario.preparar()
         self.servico = ServicoEstoque(self.inventario, self.contexto)
+        self._declarar_indicadores()
+        self._declarar_importacao()
         self.contexto.logger.info("Estoque pronto.")
+
+    def _declarar_importacao(self) -> None:
+        """Permite carregar o inventário inicial de uma folha de cálculo.
+
+        É como se começa a usar um módulo destes: ninguém digita trezentos
+        artigos à mão para experimentar.
+        """
+        from importacao.motor import Campo
+
+        def validar(dados) -> list:
+            problemas = []
+            codigo = (dados.get("codigo") or "").strip()
+            if not codigo:
+                problemas.append("O código está vazio.")
+            elif self.inventario.por_codigo(codigo) is not None:
+                # Importar duas vezes o mesmo ficheiro não pode duplicar o
+                # inventário em silêncio.
+                problemas.append(f"Já existe um item com o código {codigo!r}.")
+            if not (dados.get("nome") or "").strip():
+                problemas.append("O nome está vazio.")
+
+            minimo = (dados.get("minimo") or "").strip()
+            if minimo:
+                try:
+                    if int(float(minimo.replace(",", "."))) < 0:
+                        problemas.append("O mínimo não pode ser negativo.")
+                except ValueError:
+                    problemas.append(f"Mínimo inválido: {minimo!r}")
+            return problemas
+
+        def criar(dados) -> None:
+            minimo = (dados.get("minimo") or "").strip()
+            self.servico.criar_item(
+                dados["codigo"],
+                dados["nome"],
+                unidade=(dados.get("unidade") or "un").strip() or "un",
+                minimo=int(float(minimo.replace(",", "."))) if minimo else 0,
+            )
+
+        self.contexto.registar_destino_de_importacao(
+            "itens",
+            campos=[
+                Campo("codigo", "campo_codigo", obrigatorio=True, exemplo="PAR-01", chave=True),
+                Campo("nome", "campo_nome", obrigatorio=True, exemplo="Parafuso M6"),
+                Campo("unidade", "campo_unidade", exemplo="un"),
+                Campo("minimo", "campo_minimo", exemplo="10"),
+            ],
+            validar=validar,
+            criar=criar,
+            chave_titulo="destino_estoque_itens",
+            permissao=ESCREVER,
+        )
+
+    def _declarar_indicadores(self) -> None:
+        """Põe dois números deste módulo no painel da aplicação.
+
+        O painel não sabe o que é um item de inventário. Declarar é tudo o
+        que este módulo faz — e sai do painel quando for desinstalado.
+        """
+        from indicadores import Valor
+
+        def em_inventario() -> Valor:
+            return Valor(len(self.servico.listar()), sufixo=" un")
+
+        def em_falta() -> Valor:
+            return Valor(len(self.servico.em_falta()))
+
+        self.contexto.registar_indicador(
+            "itens", em_inventario, "indicador_estoque_itens", permissao=LER
+        )
+        self.contexto.registar_indicador(
+            "em_falta",
+            em_falta,
+            "indicador_estoque_em_falta",
+            subir_e_bom=False,
+            permissao=LER,
+        )
 
     def ativar(self) -> None:
         self.contexto.ui.registrar_aba(

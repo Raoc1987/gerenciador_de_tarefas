@@ -1,6 +1,6 @@
 """Regras de acesso às tarefas.
 
-O armazenamento (:mod:`database`) não sabe quem está a usar a aplicação, e a
+O armazenamento (:mod:`banco_de_dados`) não sabe quem está a usar a aplicação, e a
 interface não deve decidir quem vê o quê. A política vive aqui, num sítio só,
 e **todos** os caminhos passam por ela: a janela, os plugins e a análise.
 
@@ -17,7 +17,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import List, Optional, Sequence, Tuple
 
-import database
+import banco_de_dados
 from core import organizacao, permissoes
 from core.log import obter_logger
 from core.permissoes import Permissao, PermissaoNegadaError
@@ -31,7 +31,7 @@ def garantir_esquema() -> None:
     Quem usa as tarefas pede-o ao serviço; o armazenamento é assunto daqui
     para dentro. É o mesmo padrão defensivo da auditoria e das contas.
     """
-    database.criar_tabela()
+    banco_de_dados.criar_tabela()
 
 
 def utilizador_atual() -> str:
@@ -123,7 +123,7 @@ def listar(incluir_concluidas: bool = True, apenas_minhas: bool = False) -> List
     """
     _exigir_leitura()
     alcance = Ambito(dono=utilizador_atual()) if apenas_minhas else ambito()
-    return database.buscar_tarefas(
+    return banco_de_dados.buscar_tarefas(
         incluir_concluidas=incluir_concluidas,
         de=alcance.dono,
         unidades=alcance.unidades,
@@ -134,7 +134,7 @@ def listar_por_data(data_iso: str, apenas_minhas: bool = False) -> List[tuple]:
     """Tarefas visíveis com vencimento na data indicada."""
     _exigir_leitura()
     alcance = Ambito(dono=utilizador_atual()) if apenas_minhas else ambito()
-    return database.tarefas_por_data(
+    return banco_de_dados.tarefas_por_data(
         data_iso, de=alcance.dono, unidades=alcance.unidades
     )
 
@@ -143,7 +143,7 @@ def listar_completas(apenas_minhas: bool = False) -> List[tuple]:
     """Tarefas visíveis com todas as colunas (usada pela análise)."""
     _exigir_leitura()
     alcance = Ambito(dono=utilizador_atual()) if apenas_minhas else ambito()
-    return database.buscar_tarefas_completas(
+    return banco_de_dados.buscar_tarefas_completas(
         de=alcance.dono, unidades=alcance.unidades
     )
 
@@ -151,7 +151,7 @@ def listar_completas(apenas_minhas: bool = False) -> List[tuple]:
 def obter(tarefa_id: int) -> Optional[tuple]:
     """Uma tarefa, se a sessão a puder ver."""
     _exigir_leitura()
-    tarefa = database.obter_tarefa(tarefa_id)
+    tarefa = banco_de_dados.obter_tarefa(tarefa_id)
     if tarefa is None or not pode_ver(tarefa_id):
         return None
     return tarefa
@@ -159,7 +159,7 @@ def obter(tarefa_id: int) -> Optional[tuple]:
 
 def dono(tarefa_id: int) -> Optional[str]:
     """Quem criou a tarefa (``""`` se foi criada antes das contas)."""
-    return database.dono_de(tarefa_id)
+    return banco_de_dados.dono_de(tarefa_id)
 
 
 def pode_ver(tarefa_id: int) -> bool:
@@ -168,16 +168,16 @@ def pode_ver(tarefa_id: int) -> bool:
     Responde pelo mesmo âmbito que :func:`listar` usa: uma tarefa que aparece
     na lista tem de poder ser aberta, e uma que não aparece não.
     """
-    criador = database.dono_de(tarefa_id)
+    criador = banco_de_dados.dono_de(tarefa_id)
     if criador is None:
         return False
 
     alcance = ambito()
     if alcance.ve_tudo:
         return True
-    if criador in (alcance.dono, database.SEM_DONO):
+    if criador in (alcance.dono, banco_de_dados.SEM_DONO):
         return True
-    return bool(alcance.unidades) and database.unidade_de(tarefa_id) in alcance.unidades
+    return bool(alcance.unidades) and banco_de_dados.unidade_de(tarefa_id) in alcance.unidades
 
 
 def pode_editar(tarefa_id: int) -> bool:
@@ -202,7 +202,7 @@ def _exigir_edicao(tarefa_id: int) -> None:
 def adicionar(descricao: str, data_vencimento: Optional[str] = None) -> int:
     """Cria uma tarefa em nome de quem está em sessão."""
     _exigir_escrita()
-    return database.adicionar_tarefa(
+    return banco_de_dados.adicionar_tarefa(
         descricao,
         data_vencimento,
         criada_por=utilizador_atual(),
@@ -213,13 +213,13 @@ def adicionar(descricao: str, data_vencimento: Optional[str] = None) -> int:
 def concluir(tarefa_id: int, concluida: bool = True) -> bool:
     """Marca ou desmarca uma tarefa como concluída."""
     _exigir_edicao(tarefa_id)
-    return database.concluir_tarefa(tarefa_id, concluida)
+    return banco_de_dados.concluir_tarefa(tarefa_id, concluida)
 
 
 def remover(tarefa_id: int) -> bool:
     """Remove uma tarefa."""
     _exigir_edicao(tarefa_id)
-    return database.remover_tarefa(tarefa_id)
+    return banco_de_dados.remover_tarefa(tarefa_id)
 
 
 def contar_por_dono() -> List[Tuple[str, int]]:
@@ -228,7 +228,7 @@ def contar_por_dono() -> List[Tuple[str, int]]:
     if not ve_tudo():
         return [(utilizador_atual(), len(listar()))]
     contagem: dict = {}
-    for linha in database.buscar_tarefas_completas():
-        criador = linha[6] or database.SEM_DONO
+    for linha in banco_de_dados.buscar_tarefas_completas():
+        criador = linha[6] or banco_de_dados.SEM_DONO
         contagem[criador] = contagem.get(criador, 0) + 1
     return sorted(contagem.items())

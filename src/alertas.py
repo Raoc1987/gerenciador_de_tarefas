@@ -33,7 +33,7 @@ from dataclasses import dataclass
 from datetime import date, datetime
 from typing import Dict, List, Optional, Sequence, Tuple
 
-from analytics.insights import Insight, Nivel, gerar
+from analitica.insights import Insight, Nivel, gerar
 from core import eventos
 from core.log import obter_logger
 
@@ -73,10 +73,10 @@ class Mudanca:
 
 
 def _conectar():
-    import database
+    import banco_de_dados
 
-    database.criar_tabela()
-    return database.conectar()
+    banco_de_dados.criar_tabela()
+    return banco_de_dados.conectar()
 
 
 def vistos() -> Dict[str, Nivel]:
@@ -123,7 +123,7 @@ def avaliar(
     """Analisa, compara com o que já foi dito, e anuncia só o que mudou.
 
     Args:
-        tarefas: quando não é dado, vem de :mod:`analytics.fontes` — que
+        tarefas: quando não é dado, vem de :mod:`analitica.fontes` — que
             aplica as permissões e a visibilidade da sessão. A vigilância não
             vê mais do que quem a desencadeou.
 
@@ -131,7 +131,7 @@ def avaliar(
         O que mudou. Vazio quando não há novidade, que é o caso normal.
     """
     if tarefas is None:
-        from analytics import fontes
+        from analitica import fontes
 
         tarefas = fontes.carregar_tarefas()
 

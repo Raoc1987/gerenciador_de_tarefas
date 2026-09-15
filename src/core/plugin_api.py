@@ -12,7 +12,7 @@ Ciclo de vida::
     DISCOVER -> VALIDATE -> INSTALL -> REGISTER -> LOAD -> ACTIVATE
              -> RUN -> DEACTIVATE -> UNLOAD
 
-Um plugin **não** importa `database`, `gui` ou `core.plugin_manager`
+Um plugin **não** importa `banco_de_dados`, `gui` ou `core.plugin_manager`
 diretamente: tudo o que lhe é permitido usar chega pelo :class:`ContextoPlugin`.
 Isto mantém o acoplamento baixo e permite mudar a aplicação sem partir plugins.
 """
@@ -542,6 +542,59 @@ class ContextoPlugin:
             from core.permissoes import PermissaoNegadaError
 
             raise PermissaoNegadaError(permissao)
+
+    def registar_indicador(
+        self,
+        chave: str,
+        calcular,
+        chave_titulo: str = "",
+        subir_e_bom: bool = True,
+        permissao=None,
+    ):
+        """Declara um número que este módulo sabe medir, para o painel mostrar.
+
+        A chave é prefixada com o id do plugin automaticamente: dois módulos
+        que escolham "total" deixavam de se poder distinguir, e o último a
+        carregar apagava o outro sem aviso.
+
+        O indicador sai do painel quando o plugin é descarregado.
+        """
+        import indicadores
+
+        prefixo = f"{self.manifesto.id}."
+        nome = chave if str(chave).startswith(prefixo) else prefixo + str(chave)
+        return indicadores.registar(
+            nome,
+            calcular,
+            chave_titulo=chave_titulo,
+            subir_e_bom=subir_e_bom,
+            permissao=permissao,
+            dono=self.manifesto.id,
+        )
+
+    def registar_destino_de_importacao(
+        self, nome: str, campos, validar, criar, chave_titulo: str = "", permissao=None
+    ):
+        """Declara para onde este módulo sabe importar dados de um ficheiro.
+
+        Como nos indicadores, o nome é prefixado com o id do plugin: dois
+        módulos com um destino "itens" deixavam de se poder distinguir.
+
+        O destino sai da lista quando o plugin é descarregado.
+        """
+        from importacao import motor
+
+        prefixo = f"{self.manifesto.id}."
+        completo = nome if str(nome).startswith(prefixo) else prefixo + str(nome)
+        return motor.registar(
+            completo,
+            campos,
+            validar,
+            criar,
+            chave_titulo=chave_titulo,
+            permissao=permissao,
+            dono=self.manifesto.id,
+        )
 
     def utilizador(self) -> str:
         """Quem está em sessão, para o módulo registar quem fez o quê."""

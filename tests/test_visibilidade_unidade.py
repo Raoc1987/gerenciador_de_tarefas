@@ -9,7 +9,7 @@ e que a chegada da estrutura **não muda nada** para quem já usava a aplicaçã
 
 import pytest
 
-import database as db
+import banco_de_dados as db
 import tarefas_servico as servico
 from core import organizacao, permissoes, utilizadores
 from core.organizacao import TipoUnidade

@@ -67,6 +67,23 @@ plugins (ver `docs/architecture/`).
 - `textos.py`: tradução partilhada dos insights, para a mesma conclusão não
   ser escrita de duas maneiras no ecrã e no relatório.
 
+### Alterado
+
+- **Nomes de topo em português** (ADR-0005): `database.py` → `banco_de_dados.py`,
+  `analytics/` → `analitica/`, `reporting/` → `relatorios/`, `widgets/` →
+  `componentes/`. `src/` está no `sys.path`, por isso cada nome ali é um nome
+  no espaço global de módulos — foi assim que `src/workflow/` bateu com o hook
+  do pacote `workflow` do PyPI e o build parou, com os testes todos verdes.
+  Nada muda para quem usa o programa: a permissão continua a chamar-se
+  `analytics.ler` e os eventos do banco continuam a assinar `origem="database"`,
+  porque uma trilha de auditoria não se reescreve.
+- `docs/architecture/nomes-de-topo.json` declara todos os nomes de topo, e um
+  teste falha perante um nome não declarado — a decisão passa a ser tomada no
+  dia em que o módulo é criado. Os nomes que os plugins importam
+  (`utils`, `calendar_widget`, `language_manager`, `core`) ficam congelados,
+  com a razão escrita, e um teste verifica que coincidem com o que o
+  executável leva lá dentro.
+
 ### Corrigido
 
 - O relatório mostrava o estado de uma tarefa no plural ("Atrasadas"), usava

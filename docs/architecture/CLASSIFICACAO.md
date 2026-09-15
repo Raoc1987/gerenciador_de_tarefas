@@ -23,16 +23,18 @@ interface) · **Module** (domínio de negócio, como plugin) · **Plugin**
 | Visibilidade por unidade | Service | `src/tarefas_servico.py` |
 | Plugin Engine | Core | `core/plugin_*.py` |
 | SDK: permissões declaradas e dados próprios | Core (contrato) | `core/plugin_api.py`, `core/plugin_dados.py` |
-| Persistência | Infra | `src/database.py` |
+| Persistência | Infra | `src/banco_de_dados.py` |
 | Regra de quem vê que tarefas | Service | `src/tarefas_servico.py` |
-| Análise (métricas, séries, insights) | Service | `src/analytics/` |
-| Relatórios e exportação | Service | `src/reporting/` |
+| Análise (métricas, séries, insights) | Service | `src/analitica/` |
+| Relatórios e exportação | Service | `src/relatorios/` |
 | **Automação por regras** | **Service** | `src/regras/` |
 | **Pesquisa global** | **Service** | `src/pesquisa.py` |
+| **Indicadores declarados** | **Service** | `src/indicadores.py` |
+| **Importação de ficheiros** | **Service** | `src/importacao/` |
 | **Vigilância (análise -> alerta)** | **Service** | `src/alertas.py` |
 | Ações que a aplicação oferece às regras | Ligação | `src/automacoes.py` |
 | Tela das automações | UI | `src/regras_ui.py` |
-| Gráficos | Service (UI) | `src/widgets/` |
+| Gráficos | Service (UI) | `src/componentes/` |
 | Interface | UI | `src/*_ui.py`, `gui.py` |
 | Calendar Integration | Plugin | `plugins/available/calendar/` |
 | Verificação de atualizações | Plugin | `plugins/available/atualizacoes/` |
@@ -54,11 +56,11 @@ Ordenado por **valor sobre custo**, não pela ordem em que foi proposto.
 
 | # | Bloco | Categoria | Nota honesta |
 |---|---|---|---|
-| 5 | KPI Engine (indicadores declarativos) | **Service** | Bom desenho. Só compensa quando houver mais do que um domínio a medir |
+| 5 | KPI Engine (indicadores declarativos) | **feito** | A condição cumpriu-se: com o Estoque, passou a haver mais do que um domínio a medir |
 | 1 | Decision Engine — ~~insight → recomendação → ação~~ | **feito** | A cadeia está fechada: a análise publica alertas, uma regra age. O que falta é a recomendação ser gerada em vez de escrita à mão na regra |
 | 12 | Pesquisa global | ~~Core~~ → **Service** | Feito. A classificação estava errada: um registo destes vive bem fora do núcleo, como o das ações já tinha mostrado, e o núcleo não precisava de crescer para isto existir |
 | 22 | Entitlement engine | **Core** | Licenciamento a sério. As feature flags já estão feitas; falta haver módulos que valha a pena licenciar |
-| 8 | Import Wizard | **Service** + UI | Muito útil a PMEs. Independente de tudo o resto |
+| 8 | Import Wizard | **feito** | CSV e XLSX, com deteção de codificação e separador, mapeamento de colunas e pré-visualização antes de escrever |
 | 6 | OKR / metas | **Module** | Liga tarefas à estratégia; precisa do KPI Engine para não ser uma lista bonita |
 | 11 | Gestão documental | **Module** | Precisa de armazenamento de ficheiros no SDK, além de dados |
 | 16 / 17 | Previsão e anomalias avançadas | **Service** ou **Plugin** | O básico já existe (regressão, MAD). Modelos pesados entram como plugin com as suas dependências |
@@ -101,7 +103,7 @@ taxa gravada no código daria um número errado com ar de certo.
 | # | Bloco | Categoria | A razão de esperar |
 |---|---|---|---|
 | 9 | API | **Service** | Uma API precisa de um consumidor. Hoje não há nenhum, e uma API sem cliente envelhece mal. O que interessava já está feito: a lógica de negócio **não vive na interface**, por isso a API será um invólucro, não uma reescrita |
-| 19 | Cloud | Constraint | O que bloquearia a nuvem era lógica dentro da GUI e SQL espalhado. Nada disso existe. O passo real, quando chegar, é trocar `database.py` por um porto de repositório — uma peça, não o produto |
+| 19 | Cloud | Constraint | O que bloquearia a nuvem era lógica dentro da GUI e SQL espalhado. Nada disso existe. O passo real, quando chegar, é trocar `banco_de_dados.py` por um porto de repositório — uma peça, não o produto |
 | 13 | Copiloto empresarial | **Agent** (plugin) | Precisa de um fornecedor de LLM: rede, chave, custo por pergunta e dados da empresa a sair da máquina. É uma decisão comercial e de privacidade, não técnica. Como plugin opt-in, é viável; no Core, seria impor a todos os clientes uma dependência externa |
 | 14 | Orquestração de agentes | **Agent** | Só depois de **um** agente provar que vale a pena. Uma hierarquia de agentes sem um caso real é organograma, não software |
 

@@ -20,7 +20,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Sequence, Tuple
 
-from reporting.modelo import Indicadores, Lista, Relatorio, Tabela, texto_seguro
+from relatorios.modelo import Indicadores, Lista, Relatorio, Tabela, texto_seguro
 
 EXTENSAO = ".pdf"
 DESCRICAO = "PDF"

@@ -194,6 +194,31 @@ def test_remocao_de_dados_so_com_pedido_explicito(iss):
     assert posicao_param < primeiro < posicao_pergunta < segundo
 
 
+def test_o_sdk_prometido_aos_plugins_vai_dentro_do_executavel(spec, raiz_projeto):
+    """O que se diz aos plugins tem de ser o que o executável leva.
+
+    ``nomes-de-topo.json`` congela alguns nomes com uma razão: um plugin já
+    instalado importa-os pelo nome. Se essa lista e os ``hiddenimports``
+    divergirem, ou prometemos um módulo que não é empacotado — e o plugin
+    rebenta só no executável, onde ninguém corre testes — ou congelámos um
+    nome sem necessidade nenhuma.
+    """
+    import json
+
+    caminho = raiz_projeto / "docs" / "architecture" / "nomes-de-topo.json"
+    declarados = json.loads(caminho.read_text(encoding="utf-8"))["expostos_a_plugins"]
+    bloco = spec.split("hiddenimports = [", 1)[1].split("]", 1)[0]
+
+    for nome in declarados:
+        if nome.startswith("_"):
+            continue
+        assert f'"{nome}' in bloco, (
+            f"{nome} está declarado como parte do SDK dos plugins mas não "
+            f"aparece nos hiddenimports: um plugin que o importe falha no "
+            f"executável."
+        )
+
+
 # ==================================== NOMES QUE COLIDEM COM O EMPACOTADOR
 
 

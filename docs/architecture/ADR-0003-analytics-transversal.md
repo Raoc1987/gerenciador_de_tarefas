@@ -55,3 +55,10 @@ database ──► eventos ──► (auditoria, plugins, notificações)
 Um insight só é produzido quando há dados que o sustentem, e diz sempre o
 número em que se baseia. Sem dados suficientes, a resposta é "sem dados
 suficientes" — não uma frase vaga que pareça inteligente.
+
+## Nota (2026-09-15)
+
+O pacote passou a chamar-se `analitica/` e `database` passou a
+`banco_de_dados` — ver [ADR-0005](ADR-0005-nomes-de-topo.md). A decisão acima
+não muda: o que mudou foram os nomes das pastas, pela razão que lá está. A
+permissão continua a ser `analytics.ler`, porque essa é dado guardado.

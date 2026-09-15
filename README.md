@@ -138,7 +138,7 @@ Duas regras que o produto respeita e que os testes garantem:
   variação abaixo de 10% não vira notícia. Cada frase mostra o número em que
   se baseia.
 
-Os cálculos vivem em `src/analytics/` e não dependem da interface: a mesma
+Os cálculos vivem em `src/analitica/` e não dependem da interface: a mesma
 métrica serve dashboard, alertas e (no futuro) relatórios.
 
 ---
@@ -250,7 +250,78 @@ PLUGINS                                   [+ Instalar Plugin]
 Desativar **não** desinstala, e o estado sobrevive ao reinício.
 
 
-### Pesquisa global (Ctrl+F)
+### Importar de um ficheiro
+
+`Configurações → Importar de um ficheiro`. Quatro passos, na ordem em que uma
+pessoa pensa: **que ficheiro**, **para onde**, **que coluna é o quê**, e — antes
+de qualquer coisa ser escrita — **o que vai acontecer**.
+
+### Ler os ficheiros como eles realmente vêm
+
+Uma importação decide-se na leitura. Um leitor que só aceite UTF-8 separado
+por vírgulas falha no primeiro ficheiro exportado de um Excel português — que
+vem em `cp1252`, separado por ponto e vírgula — e a pessoa conclui que o
+programa não serve, o que é razoável a partir do que viu.
+
+| | |
+|---|---|
+| Codificação | `utf-8-sig`, `utf-8`, `cp1252`, `latin-1` — por tentativa, e a última aceita tudo |
+| Separador | ponto e vírgula, vírgula, tabulação ou barra vertical, descoberto pelo conteúdo. Uma vírgula dentro de uma frase não confunde: um separador a sério é **regular** |
+| XLSX | Lido à mão, sem dependências (ADR-0002). As células vazias que o Excel omite não deslocam as outras |
+
+### Nunca escrever às cegas
+
+A pré-visualização corre as mesmas validações que a importação, sem escrever
+nada. Mostra quantas linhas entram, quais ficam de fora e **porquê** — com os
+problemas primeiro, que é o que precisa de decisão.
+
+Uma linha má não cancela as boas: 300 linhas não podem ficar reféns de uma
+data mal escrita na linha 7.
+
+### Um ficheiro de fora não pode fazer mal à máquina
+
+Um XLSX é um ZIP com XML dentro, e o analisador da biblioteca padrão expande
+entidades declaradas no documento — 1 KB capaz de esgotar a memória (*billion
+laughs*). A solução habitual, `defusedxml`, é uma dependência externa que esta
+aplicação não tem. A defesa é **recusar antes de analisar**: uma folha de
+cálculo a sério não traz `DOCTYPE` nem declarações de entidades. Um ficheiro
+que traga não é uma folha de cálculo.
+
+### Cada módulo declara para onde sabe importar
+
+O Estoque aceita itens; um módulo novo declara o seu destino pelo contexto do
+plugin, e ele sai da lista quando o módulo é desinstalado. Um destino que
+exige uma permissão que a sessão não tem **não aparece** — oferecer para
+depois recusar é pior do que não oferecer.
+
+## Indicadores: cada módulo declara o que sabe medir
+
+O painel mostrava tarefas porque foi escrito para tarefas. Um módulo de
+negócio instalado não aparecia lá — e "a análise atravessa todo o produto"
+ficava por cumprir no sítio onde mais se nota.
+
+Agora cada parte da aplicação **declara** um indicador, e o painel mostra sem
+saber o que é. O Estoque declara os seus em três linhas:
+
+```python
+self.contexto.registar_indicador("itens", em_inventario, permissao=LER)
+self.contexto.registar_indicador("em_falta", contar_em_falta, subir_e_bom=False, permissao=LER)
+```
+
+A chave é prefixada com o id do plugin automaticamente — dois módulos que
+escolham "total" deixavam de se poder distinguir, e o último a carregar
+apagava o outro sem aviso. Os cartões **saem do painel quando o módulo é
+desinstalado**.
+
+Três regras que valem a pena:
+
+| | |
+|---|---|
+| Um indicador que rebenta é omitido | Uma divisão por zero num módulo não pode tapar os números de todos os outros |
+| Um indicador pode exigir permissão | Um número é informação: "há 3 itens abaixo do mínimo" diz que existe um inventário e como está. Quem não pode vê-lo **não vê o cartão** — um "—" já diria que ele existe |
+| Sem dados diz-se "—", não "0" | Mostrar zero quando não se sabe é mentir com um número, que é a forma mais convincente de mentir |
+
+## Pesquisa global (Ctrl+F)
 
 Uma caixa que procura em tudo o que existir. **Cada parte da aplicação regista
 o que sabe procurar**; a pesquisa junta as respostas e agrupa-as por origem —
@@ -700,7 +771,7 @@ com `PLUGIN_CLASS = MeuPlugin`.
 
 #### O que o plugin pode usar
 
-Tudo chega pelo `self.contexto` — um plugin **não** importa `database` nem
+Tudo chega pelo `self.contexto` — um plugin **não** importa `banco_de_dados` nem
 `gui`:
 
 | Atributo | Para quê |
@@ -770,7 +841,7 @@ gerenciador_de_tarefas/
 │   ├── main.py                 # entrada; --version, --autoteste
 │   ├── gui.py                  # janela principal (abas + menu)
 │   ├── plugin_ui.py            # tela de plugins e pontos de extensão da GUI
-│   ├── database.py             # SQLite com migrações versionadas
+│   ├── banco_de_dados.py       # SQLite com migrações versionadas
 │   ├── language_manager.py     # idiomas da aplicação e dos plugins
 │   ├── calendar_widget.py      # calendário reutilizável
 │   ├── dashboard_ui.py         # aba Dashboard
@@ -780,9 +851,9 @@ gerenciador_de_tarefas/
 │   ├── login_ui.py             # início de sessão e primeiro administrador
 │   ├── utilizadores_ui.py      # gestão de contas
 │   ├── textos.py               # apresentação partilhada dos insights
-│   ├── analytics/              # métricas, séries, insights (sem interface)
-│   ├── reporting/              # relatórios e exportação (PDF/XLSX/CSV)
-│   ├── widgets/                # gráficos desenhados em Canvas
+│   ├── analitica/              # métricas, séries, insights (sem interface)
+│   ├── relatorios/             # relatórios e exportação (PDF/XLSX/CSV)
+│   ├── componentes/           # gráficos desenhados em Canvas
 │   └── core/
 │       ├── version.py          # nome e versão (fonte única)
 │       ├── eventos.py          # barramento de eventos

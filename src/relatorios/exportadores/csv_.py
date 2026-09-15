@@ -12,7 +12,7 @@ from __future__ import annotations
 import csv
 from pathlib import Path
 
-from reporting.modelo import Relatorio, como_linhas
+from relatorios.modelo import Relatorio, como_linhas
 
 EXTENSAO = ".csv"
 DESCRICAO = "CSV"

@@ -14,8 +14,8 @@ pytestmark = pytest.mark.skipif(
 tk = pytest.importorskip("tkinter", reason="ambiente sem Tkinter")
 ttk = pytest.importorskip("tkinter.ttk", reason="ambiente sem Tkinter")
 
-from analytics import fontes  # noqa: E402
-from widgets.graficos import (  # noqa: E402
+from analitica import fontes  # noqa: E402
+from componentes.graficos import (  # noqa: E402
     CartaoKPI,
     GraficoBarras,
     GraficoLinhas,
@@ -105,7 +105,7 @@ def test_grafico_de_linhas_sem_dados_mostra_mensagem(raiz):
 
 def test_grafico_de_linhas_aceita_pontos_da_analise(raiz):
     """Aceita objetos Ponto (com .dia/.valor), não só tuplas."""
-    from analytics.series import Ponto
+    from analitica.series import Ponto
 
     pontos = [Ponto(date(2026, 6, d), float(d)) for d in range(1, 6)]
     grafico = GraficoLinhas(raiz, [Serie("Série", pontos)])
@@ -178,7 +178,7 @@ def test_cartao_kpi_sem_variacao_nao_inventa_seta(raiz):
 
 def test_cartao_kpi_com_subida_ma(raiz):
     """Em 'atrasadas', subir é mau: a cor tem de refletir isso."""
-    from widgets.graficos import COR_ALERTA
+    from componentes.graficos import COR_ALERTA
 
     cartao = CartaoKPI(raiz, rotulo="Atrasadas", valor="7", variacao=30.0, subir_e_bom=False)
     cartao.pack()
@@ -359,17 +359,17 @@ def test_erro_no_calculo_nao_derruba_o_dashboard(raiz):
 
 def test_dashboard_reage_a_uma_tarefa_criada(raiz):
     """A espinha completa: criar tarefa -> evento -> dashboard recalcula."""
-    import database
+    import banco_de_dados
     from core import eventos
     from dashboard_ui import PainelDashboard
 
-    database.criar_tabela()
+    banco_de_dados.criar_tabela()
     widget = PainelDashboard(raiz)
     widget.pack(fill=tk.BOTH, expand=True)
     raiz.update()
     assert widget.panorama.kpis.total == 0
 
-    database.adicionar_tarefa("Tarefa nova")
+    banco_de_dados.adicionar_tarefa("Tarefa nova")
     raiz.update()
     # O recálculo é adiado para agrupar rajadas de eventos.
     raiz.after(400, raiz.quit)
@@ -431,10 +431,10 @@ def dialogos_de_ficheiro(monkeypatch, tmp_path):
 
 
 def test_botao_exportar_gera_o_ficheiro(painel, raiz, dialogos_de_ficheiro, monkeypatch):
-    import database
+    import banco_de_dados
 
-    database.criar_tabela()
-    database.adicionar_tarefa("Tarefa para o relatório", "2030-01-01")
+    banco_de_dados.criar_tabela()
+    banco_de_dados.adicionar_tarefa("Tarefa para o relatório", "2030-01-01")
 
     botoes(painel)["Exportar"].invoke()
     raiz.update()

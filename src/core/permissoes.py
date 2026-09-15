@@ -70,6 +70,10 @@ class Permissao(str, Enum):
     estrutura tem sub-árvore vazia.
     """
 
+    # O texto de cada permissão é dado guardado: está nos papéis, nas
+    # declarações dos plugins e nas chaves de tradução. Renomear o módulo
+    # `analytics` para `analitica` não o muda — quem já tem esta permissão
+    # continua a tê-la.
     ANALYTICS_LER = "analytics.ler"
     RELATORIOS_LER = "relatorios.ler"
     RELATORIOS_EXPORTAR = "relatorios.exportar"
@@ -314,6 +318,14 @@ def pode(permissao) -> bool:
     """
     if isinstance(permissao, Permissao):
         return sessao().pode(permissao)
+
+    # Um nome do núcleo em texto é a mesma permissão do núcleo. Sem isto,
+    # `pode("tarefas.ler")` era negado em silêncio até ao administrador — e um
+    # "não" sem razão é a pior resposta que este módulo pode dar.
+    try:
+        return sessao().pode(Permissao(str(permissao)))
+    except ValueError:
+        pass
 
     papeis = permissoes_de_modulos().get(str(permissao))
     if papeis is None:

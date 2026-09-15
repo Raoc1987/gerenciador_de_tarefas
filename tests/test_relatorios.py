@@ -13,9 +13,9 @@ from xml.etree import ElementTree
 
 import pytest
 
-from reporting import exportadores, exportar, nome_sugerido
-from reporting.construtor import relatorio_de_tarefas, tabela_de_tarefas
-from reporting.modelo import Indicadores, Lista, Relatorio, Tabela, como_linhas
+from relatorios import exportadores, exportar, nome_sugerido
+from relatorios.construtor import relatorio_de_tarefas, tabela_de_tarefas
+from relatorios.modelo import Indicadores, Lista, Relatorio, Tabela, como_linhas
 
 HOJE = date(2026, 6, 15)
 
@@ -80,7 +80,7 @@ def test_relatorio_tem_as_tres_seccoes(relatorio):
 
 
 def test_indicadores_batem_com_a_analise(relatorio):
-    from analytics import fontes
+    from analitica import fontes
 
     visao = fontes.panorama(dias=30, hoje=HOJE, tarefas=tarefas_de_exemplo())
     valores = dict(relatorio.secoes[0].itens)

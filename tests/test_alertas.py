@@ -13,8 +13,8 @@ from datetime import date, timedelta
 import pytest
 
 import alertas
-import database as db
-from analytics.insights import Insight, Nivel
+import banco_de_dados as db
+from analitica.insights import Insight, Nivel
 from core import auditoria, eventos, permissoes
 
 HOJE = date(2026, 6, 15)

@@ -2,7 +2,7 @@
 
 import pytest
 
-import database as db
+import banco_de_dados as db
 from core import eventos
 from core.eventos import BarramentoEventos
 

@@ -14,7 +14,7 @@ from pathlib import Path
 
 import pytest
 
-import database as db
+import banco_de_dados as db
 import importacoes_incluidas
 from core import permissoes
 from importacao import leitura, motor

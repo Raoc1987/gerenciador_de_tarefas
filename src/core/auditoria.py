@@ -215,14 +215,14 @@ def registar(evento: Evento) -> bool:
     if evento.nome not in EVENTOS_AUDITAVEIS:
         return False
 
-    import database
+    import banco_de_dados
 
     campo_alvo = EVENTOS_AUDITAVEIS[evento.nome]
     alvo = str(evento.obter(campo_alvo, "")) if campo_alvo else ""
 
     try:
-        database.criar_tabela()
-        with database.conectar() as conexao:
+        banco_de_dados.criar_tabela()
+        with banco_de_dados.conectar() as conexao:
             conexao.execute(
                 "INSERT INTO auditoria (momento, evento, utilizador, alvo, detalhe,"
                 " origem, antes, depois) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
@@ -292,7 +292,7 @@ def consultar(
         utilizador: filtra por utilizador.
         desde: só registos a partir deste momento.
     """
-    import database
+    import banco_de_dados
 
     condicoes = []
     parametros: List = []
@@ -321,8 +321,8 @@ def consultar(
     parametros.append(max(1, limite))
 
     try:
-        database.criar_tabela()
-        with database.conectar() as conexao:
+        banco_de_dados.criar_tabela()
+        with banco_de_dados.conectar() as conexao:
             linhas = conexao.execute(consulta, parametros).fetchall()
     except Exception:
         logger.exception("Falha ao consultar a auditoria.")
@@ -333,11 +333,11 @@ def consultar(
 
 def contar() -> int:
     """Número de registos na trilha."""
-    import database
+    import banco_de_dados
 
     try:
-        database.criar_tabela()
-        with database.conectar() as conexao:
+        banco_de_dados.criar_tabela()
+        with banco_de_dados.conectar() as conexao:
             return int(conexao.execute("SELECT COUNT(*) FROM auditoria").fetchone()[0])
     except Exception:
         logger.exception("Falha ao contar os registos de auditoria.")
@@ -352,12 +352,12 @@ def aplicar_retencao(dias: int) -> int:
     if dias < 1:
         raise ValueError("A retenção tem de ser de pelo menos um dia.")
 
-    import database
+    import banco_de_dados
 
     limite = (datetime.now() - timedelta(days=dias)).isoformat(timespec="seconds")
     try:
-        database.criar_tabela()
-        with database.conectar() as conexao:
+        banco_de_dados.criar_tabela()
+        with banco_de_dados.conectar() as conexao:
             cursor = conexao.execute("DELETE FROM auditoria WHERE momento < ?", (limite,))
             removidos = cursor.rowcount
     except Exception:

@@ -199,7 +199,7 @@ ESCREVER = "estoque.escrever"
 class ServicoEstoque:
     """O inventário, com a permissão verificada antes de cada operação.
 
-    A separação é a mesma que a aplicação faz entre ``database`` e
+    A separação é a mesma que a aplicação faz entre ``banco_de_dados`` e
     ``tarefas_servico``: o domínio não sabe quem está a usá-lo, e a política
     vive num sítio só.
     """

@@ -70,6 +70,10 @@ class Permissao(str, Enum):
     estrutura tem sub-árvore vazia.
     """
 
+    # O texto de cada permissão é dado guardado: está nos papéis, nas
+    # declarações dos plugins e nas chaves de tradução. Renomear o módulo
+    # `analytics` para `analitica` não o muda — quem já tem esta permissão
+    # continua a tê-la.
     ANALYTICS_LER = "analytics.ler"
     RELATORIOS_LER = "relatorios.ler"
     RELATORIOS_EXPORTAR = "relatorios.exportar"

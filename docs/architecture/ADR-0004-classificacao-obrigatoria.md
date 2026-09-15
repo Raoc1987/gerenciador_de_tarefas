@@ -65,7 +65,8 @@ A pergunta a responder antes de escrever a primeira linha:
 - todo o módulo em `src/core/` consta do inventário, com justificação;
 - o Core não importa interface, análise nem relatórios;
 - a análise e os relatórios não importam interface;
-- nenhum plugin importa `database`, `gui` ou o `PluginManager`;
-- `CLASSIFICACAO.md` menciona todos os módulos e plugins que existem.
+- nenhum plugin importa `banco_de_dados`, `gui` ou o `PluginManager`;
+- `CLASSIFICACAO.md` menciona todos os módulos e plugins que existem;
+- todo o nome de topo de `src/` está declarado, com o que faz ([ADR-0005](ADR-0005-nomes-de-topo.md)).
 
 Uma regra de arquitetura que não falha um teste é uma sugestão.

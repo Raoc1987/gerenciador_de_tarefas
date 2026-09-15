@@ -2,7 +2,7 @@
 
 É a ponta visível da espinha de dados: uma tarefa criada publica um evento, o
 dashboard ouve-o e recalcula. Não faz `SELECT` nenhum — pede o panorama a
-:mod:`analytics.fontes` e desenha o que recebe.
+:mod:`analitica.fontes` e desenha o que recebe.
 """
 
 from __future__ import annotations
@@ -12,17 +12,17 @@ from pathlib import Path
 from tkinter import filedialog, messagebox, ttk
 from typing import Callable, List, Optional
 
-from analytics import fontes
-from analytics.fontes import PERIODO_PADRAO, PERIODOS, Panorama
-from analytics.insights import Insight, Nivel
+from analitica import fontes
+from analitica.fontes import PERIODO_PADRAO, PERIODOS, Panorama
+from analitica.insights import Insight, Nivel
 from core import eventos, permissoes
 from core.log import obter_logger
 from core.permissoes import Permissao
 from language_manager import carregar_texto
-from reporting import exportadores, servico
-from reporting.construtor import relatorio_de_tarefas
+from relatorios import exportadores, servico
+from relatorios.construtor import relatorio_de_tarefas
 from textos import texto_do_insight
-from widgets.graficos import (
+from componentes.graficos import (
     COR_ALERTA,
     COR_ATENCAO,
     COR_NEUTRA,
@@ -60,7 +60,7 @@ class PainelDashboard(ttk.Frame):
     Args:
         master: widget pai.
         obter_panorama: injetável nos testes; por omissão usa
-            :func:`analytics.fontes.panorama`.
+            :func:`analitica.fontes.panorama`.
     """
 
     def __init__(

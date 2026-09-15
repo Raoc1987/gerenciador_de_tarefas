@@ -4,7 +4,7 @@ import sqlite3
 
 import pytest
 
-import database as db
+import banco_de_dados as db
 
 
 def test_criar_tabela_e_idempotencia(dados_isolados):

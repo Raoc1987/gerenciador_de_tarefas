@@ -2,17 +2,17 @@
 
 Independente da interface e da persistência (ver ADR-0003):
 
-* :mod:`analytics.metricas` — KPIs a partir de tarefas;
-* :mod:`analytics.series` — séries temporais, tendência, previsão e anomalias;
-* :mod:`analytics.insights` — frases derivadas dos números;
-* :mod:`analytics.fontes` — a única peça que conhece o banco de dados.
+* :mod:`analitica.metricas` — KPIs a partir de tarefas;
+* :mod:`analitica.series` — séries temporais, tendência, previsão e anomalias;
+* :mod:`analitica.insights` — frases derivadas dos números;
+* :mod:`analitica.fontes` — a única peça que conhece o banco de dados.
 
 Tudo o resto são funções puras: recebem dados, devolvem resultados. Não abrem
 conexões, não tocam em widgets e não sabem que existe um dashboard.
 """
 
-from analytics.metricas import KPIs, calcular_kpis
-from analytics.series import (
+from analitica.metricas import KPIs, calcular_kpis
+from analitica.series import (
     Ponto,
     Tendencia,
     detetar_anomalias,

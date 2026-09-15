@@ -22,7 +22,7 @@ logger = obter_logger(__name__)
 
 def _kpis():
     """Os indicadores calculados sobre o que a sessao ve."""
-    from analytics.metricas import calcular_kpis, normalizar
+    from analitica.metricas import calcular_kpis, normalizar
     from tarefas_servico import listar_completas
 
     return calcular_kpis(normalizar(listar_completas()))

@@ -11,7 +11,7 @@ deixou de ser um motor.
 
 import pytest
 
-import database as db
+import banco_de_dados as db
 from core import auditoria, eventos, permissoes
 from regras import acoes, repositorio
 from regras.modelo import Acao, Condicao, Operador, Regra, RegraInvalidaError

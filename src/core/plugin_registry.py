@@ -94,12 +94,12 @@ class RegistroEstadoBanco(RegistroEstado):
     # ---------------------------------------------------------------- apoio
 
     def _conexao(self):
-        import database
+        import banco_de_dados
 
         if not self._schema_pronto:
-            database.criar_tabela()
+            banco_de_dados.criar_tabela()
             self._schema_pronto = True
-        return database.conectar()
+        return banco_de_dados.conectar()
 
     def _consultar(self, sql: str, parametros: tuple = ()) -> List[tuple]:
         try:

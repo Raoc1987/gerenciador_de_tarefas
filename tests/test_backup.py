@@ -12,7 +12,7 @@ from datetime import datetime
 
 import pytest
 
-import database as db
+import banco_de_dados as db
 from core import backup, organizacao, permissoes, utilizadores
 from core.backup import (
     ArquivoInvalidoError,

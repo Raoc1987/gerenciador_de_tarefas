@@ -9,8 +9,8 @@ from typing import Tuple
 from core import funcionalidades
 from core.log import obter_logger
 from core.permissoes import Permissao, exigir
-from reporting import exportadores
-from reporting.modelo import Relatorio
+from relatorios import exportadores
+from relatorios.modelo import Relatorio
 
 logger = obter_logger(__name__)
 

@@ -1,6 +1,6 @@
 """Tradução de resultados da análise para frases apresentáveis.
 
-Vive fora de :mod:`analytics` de propósito (ADR-0003): a análise devolve
+Vive fora de :mod:`analitica` de propósito (ADR-0003): a análise devolve
 chaves e números, e a apresentação decide como se lê. É partilhada pelo
 dashboard e pelos relatórios, para a mesma conclusão não ser escrita de duas
 maneiras diferentes.
@@ -8,7 +8,7 @@ maneiras diferentes.
 
 from __future__ import annotations
 
-from analytics.insights import Insight
+from analitica.insights import Insight
 from language_manager import carregar_texto
 
 _SEM_ACENTOS = str.maketrans("áéíóúâêôãõç", "aeiouaeoaoc")

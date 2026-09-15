@@ -111,10 +111,10 @@ def test_dois_plugins_nao_se_veem(tmp_path):
 
 def test_um_plugin_nao_alcanca_o_banco_da_aplicacao(tmp_path):
     """As tarefas não estão ao alcance de um SELECT do plugin."""
-    import database
+    import banco_de_dados
 
-    database.criar_tabela()
-    database.adicionar_tarefa("Tarefa da aplicação", "2030-01-01")
+    banco_de_dados.criar_tabela()
+    banco_de_dados.adicionar_tarefa("Tarefa da aplicação", "2030-01-01")
 
     dados = ArmazenamentoPlugin("intrometido", tmp_path)
     dados.migrar(1, CRIAR_ITENS)
@@ -220,13 +220,13 @@ def test_remover_sem_apagar_dados_preserva_o_ficheiro(gerenciador, criar_plugin)
 
 
 def test_remover_um_plugin_nao_toca_nas_tarefas(gerenciador, criar_plugin):
-    import database
+    import banco_de_dados
 
-    database.criar_tabela()
-    database.adicionar_tarefa("Continua aqui", "2030-01-01")
+    banco_de_dados.criar_tabela()
+    banco_de_dados.adicionar_tarefa("Continua aqui", "2030-01-01")
 
     criar_plugin("estoque")
     gerenciador.descobrir()
     gerenciador.remover("estoque", remover_dados=True)
 
-    assert [t[1] for t in database.buscar_tarefas()] == ["Continua aqui"]
+    assert [t[1] for t in banco_de_dados.buscar_tarefas()] == ["Continua aqui"]

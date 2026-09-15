@@ -112,9 +112,9 @@ def test_criar_conta(admin):
 
 
 def test_a_senha_nunca_fica_em_claro_no_banco(admin):
-    import database
+    import banco_de_dados
 
-    with database.conectar() as conexao:
+    with banco_de_dados.conectar() as conexao:
         guardado = conexao.execute("SELECT senha_hash FROM utilizadores").fetchone()[0]
     assert SENHA not in guardado
     assert seguranca.verificar(SENHA, guardado)
@@ -204,13 +204,13 @@ def test_entrada_com_sucesso_limpa_as_tentativas(admin):
 
 
 def test_bloqueio_expira(admin):
-    import database
+    import banco_de_dados
 
     for _ in range(utilizadores.TENTATIVAS_ATE_BLOQUEAR):
         utilizadores.autenticar("rodrigo", "errada12345")
 
     passado = (datetime.now() - timedelta(minutes=1)).isoformat(timespec="seconds")
-    with database.conectar() as conexao:
+    with banco_de_dados.conectar() as conexao:
         conexao.execute("UPDATE utilizadores SET bloqueado_ate = ?", (passado,))
 
     assert utilizadores.autenticar("rodrigo", SENHA).sucesso
@@ -218,14 +218,14 @@ def test_bloqueio_expira(admin):
 
 def test_o_custo_da_derivacao_sobe_na_entrada(admin, monkeypatch):
     """Uma conta antiga é regravada com o custo atual quando o dono entra."""
-    import database
+    import banco_de_dados
 
     fraco = seguranca.gerar_hash(SENHA, iteracoes=1000)
-    with database.conectar() as conexao:
+    with banco_de_dados.conectar() as conexao:
         conexao.execute("UPDATE utilizadores SET senha_hash = ?", (fraco,))
 
     assert utilizadores.autenticar("rodrigo", SENHA).sucesso
-    with database.conectar() as conexao:
+    with banco_de_dados.conectar() as conexao:
         guardado = conexao.execute("SELECT senha_hash FROM utilizadores").fetchone()[0]
     assert seguranca.precisa_de_rehash(guardado) is False
 

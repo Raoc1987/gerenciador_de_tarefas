@@ -4,7 +4,7 @@ Funções puras: recebem as tarefas já lidas e devolvem números. É isto que
 garante que dashboard, relatórios e alertas mostram sempre o mesmo valor —
 está calculado num sítio só.
 
-Formato esperado de cada tarefa (ver ``database.COLUNAS_TAREFA_COMPLETA``)::
+Formato esperado de cada tarefa (ver ``banco_de_dados.COLUNAS_TAREFA_COMPLETA``)::
 
     (id, descrição, data_vencimento, concluída, criada_em, concluída_em)
 
@@ -18,7 +18,7 @@ from dataclasses import dataclass
 from datetime import date
 from typing import Iterable, List, Optional, Sequence
 
-from analytics.datas import para_data
+from analitica.datas import para_data
 
 
 @dataclass(frozen=True)

@@ -22,6 +22,15 @@ from core.paths import caminho_banco
 
 logger = obter_logger(__name__)
 
+#: Quem assina os eventos deste módulo na trilha de auditoria.
+#:
+#: Diz ``"database"`` porque era esse o nome do módulo quando as primeiras
+#: linhas foram escritas, e uma trilha de auditoria não se reescreve: as
+#: linhas já gravadas não mudam, e mudar as novas partia o histórico em duas
+#: metades que não se conseguem consultar juntas. O nome do ficheiro é
+#: assunto nosso; o valor guardado é um facto sobre o passado.
+ORIGEM_DOS_EVENTOS = "database"
+
 # Cada entrada é aplicada quando ``PRAGMA user_version`` for menor que o índice+1.
 _MIGRACOES: List[Sequence[str]] = [
     # v1 — tabela de tarefas
@@ -349,7 +358,7 @@ def adicionar_tarefa(
 
     eventos.publicar(
         eventos.TAREFA_CRIADA,
-        origem="database",
+        origem=ORIGEM_DOS_EVENTOS,
         id=tarefa_id,
         descricao=descricao,
         data_vencimento=data_vencimento,
@@ -429,7 +438,7 @@ def concluir_tarefa(tarefa_id: int, concluida: bool = True) -> bool:
     if mudou:
         eventos.publicar(
             eventos.TAREFA_CONCLUIDA if concluida else eventos.TAREFA_REABERTA,
-            origem="database",
+            origem=ORIGEM_DOS_EVENTOS,
             id=tarefa_id,
         )
     return mudou
@@ -442,7 +451,7 @@ def remover_tarefa(tarefa_id: int) -> bool:
         removida = cursor.rowcount > 0
 
     if removida:
-        eventos.publicar(eventos.TAREFA_REMOVIDA, origem="database", id=tarefa_id)
+        eventos.publicar(eventos.TAREFA_REMOVIDA, origem=ORIGEM_DOS_EVENTOS, id=tarefa_id)
     return removida
 
 
@@ -451,7 +460,7 @@ def buscar_tarefas_completas(
 ) -> List[tuple]:
     """Tarefas com todas as colunas, incluindo ``concluida_em`` e ``criada_por``.
 
-    Usada pela camada de analytics. :func:`buscar_tarefas` mantém o formato de
+    Usada pela camada de analitica. :func:`buscar_tarefas` mantém o formato de
     cinco colunas de que a interface e os plugins dependem.
     """
     consulta = f"SELECT {COLUNAS_TAREFA_COMPLETA} FROM tarefas"

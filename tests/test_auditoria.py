@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 
 import pytest
 
-import database as db
+import banco_de_dados as db
 from core import auditoria, eventos, permissoes
 from core.eventos import Evento
 
@@ -191,12 +191,12 @@ def test_auditoria_nao_impede_o_trabalho(monkeypatch):
 
 
 def test_consulta_com_banco_partido_devolve_vazio(monkeypatch):
-    import database
+    import banco_de_dados
 
     def explode():
         raise RuntimeError("banco indisponível")
 
-    monkeypatch.setattr(database, "criar_tabela", explode)
+    monkeypatch.setattr(banco_de_dados, "criar_tabela", explode)
     assert auditoria.consultar() == []
     assert auditoria.contar() == 0
 

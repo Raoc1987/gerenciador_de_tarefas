@@ -837,9 +837,11 @@ class PluginManager:
         try:
             import indicadores
             import pesquisa
+            from importacao import motor as importacao_motor
 
             indicadores.esquecer_por_dono(plugin_id)
             pesquisa.esquecer_por_dono(plugin_id)
+            importacao_motor.esquecer_por_dono(plugin_id)
         except Exception:  # pragma: no cover - defensivo
             logger.exception("Falha a limpar os registos de %s.", plugin_id)
         # Um plugin descarregado não pode continuar a reagir a eventos.

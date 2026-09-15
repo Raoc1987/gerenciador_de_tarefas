@@ -49,12 +49,14 @@ def _limpar_automacao() -> None:
     import alertas
     import indicadores
     import pesquisa
+    from importacao import motor as importacao_motor
     from regras import acoes, motor
 
     motor.reiniciar()
     acoes.limpar()
     pesquisa.limpar()
     indicadores.limpar()
+    importacao_motor.limpar()
     alertas.desativar()
 
 

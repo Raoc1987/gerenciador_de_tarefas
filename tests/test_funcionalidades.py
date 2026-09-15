@@ -28,9 +28,39 @@ def sessao_de_admin():
 # ================================================================ CATÁLOGO
 
 
-def test_tudo_nasce_ligado():
+#: Funcionalidades que nascem desligadas, e o que cada uma trava.
+#:
+#: A regra continua a ser "nasce ligada": instalar a versão nova não pode
+#: tirar nada a ninguém. A exceção é a funcionalidade que **acrescenta uma
+#: restrição** — ligá-la por omissão mudava o que já funcionava, que é a
+#: mesma coisa vista do outro lado. Essas nascem desligadas, e ficam aqui
+#: para que nenhuma passe a nascer desligada sem alguém dizer porquê.
+NASCEM_DESLIGADAS = {
+    "segregacao_de_funcoes": "trava a conclusão da tarefa por quem a criou",
+}
+
+
+def test_nada_e_tirado_a_quem_ja_usava():
     """Instalar a versão nova não pode tirar nada a ninguém."""
-    assert all(estado.ativa for estado in funcionalidades.listar())
+    for estado in funcionalidades.listar():
+        if estado.chave in NASCEM_DESLIGADAS:
+            continue
+        assert estado.ativa, f"{estado.chave} passou a nascer desligada."
+
+
+def test_nascer_desligada_e_sempre_uma_decisao_escrita():
+    """Impede que uma funcionalidade nasça desligada em silêncio.
+
+    Nascer desligada é legítimo — e é o que faz uma restrição nova não mudar
+    o produto de quem já o usa. O que não é legítimo é acontecer sem
+    justificação: uma parte do produto que ninguém vê porque ninguém decidiu
+    ligá-la é indistinguível de um esquecimento.
+    """
+    desligadas = {e.chave for e in funcionalidades.listar() if not e.ativa}
+    assert desligadas == set(NASCEM_DESLIGADAS), (
+        "Uma funcionalidade nasce ligada, salvo decisão escrita em "
+        "NASCEM_DESLIGADAS com a razão."
+    )
 
 
 def test_nada_esta_decidido_a_partida():
@@ -136,7 +166,11 @@ def test_repor_tudo():
     funcionalidades.definir("painel", False)
     funcionalidades.definir("relatorios", False)
     funcionalidades.repor()
-    assert all(e.ativa and not e.decidida for e in funcionalidades.listar())
+    # "Repor" é voltar ao que veio de origem, e o de origem não é "tudo
+    # ligado": é o padrão de cada uma.
+    assert not any(e.decidida for e in funcionalidades.listar())
+    for e in funcionalidades.listar():
+        assert e.ativa is e.funcionalidade.padrao
 
 
 def test_lixo_na_configuracao_e_ignorado():

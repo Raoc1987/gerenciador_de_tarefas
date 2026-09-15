@@ -320,5 +320,9 @@
   "campo_codigo": "Code",
   "campo_nome": "Name",
   "campo_unidade": "Unit",
-  "campo_minimo": "Minimum"
+  "campo_minimo": "Minimum",
+  "funcionalidade_segregacao_de_funcoes": "Separation of duties",
+  "funcionalidade_segregacao_de_funcoes_ajuda": "Stops whoever creates a task from being the one who marks it done. Turn it on only where someone else can close the work: with it on, nobody completes the tasks they created — not even an administrator.",
+  "politica_quem_cria_nao_conclui": "Whoever creates a task cannot mark it done. Ask someone else to close it.",
+  "politica_falhou": "An access rule could not be evaluated, so the action was refused. Check the application log."
 }

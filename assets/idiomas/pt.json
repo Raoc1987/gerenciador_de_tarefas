@@ -320,5 +320,9 @@
   "campo_codigo": "Código",
   "campo_nome": "Nome",
   "campo_unidade": "Unidade",
-  "campo_minimo": "Mínimo"
+  "campo_minimo": "Mínimo",
+  "funcionalidade_segregacao_de_funcoes": "Segregação de funções",
+  "funcionalidade_segregacao_de_funcoes_ajuda": "Impede que quem cria uma tarefa seja quem a dá por concluída. Ligue-a só onde exista outra pessoa para fechar o trabalho: com ela ligada, ninguém conclui as tarefas que criou — nem quem administra.",
+  "politica_quem_cria_nao_conclui": "Quem cria uma tarefa não a pode dar por concluída. Peça a outra pessoa que a feche.",
+  "politica_falhou": "Uma regra de acesso não pôde ser avaliada, por isso a ação foi recusada. Veja o registo da aplicação."
 }

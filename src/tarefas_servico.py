@@ -18,11 +18,46 @@ from dataclasses import dataclass
 from typing import List, Optional, Sequence, Tuple
 
 import banco_de_dados
+import politicas_incluidas
 from core import organizacao, permissoes
 from core.log import obter_logger
-from core.permissoes import Permissao, PermissaoNegadaError
+from core.permissoes import Pedido, Permissao, PermissaoNegadaError
 
 logger = obter_logger(__name__)
+
+#: As políticas registam-se aqui, ao importar, e não no arranque da interface.
+#:
+#: Este módulo é a **porta única** para escrever numa tarefa — é o que o teste
+#: de arquitetura garante. Se as políticas dependessem de a janela ter sido
+#: construída, um caminho sem interface (um plugin, um teste, uma futura API)
+#: escrevia sem elas, e uma regra de acesso que só existe quando a interface
+#: existe não é uma regra de acesso. A porta traz as suas próprias fechaduras.
+politicas_incluidas.registar_incluidas()
+
+#: O tipo de objeto sobre o qual as políticas das tarefas decidem.
+TIPO = "tarefa"
+
+
+def pedido_sobre(acao: str, tarefa_id: int) -> Pedido:
+    """Os factos sobre uma tarefa, para uma política poder decidir.
+
+    Texto e números simples, de propósito: uma política — incluindo a de um
+    plugin — não recebe objetos nossos nem uma ligação ao banco. Vê o que
+    precisa de ver e mais nada.
+    """
+    linha = banco_de_dados.obter_tarefa(tarefa_id)
+    return Pedido(
+        acao,
+        TIPO,
+        {
+            "id": tarefa_id,
+            "dono": banco_de_dados.dono_de(tarefa_id) or "",
+            "unidade": banco_de_dados.unidade_de(tarefa_id),
+            "concluida": bool(linha[3]) if linha else False,
+            "vencimento": linha[2] if linha else None,
+            "criada_em": linha[4] if linha else None,
+        },
+    )
 
 
 def garantir_esquema() -> None:
@@ -211,14 +246,29 @@ def adicionar(descricao: str, data_vencimento: Optional[str] = None) -> int:
 
 
 def concluir(tarefa_id: int, concluida: bool = True) -> bool:
-    """Marca ou desmarca uma tarefa como concluída."""
+    """Marca ou desmarca uma tarefa como concluída.
+
+    Raises:
+        PoliticaNegouError: se uma política recusar **esta** tarefa — por
+            exemplo a segregação de funções, quando está ligada.
+    """
     _exigir_edicao(tarefa_id)
+    # Concluir e reabrir são ações diferentes para quem escreve políticas:
+    # fechar o próprio trabalho é o que a segregação de funções trava;
+    # reabrir é o caminho de volta, e travá-lo também seria uma armadilha.
+    acao = "concluir" if concluida else "reabrir"
+    permissoes.exigir(Permissao.TAREFAS_ESCREVER, pedido_sobre(acao, tarefa_id))
     return banco_de_dados.concluir_tarefa(tarefa_id, concluida)
 
 
 def remover(tarefa_id: int) -> bool:
-    """Remove uma tarefa."""
+    """Remove uma tarefa.
+
+    Raises:
+        PoliticaNegouError: se uma política recusar esta tarefa.
+    """
     _exigir_edicao(tarefa_id)
+    permissoes.exigir(Permissao.TAREFAS_ESCREVER, pedido_sobre("remover", tarefa_id))
     return banco_de_dados.remover_tarefa(tarefa_id)
 
 

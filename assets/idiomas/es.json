@@ -320,5 +320,9 @@
   "campo_codigo": "Código",
   "campo_nome": "Nombre",
   "campo_unidade": "Unidad",
-  "campo_minimo": "Mínimo"
+  "campo_minimo": "Mínimo",
+  "funcionalidade_segregacao_de_funcoes": "Segregación de funciones",
+  "funcionalidade_segregacao_de_funcoes_ajuda": "Impide que quien crea una tarea sea quien la da por terminada. Actívela solo donde exista otra persona para cerrar el trabajo: con ella activa, nadie completa las tareas que creó — ni siquiera quien administra.",
+  "politica_quem_cria_nao_conclui": "Quien crea una tarea no puede darla por terminada. Pida a otra persona que la cierre.",
+  "politica_falhou": "No se pudo evaluar una regla de acceso, por lo que la acción fue rechazada. Consulte el registro de la aplicación."
 }

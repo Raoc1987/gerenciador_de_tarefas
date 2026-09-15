@@ -35,13 +35,30 @@ def dados_isolados(tmp_path, monkeypatch):
     eventos.barramento().limpar()
     permissoes.terminar_sessao()
     permissoes.limpar_permissoes_de_modulos()
+    _repor_politicas()
     _limpar_automacao()
     yield destino
     auditoria.desativar()
     eventos.barramento().limpar()
     permissoes.terminar_sessao()
     permissoes.limpar_permissoes_de_modulos()
+    _repor_politicas()
     _limpar_automacao()
+
+
+def _repor_politicas() -> None:
+    """Deixa cada teste com exatamente as políticas que a aplicação traz.
+
+    Limpar e não voltar a registar seria pior do que não limpar: as políticas
+    incluídas desapareciam a meio da sessão de testes e, como nascem
+    desligadas, nada falhava — um teste passaria por a regra não existir, que
+    é o oposto do que ele diz estar a verificar.
+    """
+    import politicas_incluidas
+    from core import permissoes
+
+    permissoes.limpar_politicas()
+    politicas_incluidas.registar_incluidas()
 
 
 def _limpar_automacao() -> None:

@@ -23,6 +23,7 @@ import tarefas_servico
 from core.log import obter_logger
 from core.plugin_api import EstadoPlugin
 from core.plugin_manager import PluginManager, RegistroPlugin, ResultadoOperacao
+from core.plugin_sources import FontePlugins
 from language_manager import carregar_texto
 
 logger = obter_logger(__name__)
@@ -163,11 +164,22 @@ class JanelaPlugins(tk.Toplevel):
 
     Lista os plugins instalados com estado e ações (ativar, desativar,
     atualizar, remover) e permite instalar um novo a partir de um ``.zip``.
+
+    Args:
+        embutidos: fonte dos plugins que acompanham a aplicação. Quando é
+            dada, a tela oferece a reposição — a saída para os casos que o
+            arranque não pode resolver sozinho (ADR-0006).
     """
 
-    def __init__(self, master: tk.Misc, gerenciador: PluginManager) -> None:
+    def __init__(
+        self,
+        master: tk.Misc,
+        gerenciador: PluginManager,
+        embutidos: Optional[FontePlugins] = None,
+    ) -> None:
         super().__init__(master)
         self._gerenciador = gerenciador
+        self._embutidos = embutidos
         self.title(carregar_texto("plugins"))
         self.geometry("620x520")
         self.transient(master)
@@ -182,6 +194,12 @@ class JanelaPlugins(tk.Toplevel):
             text="+ " + carregar_texto("instalar_plugin"),
             command=self._instalar,
         ).pack(side=tk.RIGHT)
+        if self._embutidos is not None:
+            ttk.Button(
+                cabecalho,
+                text=carregar_texto("plugin_repor_embutidos"),
+                command=self._repor_embutidos,
+            ).pack(side=tk.RIGHT, padx=(0, 6))
 
         # Área rolável com um cartão por plugin.
         moldura = ttk.Frame(self)
@@ -350,6 +368,60 @@ class JanelaPlugins(tk.Toplevel):
                 parent=self,
             )
         )
+
+    def _repor_embutidos(self) -> None:
+        """Volta a pôr os plugins que vieram com a aplicação.
+
+        Existe porque a decisão do ADR-0006 deixa de propósito dois casos
+        parados: um plugin embutido que alguém modificou à mão, e um que o
+        utilizador substituiu pela sua própria versão. Nenhum dos dois pode
+        ser resolvido pelo arranque sem desfazer uma escolha de alguém — mas
+        ficar sem saída nenhuma seria pior, porque é assim que um plugin fica
+        partido para sempre.
+
+        Diz o que vai sobrepor antes de o fazer: quem carrega no botão deve
+        saber o que está a perder.
+        """
+        if self._embutidos is None:  # pragma: no cover - o botão nem existe
+            return
+
+        retidos = self._gerenciador.retidos_da_fonte(self._embutidos)
+        if not retidos:
+            messagebox.showinfo(
+                carregar_texto("informacao"),
+                carregar_texto("plugin_repor_nada"),
+                parent=self,
+            )
+            return
+
+        nomes = ", ".join(
+            (self._gerenciador.obter(pid).nome if self._gerenciador.obter(pid) else pid)
+            for pid in retidos
+        )
+        if not messagebox.askyesno(
+            carregar_texto("confirmar"),
+            carregar_texto("plugin_repor_confirmar", nomes=nomes),
+            parent=self,
+        ):
+            return
+
+        self.configure(cursor="watch")
+        self.update_idletasks()
+        try:
+            resultados = self._gerenciador.semear_de_fonte(self._embutidos, repor=True)
+        finally:
+            self.configure(cursor="")
+
+        falhas = [r for r in resultados if not r.sucesso]
+        if falhas:
+            self._mostrar_erro(falhas[0])
+        else:
+            messagebox.showinfo(
+                carregar_texto("informacao"),
+                carregar_texto("plugin_repostos", quantos=len(resultados)),
+                parent=self,
+            )
+        self.recarregar()
 
     def _remover(self, registro: RegistroPlugin) -> None:
         if not messagebox.askyesno(

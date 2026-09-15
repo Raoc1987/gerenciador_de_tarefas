@@ -22,6 +22,7 @@ interface) · **Module** (domínio de negócio, como plugin) · **Plugin**
 | Copia de seguranca e restauro | Core | `core/backup.py` |
 | Visibilidade por unidade | Service | `src/tarefas_servico.py` |
 | Plugin Engine | Core | `core/plugin_*.py` |
+| Posse dos plugins (embutido vs. do utilizador) | Core | `core/plugin_manager.py`, `core/plugin_registry.py` |
 | SDK: permissões declaradas e dados próprios | Core (contrato) | `core/plugin_api.py`, `core/plugin_dados.py` |
 | Persistência | Infra | `src/banco_de_dados.py` |
 | Regra de quem vê que tarefas | Service | `src/tarefas_servico.py` |

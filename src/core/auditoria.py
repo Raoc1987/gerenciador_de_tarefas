@@ -70,8 +70,11 @@ EVENTOS_AUDITAVEIS: Dict[str, str] = {
 
 #: Campos do payload que podem ser guardados como detalhe, por evento.
 _DETALHES = {
-    eventos.PLUGIN_INSTALADO: ("versao",),
-    eventos.PLUGIN_ATUALIZADO: ("versao", "versao_anterior"),
+    # "proveniencia" responde à pergunta que uma trilha de auditoria tem de
+    # responder sobre uma substituição: foi a aplicação a repor um plugin seu,
+    # ou foi alguém a instalar um pacote? (ADR-0006)
+    eventos.PLUGIN_INSTALADO: ("versao", "proveniencia"),
+    eventos.PLUGIN_ATUALIZADO: ("versao", "versao_anterior", "proveniencia"),
     eventos.PLUGIN_ERRO: ("erro",),
     eventos.PLUGIN_REMOVIDO: ("dados_removidos",),
     # Nunca "senha": o detalhe diz o que mudou, não o valor.

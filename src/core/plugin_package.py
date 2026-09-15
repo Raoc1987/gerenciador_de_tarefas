@@ -16,6 +16,7 @@ Proteções implementadas:
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import stat
@@ -42,6 +43,10 @@ MAX_TAMANHO_TOTAL = 50 * 1024 * 1024
 MAX_TAMANHO_ARQUIVO = 20 * 1024 * 1024
 #: Rácio máximo de compressão tolerado por arquivo (defesa contra zip bomb).
 MAX_RACIO_COMPRESSAO = 200
+
+#: Nomes que não fazem parte do conteúdo de um plugin: não entram num pacote
+#: gerado a partir de uma pasta, nem contam para a sua impressão digital.
+IGNORADOS = {"__pycache__", ".git", ".pytest_cache", ".DS_Store"}
 
 
 @dataclass(frozen=True)
@@ -284,3 +289,32 @@ def validar_instalacao(pasta: Path, esperado: Optional[ManifestoPlugin] = None) 
             f"entry_point inexistente após a extração: {manifesto.entry_point}"
         )
     return manifesto
+
+
+def impressao_da_pasta(pasta: Path) -> str:
+    """Impressão digital do conteúdo instalado de um plugin.
+
+    Serve uma pergunta só, e é preciso que a saiba responder com certeza:
+    **o que está no disco é exatamente o que a aplicação lá pôs?** É isso que
+    distingue "a versão embutida é mais recente, pode substituir" de "alguém
+    mexeu nisto à mão, não se toca" (ADR-0006).
+
+    Entra o caminho relativo de cada arquivo e o seu conteúdo — renomear um
+    arquivo muda a impressão tanto como editá-lo. Ficheiros gerados
+    (``__pycache__`` e companhia) ficam de fora: um plugin que corre escreve
+    ``.pyc`` dentro da sua própria pasta, e isso não é uma modificação do
+    utilizador.
+    """
+    pasta = Path(pasta)
+    digestor = hashlib.sha256()
+    for arquivo in sorted(pasta.rglob("*"), key=lambda p: p.relative_to(pasta).as_posix()):
+        relativo = arquivo.relative_to(pasta)
+        if any(parte in IGNORADOS for parte in relativo.parts):
+            continue
+        if not arquivo.is_file():
+            continue
+        digestor.update(relativo.as_posix().encode("utf-8"))
+        digestor.update(b"\0")
+        digestor.update(arquivo.read_bytes())
+        digestor.update(b"\0")
+    return digestor.hexdigest()

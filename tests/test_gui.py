@@ -505,16 +505,27 @@ def test_plugins_embutidos_sao_semeados_no_arranque(
 
 
 def test_semeadura_nao_substitui_o_plugin_do_utilizador(
-    dialogos, pasta_plugins, raiz_projeto, criar_plugin, monkeypatch
+    dialogos, pasta_plugins, raiz_projeto, zip_valido, monkeypatch
 ):
-    """Uma versão já instalada pelo utilizador nunca é sobreposta."""
+    """Uma versão instalada pelo utilizador nunca é sobreposta (ADR-0006).
+
+    Ele instalou o seu próprio ``calendar``; a aplicação traz um mais recente.
+    Manda ele: a semeadura vê que o plugin passou a ser do utilizador e não
+    lhe toca, nem para o atualizar.
+    """
     import core.plugin_manager as pm_modulo
     import gui
+    from core.plugin_manager import PluginManager
+    from core.plugin_registry import RegistroEstadoBanco
 
-    criar_plugin("calendar", version="0.9.0")
     monkeypatch.setattr(pm_modulo, "diretorio_plugins_instalados", lambda: pasta_plugins)
     monkeypatch.setattr(
         gui, "diretorio_plugins_embutidos", lambda: raiz_projeto / "plugins" / "available"
+    )
+    # Instalado pela porta por onde o utilizador instala: é isso que lhe dá a
+    # posse. Uma pasta largada no disco não diz de quem é.
+    PluginManager(diretorio=pasta_plugins, registro=RegistroEstadoBanco()).instalar_zip(
+        zip_valido("calendar", version="0.9.0")
     )
 
     app = criar_janela_com_retentativa(gui.criar_janela)
@@ -522,6 +533,96 @@ def test_semeadura_nao_substitui_o_plugin_do_utilizador(
         assert app.gerenciador_de_plugins.versao_instalada("calendar") == "0.9.0"
     finally:
         app.destroy()
+
+
+def test_semeadura_atualiza_o_plugin_embutido_desatualizado(
+    dialogos, pasta_plugins, raiz_projeto, monkeypatch
+):
+    """Uma correção num plugin embutido chega a quem já o tinha (ADR-0006).
+
+    É o caso que faltava: o plugin ficava instalado uma vez e nunca mais era
+    tocado, e nenhuma correção lhe chegava.
+    """
+    import core.plugin_manager as pm_modulo
+    import gui
+    from core.plugin_manager import PluginManager
+    from core.plugin_sources import FontePastasLocais
+
+    embutidos = raiz_projeto / "plugins" / "available"
+    monkeypatch.setattr(pm_modulo, "diretorio_plugins_instalados", lambda: pasta_plugins)
+    monkeypatch.setattr(gui, "diretorio_plugins_embutidos", lambda: embutidos)
+
+    # Uma instalação antiga: o plugin embutido tal como era numa versão
+    # anterior da aplicação, semeado quando ainda não se registava a posse.
+    antigo = PluginManager(diretorio=pasta_plugins, app_version="1.0.0")
+    antigo.semear_de_fonte(FontePastasLocais(embutidos))
+    manifesto = pasta_plugins / "calendar" / "plugin.json"
+    manifesto.write_text(
+        manifesto.read_text(encoding="utf-8").replace('"1.0.1"', '"0.9.0"'),
+        encoding="utf-8",
+    )
+
+    app = criar_janela_com_retentativa(gui.criar_janela)
+    try:
+        assert app.gerenciador_de_plugins.versao_instalada("calendar") == "1.0.1"
+    finally:
+        app.gerenciador_de_plugins.desativar_todos()
+        app.destroy()
+
+
+def test_repor_originais_recupera_um_plugin_embutido_modificado(
+    dialogos, pasta_plugins, tmp_path, monkeypatch
+):
+    """A saída explícita do ADR-0006, pela tela.
+
+    O arranque não pisa um plugin embutido que alguém modificou — mas tem de
+    haver maneira de o repor, ou fica partido para sempre.
+    """
+    import core.plugin_manager as pm_modulo
+    import gui
+    from conftest import CORPO_OK
+    from core.plugin_sources import FontePastasLocais
+
+    embutidos = tmp_path / "available"
+    (embutidos / "demo").mkdir(parents=True)
+    (embutidos / "demo" / "plugin.json").write_text(
+        json.dumps(manifesto_valido("demo")), encoding="utf-8"
+    )
+    (embutidos / "demo" / "plugin.py").write_text(CORPO_OK, encoding="utf-8")
+
+    monkeypatch.setattr(pm_modulo, "diretorio_plugins_instalados", lambda: pasta_plugins)
+    monkeypatch.setattr(gui, "diretorio_plugins_embutidos", lambda: embutidos)
+
+    app = criar_janela_com_retentativa(gui.criar_janela)
+    try:
+        estragado = pasta_plugins / "demo" / "plugin.py"
+        assert estragado.is_file(), "o arranque devia ter semeado o plugin"
+        estragado.write_text("# alterado à mão\n", encoding="utf-8")
+
+        fonte = FontePastasLocais(embutidos)
+        assert app.gerenciador_de_plugins.retidos_da_fonte(fonte) == ["demo"]
+
+        tela = abrir_plugins(app)
+        botoes(tela)["Repor originais"].invoke()
+        app.update()
+
+        assert estragado.read_text(encoding="utf-8") == CORPO_OK
+        assert app.gerenciador_de_plugins.retidos_da_fonte(fonte) == []
+        tela.destroy()
+    finally:
+        app.gerenciador_de_plugins.desativar_todos()
+        app.destroy()
+
+
+def test_repor_originais_diz_quando_nao_ha_nada_a_repor(janela, dialogos):
+    """Não há nada a fazer é uma resposta, e o utilizador merece ouvi-la."""
+    tela = abrir_plugins(janela)
+    dialogos["info"].clear()
+    botoes(tela)["Repor originais"].invoke()
+    janela.update()
+
+    assert dialogos["info"], "a tela devia ter dito alguma coisa"
+    tela.destroy()
 
 
 # ========================================================== TELA DE AUDITORIA

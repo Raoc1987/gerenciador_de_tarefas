@@ -1,0 +1,21 @@
+{
+  "_leia_me": "Inventário dos plugins que acompanham a aplicação (ver ADR-0006). A impressão é do conteúdo da pasta; a versão é a que o manifesto declara. tests/test_arquitetura.py falha quando a impressão muda e a versão não: um plugin embutido só chega a quem já o tem instalado se a versão subir, por isso corrigi-lo sem a subir é publicar uma correção que nunca sai do repositório. Regenerar com: python tools/inventario_plugins.py",
+  "plugins": {
+    "atualizacoes": {
+      "versao": "1.0.1",
+      "impressao": "93099330bc8594beee84b7092ba4cc84140328898b2a4955aacd42e6775e0508"
+    },
+    "calculadora": {
+      "versao": "1.0.0",
+      "impressao": "48d53ac75aa91fc882d0586c6bb20c3d7af4e707cba5ff747842a03c0ceaba64"
+    },
+    "calendar": {
+      "versao": "1.0.1",
+      "impressao": "bdc38eda51da4b96b99e2ef22bfebb9c6be57318c4565dadf9479a749cdadc02"
+    },
+    "estoque": {
+      "versao": "1.0.0",
+      "impressao": "374f24f1529bceb9b3dbd153a735e12ccf23d22b87d778756dee20867750b937"
+    }
+  }
+}

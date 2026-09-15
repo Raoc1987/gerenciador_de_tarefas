@@ -320,5 +320,9 @@
   "campo_codigo": "Código",
   "campo_nome": "Nombre",
   "campo_unidade": "Unidad",
-  "campo_minimo": "Mínimo"
+  "campo_minimo": "Mínimo",
+  "plugin_repor_embutidos": "Restaurar originales",
+  "plugin_repor_confirmar": "Esto vuelve a poner la versión que vino con la aplicación, sustituyendo lo que está instalado: {nomes}.\n\nLa configuración y los datos de estos complementos se conservan. ¿Desea continuar?",
+  "plugin_repor_nada": "Los complementos que vinieron con la aplicación ya están como deben estar.",
+  "plugin_repostos": "{quantos} complemento(s) restaurados a la versión que vino con la aplicación."
 }

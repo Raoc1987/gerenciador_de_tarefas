@@ -128,7 +128,7 @@ def test_plugin_real_na_janela(pasta_plugins, zip_calendar, tmp_path, monkeypatc
     from tkinter import messagebox
 
     import core.plugin_manager as pm_modulo
-    import database
+    import banco_de_dados
     import gui
 
     monkeypatch.setattr(messagebox, "showinfo", lambda *a, **k: None)
@@ -136,8 +136,8 @@ def test_plugin_real_na_janela(pasta_plugins, zip_calendar, tmp_path, monkeypatc
     monkeypatch.setattr(pm_modulo, "diretorio_plugins_instalados", lambda: pasta_plugins)
     monkeypatch.setattr(gui, "diretorio_plugins_embutidos", lambda: tmp_path / "sem_embutidos")
 
-    database.criar_tabela()
-    database.adicionar_tarefa("Reunião de equipa", "2026-06-15")
+    banco_de_dados.criar_tabela()
+    banco_de_dados.adicionar_tarefa("Reunião de equipa", "2026-06-15")
 
     app = criar_janela_com_retentativa(gui.criar_janela)
     try:
@@ -173,7 +173,7 @@ def test_plugin_real_na_janela(pasta_plugins, zip_calendar, tmp_path, monkeypatc
         ).invoke()
         app.update()
 
-        descricoes = [t[1] for t in database.tarefas_por_data("2026-06-16")]
+        descricoes = [t[1] for t in banco_de_dados.tarefas_por_data("2026-06-16")]
         assert descricoes == ["Tarefa criada no calendário"]
         assert "Tarefa criada no calendário" in lista.get(0)
 
@@ -181,7 +181,7 @@ def test_plugin_real_na_janela(pasta_plugins, zip_calendar, tmp_path, monkeypatc
         gerenciador.desativar("calendar")
         app.update()
         assert notebook.index("end") == 2, "fica o Dashboard e as Tarefas"
-        assert len(database.buscar_tarefas()) == 2
+        assert len(banco_de_dados.buscar_tarefas()) == 2
     finally:
         app.gerenciador_de_plugins.desativar_todos()
         app.destroy()

@@ -16,7 +16,7 @@ pytestmark = pytest.mark.skipif(
 
 tk = pytest.importorskip("tkinter", reason="ambiente sem Tkinter")
 
-import database as db  # noqa: E402
+import banco_de_dados as db  # noqa: E402
 from core import eventos, permissoes  # noqa: E402
 from regras import acoes, repositorio  # noqa: E402
 from regras.modelo import Acao, Condicao, Operador  # noqa: E402

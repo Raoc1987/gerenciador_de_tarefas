@@ -226,7 +226,7 @@ def test_o_nucleo_nao_sabe_que_o_estoque_existe():
 def test_o_modulo_nao_importa_o_que_nao_pode():
     import ast
 
-    proibidos = {"database", "gui", "tarefas_servico", "core.plugin_manager"}
+    proibidos = {"banco_de_dados", "gui", "tarefas_servico", "core.plugin_manager"}
     for arquivo in PASTA.rglob("*.py"):
         arvore = ast.parse(arquivo.read_text(encoding="utf-8"))
         for no in ast.walk(arvore):
@@ -259,10 +259,10 @@ def test_os_dados_do_modulo_ficam_no_ficheiro_dele(tmp_path):
 def test_o_modulo_nao_alcanca_as_tarefas(tmp_path):
     import sqlite3
 
-    import database
+    import banco_de_dados
 
-    database.criar_tabela()
-    database.adicionar_tarefa("Tarefa da aplicação", "2030-01-01")
+    banco_de_dados.criar_tabela()
+    banco_de_dados.adicionar_tarefa("Tarefa da aplicação", "2030-01-01")
 
     armazem = ArmazenamentoPlugin("estoque", tmp_path)
     inv = dominio.Inventario(armazem)
@@ -384,16 +384,16 @@ def test_remover_o_modulo_leva_os_dados_dele(estoque_instalado):
 
 
 def test_remover_o_modulo_nao_toca_nas_tarefas(estoque_instalado):
-    import database
+    import banco_de_dados
 
-    database.criar_tabela()
-    database.adicionar_tarefa("Continua aqui", "2030-01-01")
+    banco_de_dados.criar_tabela()
+    banco_de_dados.adicionar_tarefa("Continua aqui", "2030-01-01")
 
     permissoes.definir_sessao("ana", "administrador", persistir=False)
     estoque_instalado.carregar("estoque")
     estoque_instalado.remover("estoque", remover_dados=True)
 
-    assert [t[1] for t in database.buscar_tarefas()] == ["Continua aqui"]
+    assert [t[1] for t in banco_de_dados.buscar_tarefas()] == ["Continua aqui"]
 
 
 def test_nem_o_administrador_tem_o_que_nao_existe(estoque_instalado):

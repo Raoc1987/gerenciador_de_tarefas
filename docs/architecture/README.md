@@ -5,7 +5,7 @@ mantendo a gestão de tarefas como núcleo inicial.
 
 A regra que organiza tudo o resto: **os módulos empresariais (RH, Estoque,
 Financeiro, CRM, Manutenção…) não entram no núcleo.** O núcleo prepara-lhes o
-terreno — plugins, eventos, permissões, analytics — para que possam ser
+terreno — plugins, eventos, permissões, análise — para que possam ser
 acrescentados sem transformar o programa num monólito.
 
 ## Camadas
@@ -14,34 +14,34 @@ acrescentados sem transformar o programa num monólito.
         ┌──────────────────────────────────────────────┐
    UI   │  gui.py · dashboard_ui.py · plugin_ui.py     │
         ├──────────────────────────────────────────────┤
- APP    │  analytics/ (métricas, séries, insights)     │
-        │  reporting/ (relatórios e exportação)        │
+ APP    │  analitica/ (métricas, séries, insights)     │
+        │  relatorios/ (relatórios e exportação)       │
         ├──────────────────────────────────────────────┤
  CORE   │  eventos · permissoes · auditoria · plugins  │
         │  config · version · paths · log              │
         ├──────────────────────────────────────────────┤
- INFRA  │  database.py (SQLite + migrações)            │
+ INFRA  │  banco_de_dados.py (SQLite + migrações)      │
         └──────────────────────────────────────────────┘
 ```
 
 Regras de dependência, verificadas por testes:
 
 - a **UI** pode usar tudo abaixo dela;
-- **analytics** e **reporting** não importam UI nem plugins;
-- o **core** não importa UI nem analytics;
-- **plugins** não importam `database`, `gui` nem o `PluginManager`: tudo o que
+- **analitica** e **relatorios** não importam UI nem plugins;
+- o **core** não importa UI nem analitica;
+- **plugins** não importam `banco_de_dados`, `gui` nem o `PluginManager`: tudo o que
   usam chega pelo `ContextoPlugin`.
 
 ## A espinha de dados
 
-Analytics não é uma tela isolada — atravessa o produto:
+A análise não é uma tela isolada — atravessa o produto:
 
 ```
 ação do utilizador
       ↓
-database  ──publica──►  Event Bus  ──►  plugins / notificações / auditoria
+banco_de_dados ─publica─►  Event Bus  ──►  plugins / notificações / auditoria
       ↓
-analytics (métricas, séries, tendências)
+analitica (métricas, séries, tendências)
       ↓
 dashboard (KPIs, gráficos)
       ↓
@@ -93,7 +93,7 @@ A seguir, por ordem de valor:
 1. **SDK de dados e permissões para plugins** — um módulo de negócio precisa
    de tabelas próprias, permissões próprias e migrações próprias, e o
    `ContextoPlugin` ainda não dá nada disso. Tem de vir **antes** do primeiro
-   módulo, ou ele acabará a importar `database` diretamente. (A resolver
+   módulo, ou ele acabará a importar `banco_de_dados` diretamente. (A resolver
    também aí: um plugin que importe um módulo vizinho usa um nome global —
    dois plugins com um `verificador.py` colidiriam.)
 2. **Módulo Projetos** — primeiro módulo de gestão, já como plugin, para
@@ -106,7 +106,7 @@ A seguir, por ordem de valor:
 
 Uma nota sobre a ordem: o `ContextoPlugin` ainda não oferece tabelas próprias
 nem permissões próprias a um plugin. Isso tem de ser decidido **antes** do
-primeiro módulo de negócio, ou o módulo acabará a importar `database`
+primeiro módulo de negócio, ou o módulo acabará a importar `banco_de_dados`
 diretamente e a furar a arquitetura.
 
 Ver os ADRs nesta pasta para as decisões e os seus porquês.

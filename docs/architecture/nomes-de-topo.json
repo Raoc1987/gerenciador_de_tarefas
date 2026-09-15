@@ -1,0 +1,54 @@
+{
+  "_leia_me": "Inventário do espaço de nomes de topo de src/ (ver ADR-0005). src/ está no sys.path, por isso cada nome aqui é um nome no espaço global de módulos, partilhado com tudo o que estiver instalado. Um nome genérico colide com um pacote do PyPI: foi assim que src/workflow/ bateu com o hook do pacote `workflow` e o build parou, com os testes todos verdes. tests/test_arquitetura.py falha se aparecer um nome que não conste daqui — é o que obriga a decisão a ser tomada quando o módulo é criado, e não quando o build parte.",
+
+  "_regra": "Um nome novo é uma palavra do domínio, em português. O índice de pacotes é um espaço de nomes em inglês; não partilhar a língua é a maneira mais barata de não partilhar nomes.",
+
+  "expostos_a_plugins": {
+    "_leia_me": "Nomes congelados. Um plugin já instalado na máquina de alguém escreve `import utils`; renomear parte esse plugin sem aviso e sem forma de o corrigir à distância. O risco de colisão é real mas é menor do que partir código que não controlamos. Têm de coincidir com os hiddenimports do GerenciadorDeTarefas.spec.",
+    "calendar_widget": "Widget de calendário reutilizável; o plugin Calendar importa-o.",
+    "core": "core.plugin_api é o contrato. O resto de core/ está fora do alcance de um plugin, mas o nome do pacote é o mesmo.",
+    "language_manager": "Tradução. Um plugin que não traduza não serve para um produto em três idiomas.",
+    "utils": "Formatação partilhada (datas, números). Está no SDK desde a primeira versão."
+  },
+
+  "excecoes_de_nome": {
+    "_leia_me": "Nomes genéricos em inglês que ficaram, cada um com a razão. Não são dívida escondida: estão aqui, e o teste de colisão com os hooks do PyInstaller cobre-os a cada execução.",
+    "gui": "Janela principal. É interno — um plugin não o pode importar — por isso renomeá-lo é possível, mas o nome aparece em 42 sítios e no vocabulário de toda a documentação. Fica declarado e vigiado; muda no dia em que o teste de colisão o apanhar.",
+    "main": "Ponto de entrada passado ao PyInstaller. O nome faz parte da receita do empacotamento e da convenção do Python."
+  },
+
+  "nomes": {
+    "alertas": "Análise que passa a alerta, com persistência do que já foi anunciado.",
+    "analitica": "Métricas, séries, previsão e insights. Sem interface.",
+    "auditoria_ui": "Ecrã da trilha de auditoria.",
+    "automacoes": "Modelos de texto das ações automáticas.",
+    "backup_ui": "Ecrã de cópia e restauro.",
+    "banco_de_dados": "Persistência SQLite das tarefas e migrações do esquema.",
+    "calendar_widget": "Ver expostos_a_plugins.",
+    "componentes": "Gráficos desenhados em Canvas, reutilizáveis.",
+    "core": "Ver expostos_a_plugins; o conteúdo está em core-inventory.json.",
+    "dashboard_ui": "Painel: KPIs, gráficos e insights.",
+    "funcionalidades_ui": "Ecrã do que está ligado nesta instalação.",
+    "gui": "Ver excecoes_de_nome.",
+    "importacao": "Leitura de ficheiros e motor de importação.",
+    "importacao_ui": "Assistente de importação.",
+    "importacoes_incluidas": "Destinos de importação que vêm com a aplicação.",
+    "indicadores": "Registo de indicadores que os módulos declaram.",
+    "indicadores_incluidos": "Indicadores que vêm com a aplicação.",
+    "language_manager": "Ver expostos_a_plugins.",
+    "login_ui": "Autenticação e criação da primeira conta.",
+    "main": "Ver excecoes_de_nome.",
+    "organizacao_ui": "Ecrã da estrutura da empresa.",
+    "pesquisa": "Registo de fontes de pesquisa global.",
+    "pesquisa_ui": "Caixa de pesquisa e resultados.",
+    "pesquisas_incluidas": "Fontes de pesquisa que vêm com a aplicação.",
+    "plugin_ui": "Ecrã de gestão de plugins.",
+    "regras": "Motor de regras de automação (era workflow/, ver ADR-0005).",
+    "regras_ui": "Ecrã das regras.",
+    "relatorios": "Montagem e exportação de relatórios (PDF, XLSX, CSV).",
+    "tarefas_servico": "Serviço das tarefas: permissões e âmbito por cima da persistência.",
+    "textos": "Frases derivadas de números, traduzidas.",
+    "utilizadores_ui": "Ecrã de contas e papéis.",
+    "utils": "Ver expostos_a_plugins."
+  }
+}

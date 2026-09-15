@@ -21,7 +21,7 @@ from pathlib import Path
 from typing import List, Sequence
 from xml.sax.saxutils import escape
 
-from reporting.modelo import Indicadores, Relatorio, Tabela, como_linhas
+from relatorios.modelo import Indicadores, Relatorio, Tabela, como_linhas
 
 EXTENSAO = ".xlsx"
 DESCRICAO = "Excel (XLSX)"

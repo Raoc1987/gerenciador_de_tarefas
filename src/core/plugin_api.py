@@ -12,7 +12,7 @@ Ciclo de vida::
     DISCOVER -> VALIDATE -> INSTALL -> REGISTER -> LOAD -> ACTIVATE
              -> RUN -> DEACTIVATE -> UNLOAD
 
-Um plugin **não** importa `database`, `gui` ou `core.plugin_manager`
+Um plugin **não** importa `banco_de_dados`, `gui` ou `core.plugin_manager`
 diretamente: tudo o que lhe é permitido usar chega pelo :class:`ContextoPlugin`.
 Isto mantém o acoplamento baixo e permite mudar a aplicação sem partir plugins.
 """

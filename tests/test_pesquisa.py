@@ -10,7 +10,7 @@ Metade destes testes é sobre isso.
 
 import pytest
 
-import database as db
+import banco_de_dados as db
 import pesquisa
 import pesquisas_incluidas
 from core import organizacao, permissoes, utilizadores
@@ -228,4 +228,4 @@ def test_as_fontes_nao_falam_com_o_banco_diretamente():
         if isinstance(no, (ast.Import, ast.ImportFrom)):
             origem = getattr(no, "module", "") or ""
             nomes = [a.name for a in no.names] + [origem]
-            assert "database" not in nomes, "as fontes passam pelos serviços"
+            assert "banco_de_dados" not in nomes, "as fontes passam pelos serviços"

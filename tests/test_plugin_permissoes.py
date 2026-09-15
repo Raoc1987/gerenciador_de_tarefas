@@ -135,11 +135,11 @@ def test_declarar_nao_concede():
     ambas. O guardião do plugin deixa passar as duas; o serviço por baixo —
     que é quem conhece a sessão — recusa a escrita.
     """
-    import database
+    import banco_de_dados
     from core.permissoes import PermissaoNegadaError
     from plugin_ui import ServicoTarefasApp
 
-    database.criar_tabela()
+    banco_de_dados.criar_tabela()
     definir_sessao("ana", "visualizador", persistir=False)
     tarefas = TarefasComPermissoes(
         ServicoTarefasApp(), [Permissao.TAREFAS_LER, Permissao.TAREFAS_ESCREVER]

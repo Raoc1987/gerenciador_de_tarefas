@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from typing import Dict
 
-from reporting.exportadores import csv_, pdf, xlsx
+from relatorios.exportadores import csv_, pdf, xlsx
 
 #: Formato -> módulo exportador.
 EXPORTADORES: Dict[str, object] = {

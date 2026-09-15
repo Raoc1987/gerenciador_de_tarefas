@@ -145,10 +145,10 @@ _COLUNAS = (
 
 
 def _conectar():
-    import database
+    import banco_de_dados
 
-    database.criar_tabela()
-    return database.conectar()
+    banco_de_dados.criar_tabela()
+    return banco_de_dados.conectar()
 
 
 def listar(incluir_inativos: bool = True) -> List[Utilizador]:

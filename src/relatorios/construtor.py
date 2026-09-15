@@ -1,6 +1,6 @@
 """Montagem dos relatórios a partir da análise.
 
-Os números vêm todos de :mod:`analytics` — o relatório não recalcula nada por
+Os números vêm todos de :mod:`analitica` — o relatório não recalcula nada por
 sua conta, senão acabaria a divergir do dashboard.
 """
 
@@ -9,11 +9,11 @@ from __future__ import annotations
 from datetime import date
 from typing import Callable, List, Optional, Sequence
 
-from analytics import fontes
-from analytics.fontes import Panorama
-from analytics.metricas import Tarefa, normalizar
+from analitica import fontes
+from analitica.fontes import Panorama
+from analitica.metricas import Tarefa, normalizar
 from language_manager import carregar_texto
-from reporting.modelo import Indicadores, Lista, Relatorio, Tabela
+from relatorios.modelo import Indicadores, Lista, Relatorio, Tabela
 from textos import texto_do_insight
 
 Tradutor = Callable[..., str]

@@ -23,9 +23,9 @@ from datetime import date
 from enum import Enum
 from typing import Any, Dict, List, Optional, Sequence
 
-from analytics.datas import intervalo_de_dias, periodo_anterior
-from analytics.metricas import KPIs, calcular_kpis, filtrar_por_periodo, normalizar
-from analytics.series import (
+from analitica.datas import intervalo_de_dias, periodo_anterior
+from analitica.metricas import KPIs, calcular_kpis, filtrar_por_periodo, normalizar
+from analitica.series import (
     MINIMO_PARA_TENDENCIA,
     Ponto,
     detetar_anomalias,
@@ -46,7 +46,7 @@ class Nivel(str, Enum):
 
 
 class Tipo(str, Enum):
-    """Que pergunta o insight responde (escada clássica de analytics)."""
+    """Que pergunta o insight responde (escada clássica de analitica)."""
 
     DESCRITIVO = "descritivo"
     """O que aconteceu."""

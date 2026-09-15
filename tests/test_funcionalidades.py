@@ -212,8 +212,8 @@ def test_as_duas_perguntas_sao_independentes():
 
 def test_exportar_um_relatorio_e_recusado_com_a_funcionalidade_desligada(tmp_path):
     """Esconder o botão não chega: um plugin chega aqui por outro caminho."""
-    from reporting.modelo import Relatorio
-    from reporting.servico import exportar
+    from relatorios.modelo import Relatorio
+    from relatorios.servico import exportar
 
     funcionalidades.definir("relatorios", False)
     with pytest.raises(FuncionalidadeDesligadaError):
@@ -227,8 +227,8 @@ def test_a_funcionalidade_e_verificada_antes_da_permissao(tmp_path):
     Ao contrário, quem não tem permissão receberia "não pode" sobre uma coisa
     que a instalação nem sequer inclui.
     """
-    from reporting.modelo import Relatorio
-    from reporting.servico import exportar
+    from relatorios.modelo import Relatorio
+    from relatorios.servico import exportar
 
     funcionalidades.definir("relatorios", False)
     como("visualizador")  # não tem relatorios.exportar
@@ -237,8 +237,8 @@ def test_a_funcionalidade_e_verificada_antes_da_permissao(tmp_path):
 
 
 def test_exportar_funciona_quando_esta_ligada(tmp_path):
-    from reporting.modelo import Lista, Relatorio
-    from reporting.servico import exportar
+    from relatorios.modelo import Lista, Relatorio
+    from relatorios.servico import exportar
 
     relatorio = Relatorio(titulo="Teste", secoes=[Lista(titulo="S", itens=["x"])])
     assert exportar(relatorio, tmp_path / "r.csv").is_file()

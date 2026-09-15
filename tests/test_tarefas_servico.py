@@ -2,7 +2,7 @@
 
 import pytest
 
-import database as db
+import banco_de_dados as db
 import tarefas_servico as servico
 from core import permissoes
 from core.permissoes import Permissao, PermissaoNegadaError
@@ -52,7 +52,7 @@ def test_administrador_ve_tudo(cenario):
 
 def test_colaborador_ve_a_analise_das_suas(cenario):
     """Ver os próprios números não é privilégio; ver os dos outros é."""
-    from analytics import fontes
+    from analitica import fontes
 
     como("ana", "colaborador")
     assert fontes.panorama(dias=30).kpis.total == 2
@@ -193,7 +193,7 @@ def test_plugin_cria_tarefa_em_nome_de_quem_esta_em_sessao(cenario):
 
 
 def test_analytics_conta_so_o_que_a_sessao_ve(cenario):
-    from analytics import fontes
+    from analitica import fontes
 
     como("ana", "colaborador")
     assert fontes.panorama(dias=30).kpis.total == 2
@@ -203,7 +203,7 @@ def test_analytics_conta_so_o_que_a_sessao_ve(cenario):
 
 
 def test_relatorio_so_leva_o_que_a_sessao_ve(cenario):
-    from reporting.construtor import relatorio_de_tarefas
+    from relatorios.construtor import relatorio_de_tarefas
 
     como("ana", "colaborador")
     relatorio = relatorio_de_tarefas(dias=30)
@@ -220,7 +220,7 @@ def test_linhas_antigas_ficam_sem_dono_e_nao_inventado(cenario):
 
 
 def test_o_banco_nao_decide_quem_ve_o_que(cenario):
-    """database.py continua armazenamento: sem filtro, devolve tudo."""
+    """banco_de_dados.py continua armazenamento: sem filtro, devolve tudo."""
     como("ana", "colaborador")
     assert len(db.buscar_tarefas()) == 3
     assert len(servico.listar()) == 2

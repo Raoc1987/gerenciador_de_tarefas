@@ -4,11 +4,11 @@ from datetime import date, datetime, timedelta
 
 import pytest
 
-from analytics import fontes, insights, metricas, series
-from analytics.datas import intervalo_de_dias, para_data, periodo_anterior
-from analytics.insights import Nivel, Tipo
-from analytics.metricas import KPIs, Tarefa, calcular_kpis
-from analytics.series import Ponto
+from analitica import fontes, insights, metricas, series
+from analitica.datas import intervalo_de_dias, para_data, periodo_anterior
+from analitica.insights import Nivel, Tipo
+from analitica.metricas import KPIs, Tarefa, calcular_kpis
+from analitica.series import Ponto
 
 HOJE = date(2026, 6, 15)
 
@@ -443,11 +443,11 @@ def test_panorama_respeita_o_periodo():
 
 
 def test_panorama_le_do_banco(dados_isolados):
-    import database
+    import banco_de_dados
 
-    database.criar_tabela()
-    tarefa_id = database.adicionar_tarefa("Do banco", "2030-01-01")
-    database.concluir_tarefa(tarefa_id)
+    banco_de_dados.criar_tabela()
+    tarefa_id = banco_de_dados.adicionar_tarefa("Do banco", "2030-01-01")
+    banco_de_dados.concluir_tarefa(tarefa_id)
 
     visao = fontes.panorama(dias=30)
     assert visao.kpis.total == 1

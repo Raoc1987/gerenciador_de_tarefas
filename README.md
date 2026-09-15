@@ -121,7 +121,7 @@ Duas regras que o produto respeita e que os testes garantem:
   variação abaixo de 10% não vira notícia. Cada frase mostra o número em que
   se baseia.
 
-Os cálculos vivem em `src/analytics/` e não dependem da interface: a mesma
+Os cálculos vivem em `src/analitica/` e não dependem da interface: a mesma
 métrica serve dashboard, alertas e (no futuro) relatórios.
 
 ---
@@ -754,7 +754,7 @@ com `PLUGIN_CLASS = MeuPlugin`.
 
 #### O que o plugin pode usar
 
-Tudo chega pelo `self.contexto` — um plugin **não** importa `database` nem
+Tudo chega pelo `self.contexto` — um plugin **não** importa `banco_de_dados` nem
 `gui`:
 
 | Atributo | Para quê |
@@ -824,7 +824,7 @@ gerenciador_de_tarefas/
 │   ├── main.py                 # entrada; --version, --autoteste
 │   ├── gui.py                  # janela principal (abas + menu)
 │   ├── plugin_ui.py            # tela de plugins e pontos de extensão da GUI
-│   ├── database.py             # SQLite com migrações versionadas
+│   ├── banco_de_dados.py       # SQLite com migrações versionadas
 │   ├── language_manager.py     # idiomas da aplicação e dos plugins
 │   ├── calendar_widget.py      # calendário reutilizável
 │   ├── dashboard_ui.py         # aba Dashboard
@@ -834,9 +834,9 @@ gerenciador_de_tarefas/
 │   ├── login_ui.py             # início de sessão e primeiro administrador
 │   ├── utilizadores_ui.py      # gestão de contas
 │   ├── textos.py               # apresentação partilhada dos insights
-│   ├── analytics/              # métricas, séries, insights (sem interface)
-│   ├── reporting/              # relatórios e exportação (PDF/XLSX/CSV)
-│   ├── widgets/                # gráficos desenhados em Canvas
+│   ├── analitica/              # métricas, séries, insights (sem interface)
+│   ├── relatorios/             # relatórios e exportação (PDF/XLSX/CSV)
+│   ├── componentes/           # gráficos desenhados em Canvas
 │   └── core/
 │       ├── version.py          # nome e versão (fonte única)
 │       ├── eventos.py          # barramento de eventos

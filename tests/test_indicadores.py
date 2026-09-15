@@ -10,7 +10,7 @@ o quê.
 
 import pytest
 
-import database as db
+import banco_de_dados as db
 import indicadores
 import indicadores_incluidos
 from core import permissoes

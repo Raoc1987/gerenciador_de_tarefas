@@ -144,10 +144,10 @@ class Manifesto:
 def _plugins_registados() -> Tuple[Tuple[str, str], ...]:
     """Ids e versões dos plugins instalados, só para memória futura."""
     try:
-        import database
+        import banco_de_dados
 
-        database.criar_tabela()
-        with database.conectar() as conexao:
+        banco_de_dados.criar_tabela()
+        with banco_de_dados.conectar() as conexao:
             linhas = conexao.execute(
                 "SELECT id, version FROM plugins ORDER BY id"
             ).fetchall()
@@ -169,13 +169,13 @@ def nome_sugerido(agora: Optional[datetime] = None) -> str:
 def criar(destino: Path) -> Path:
     """Escreve uma cópia de segurança em ``destino``.
 
-    O banco é copiado pela API do SQLite — ver :func:`database.copiar_para` —
+    O banco é copiado pela API do SQLite — ver :func:`banco_de_dados.copiar_para` —
     e não por cópia do ficheiro, para a cópia nunca apanhar uma escrita a meio.
 
     Returns:
         O caminho do ficheiro escrito.
     """
-    import database
+    import banco_de_dados
 
     destino = Path(destino)
     destino.parent.mkdir(parents=True, exist_ok=True)
@@ -183,7 +183,7 @@ def criar(destino: Path) -> Path:
     manifesto = Manifesto(
         formato=FORMATO,
         app_version=APP_VERSION,
-        esquema=database.versao_do_esquema(),
+        esquema=banco_de_dados.versao_do_esquema(),
         criado_em=datetime.now().isoformat(timespec="seconds"),
         plugins=_plugins_registados(),
     )
@@ -194,7 +194,7 @@ def criar(destino: Path) -> Path:
     provisorio = destino.with_suffix(destino.suffix + ".parcial")
     try:
         with TemporaryDirectory(prefix="gdt_backup_") as temporario:
-            copia_banco = database.copiar_para(Path(temporario) / "tarefas.db")
+            copia_banco = banco_de_dados.copiar_para(Path(temporario) / "tarefas.db")
 
             with zipfile.ZipFile(provisorio, "w", zipfile.ZIP_DEFLATED) as arquivo:
                 arquivo.writestr(
@@ -324,14 +324,14 @@ def verificar_compatibilidade(manifesto: Manifesto) -> None:
             do que os desta aplicação. Abrir um banco do futuro é ler colunas
             que não se conhecem; atualizar a aplicação é a resposta certa.
     """
-    import database
+    import banco_de_dados
 
     if manifesto.formato > FORMATO:
         raise BackupIncompativelError(
             f"A cópia está no formato {manifesto.formato} e esta versão lê até "
             f"ao {FORMATO}. Atualize a aplicação."
         )
-    if manifesto.esquema > database.VERSAO_ESQUEMA:
+    if manifesto.esquema > banco_de_dados.VERSAO_ESQUEMA:
         raise BackupIncompativelError(
             f"A cópia foi feita pela versão {manifesto.app_version}, mais recente "
             f"do que a instalada ({APP_VERSION}). Atualize a aplicação e tente "
@@ -359,7 +359,7 @@ def restaurar(caminho_zip: Path) -> Path:
         ArquivoInvalidoError: cópia malformada ou insegura.
         BackupIncompativelError: cópia de uma versão mais recente.
     """
-    import database
+    import banco_de_dados
 
     caminho_zip = Path(caminho_zip)
     manifesto = inspecionar(caminho_zip)
@@ -392,7 +392,7 @@ def restaurar(caminho_zip: Path) -> Path:
         for pasta in (PASTA_CONFIG, PASTA_DADOS_PLUGINS):
             _repor_pasta(extraido / pasta, raiz / pasta)
 
-    database.criar_tabela()  # aplica migrações se a cópia for mais antiga
+    banco_de_dados.criar_tabela()  # aplica migrações se a cópia for mais antiga
     logger.info(
         "Cópia de %s restaurada; estado anterior guardado em %s",
         manifesto.data_legivel,
@@ -405,7 +405,7 @@ def _exigir_banco_legivel(caminho: Path) -> None:
     """Confirma que o ficheiro é mesmo um banco desta aplicação."""
     import sqlite3
 
-    import database
+    import banco_de_dados
 
     try:
         conexao = sqlite3.connect(caminho)
@@ -418,11 +418,11 @@ def _exigir_banco_legivel(caminho: Path) -> None:
             f"O banco dentro da cópia não abre: {erro}"
         ) from erro
 
-    versao = database.versao_do_esquema(caminho)
-    if versao > database.VERSAO_ESQUEMA:  # pragma: no cover - já visto no manifesto
+    versao = banco_de_dados.versao_do_esquema(caminho)
+    if versao > banco_de_dados.VERSAO_ESQUEMA:  # pragma: no cover - já visto no manifesto
         raise BackupIncompativelError(
             f"O banco da cópia está no esquema {versao} e esta versão lê até ao "
-            f"{database.VERSAO_ESQUEMA}."
+            f"{banco_de_dados.VERSAO_ESQUEMA}."
         )
 
 

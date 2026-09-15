@@ -805,10 +805,10 @@ def test_registo_em_memoria_e_o_padrao(pasta_plugins):
 
 
 def test_tabela_de_plugins_nao_afeta_as_tarefas(pasta_plugins, criar_plugin):
-    import database
+    import banco_de_dados
 
-    database.criar_tabela()
-    tarefa_id = database.adicionar_tarefa("Tarefa importante")
+    banco_de_dados.criar_tabela()
+    tarefa_id = banco_de_dados.adicionar_tarefa("Tarefa importante")
 
     criar_plugin("demo")
     gerenciador = PluginManager(
@@ -818,7 +818,7 @@ def test_tabela_de_plugins_nao_afeta_as_tarefas(pasta_plugins, criar_plugin):
     gerenciador.ativar("demo")
     gerenciador.remover("demo", remover_dados=True)
 
-    assert database.obter_tarefa(tarefa_id)[1] == "Tarefa importante"
+    assert banco_de_dados.obter_tarefa(tarefa_id)[1] == "Tarefa importante"
 
 
 # ====================================================== IDIOMAS DOS PLUGINS
@@ -996,35 +996,35 @@ class PluginPublicador(Plugin):
 
 
 def test_plugin_reage_a_eventos_da_aplicacao(gerenciador, criar_plugin):
-    import database
+    import banco_de_dados
     from core import eventos
 
     criar_plugin("ouvinte", corpo=CORPO_OUVINTE)
     gerenciador.descobrir()
     gerenciador.ativar("ouvinte")
 
-    database.criar_tabela()
-    tarefa_id = database.adicionar_tarefa("Tarefa observada")
-    database.concluir_tarefa(tarefa_id)
+    banco_de_dados.criar_tabela()
+    tarefa_id = banco_de_dados.adicionar_tarefa("Tarefa observada")
+    banco_de_dados.concluir_tarefa(tarefa_id)
 
     recebidos = sys.modules[PREFIXO_MODULO + "ouvinte"].recebidos
     assert recebidos == [eventos.TAREFA_CRIADA, eventos.TAREFA_CONCLUIDA]
 
 
 def test_plugin_desativado_deixa_de_receber(gerenciador, criar_plugin):
-    import database
+    import banco_de_dados
 
     criar_plugin("ouvinte", corpo=CORPO_OUVINTE)
     gerenciador.descobrir()
     gerenciador.ativar("ouvinte")
     modulo = sys.modules[PREFIXO_MODULO + "ouvinte"]
 
-    database.criar_tabela()
-    database.adicionar_tarefa("Antes")
+    banco_de_dados.criar_tabela()
+    banco_de_dados.adicionar_tarefa("Antes")
     assert len(modulo.recebidos) == 1
 
     gerenciador.descarregar("ouvinte")
-    database.adicionar_tarefa("Depois")
+    banco_de_dados.adicionar_tarefa("Depois")
     assert len(modulo.recebidos) == 1, "as subscrições saem com o plugin"
 
 
@@ -1041,7 +1041,7 @@ def test_plugin_removido_nao_deixa_subscricoes(gerenciador, criar_plugin):
 
 
 def test_ouvinte_defeituoso_de_plugin_nao_impede_o_trabalho(gerenciador, criar_plugin):
-    import database
+    import banco_de_dados
 
     criar_plugin("mau", corpo=CORPO_OUVINTE_MAU)
     criar_plugin("bom", corpo=CORPO_OUVINTE)
@@ -1049,10 +1049,10 @@ def test_ouvinte_defeituoso_de_plugin_nao_impede_o_trabalho(gerenciador, criar_p
     gerenciador.ativar("mau")
     gerenciador.ativar("bom")
 
-    database.criar_tabela()
-    tarefa_id = database.adicionar_tarefa("Tem de ser criada")
+    banco_de_dados.criar_tabela()
+    tarefa_id = banco_de_dados.adicionar_tarefa("Tem de ser criada")
 
-    assert database.obter_tarefa(tarefa_id) is not None
+    assert banco_de_dados.obter_tarefa(tarefa_id) is not None
     assert sys.modules[PREFIXO_MODULO + "bom"].recebidos, "o bom continua a receber"
     assert gerenciador.obter("mau").ativo, "falhar a tratar um evento não desativa"
 

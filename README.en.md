@@ -153,7 +153,7 @@ class MyPlugin(Plugin):
 ```
 
 Everything a plugin may use comes through `self.contexto` — plugins never
-import `database` or `gui` directly:
+import `banco_de_dados` or `gui` directly:
 
 | Attribute | Purpose |
 |---|---|
@@ -198,7 +198,7 @@ gerenciador_de_tarefas/
 │   ├── main.py                 # entry point; --version, --autoteste
 │   ├── gui.py                  # main window (tabs + menu)
 │   ├── plugin_ui.py            # plugin screen and GUI extension points
-│   ├── database.py             # SQLite with versioned migrations
+│   ├── banco_de_dados.py       # SQLite with versioned migrations
 │   ├── language_manager.py     # app and plugin translations
 │   ├── calendar_widget.py      # reusable calendar
 │   ├── dashboard_ui.py         # Dashboard tab
@@ -208,9 +208,9 @@ gerenciador_de_tarefas/
 │   ├── login_ui.py             # sign-in and first administrator
 │   ├── utilizadores_ui.py      # account management
 │   ├── textos.py               # shared insight presentation
-│   ├── analytics/              # metrics, series, insights (UI-free)
-│   ├── reporting/              # reports and export (PDF/XLSX/CSV)
-│   ├── widgets/                # Canvas-drawn charts
+│   ├── analitica/              # metrics, series, insights (UI-free)
+│   ├── relatorios/             # reports and export (PDF/XLSX/CSV)
+│   ├── componentes/            # Canvas-drawn charts
 │   └── core/
 │       ├── version.py          # single source of name and version
 │       ├── eventos.py          # event bus

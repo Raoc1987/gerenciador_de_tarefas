@@ -32,7 +32,7 @@ INTERFACE = {
     "auditoria_ui",
     "login_ui",
     "utilizadores_ui",
-    "widgets",
+    "componentes",
 }
 
 
@@ -116,12 +116,12 @@ def test_o_core_nao_depende_da_analise_nem_dos_relatorios():
     for arquivo in modulos_de(CORE):
         for importado in importados_por(arquivo):
             raiz = importado.split(".")[0]
-            assert raiz not in {"analytics", "reporting"}, (
+            assert raiz not in {"analitica", "relatorios"}, (
                 f"core/{arquivo.name} importa {importado}"
             )
 
 
-@pytest.mark.parametrize("pacote", ["analytics", "reporting", "regras"])
+@pytest.mark.parametrize("pacote", ["analitica", "relatorios", "regras"])
 def test_as_camadas_de_aplicacao_nao_tocam_na_interface(pacote):
     """ADR-0003: têm de servir a janela, um agendamento ou um plugin por igual.
 
@@ -137,11 +137,11 @@ def test_as_camadas_de_aplicacao_nao_tocam_na_interface(pacote):
 
 
 def test_so_as_fontes_da_analise_conhecem_o_banco():
-    for arquivo in (SRC / "analytics").rglob("*.py"):
+    for arquivo in (SRC / "analitica").rglob("*.py"):
         if arquivo.name == "fontes.py":
             continue
-        assert "database" not in importados_por(arquivo), (
-            f"analytics/{arquivo.name} devia pedir os dados a fontes.py"
+        assert "banco_de_dados" not in importados_por(arquivo), (
+            f"analitica/{arquivo.name} devia pedir os dados a fontes.py"
         )
 
 
@@ -152,7 +152,7 @@ def test_o_motor_de_automacao_nao_conhece_dominios():
     seria o primeiro passo para se tornar o sítio onde todos se encontram —
     um monólito com outro nome.
     """
-    dominios = {"tarefas_servico", "analytics", "reporting", "organizacao"}
+    dominios = {"tarefas_servico", "analitica", "relatorios", "organizacao"}
     for arquivo in (SRC / "regras").rglob("*.py"):
         for importado in importados_por(arquivo):
             raiz = importado.split(".")[0]
@@ -161,7 +161,7 @@ def test_o_motor_de_automacao_nao_conhece_dominios():
             # a organização também o usam. Mas só o repositório: o motor que
             # soubesse ler o banco começaria a lê-lo para decidir.
             if arquivo.name != "repositorio.py":
-                assert raiz != "database", f"regras/{arquivo.name} importa database"
+                assert raiz != "banco_de_dados", f"regras/{arquivo.name} importa banco_de_dados"
 
 
 #: O que só :mod:`tarefas_servico` pode fazer ao armazenamento.
@@ -173,7 +173,7 @@ FUNCOES_DE_TAREFAS = {
 
 #: Quem pode mexer nas tarefas: a política, o próprio armazenamento, e o
 #: arranque da aplicação (que só cria o esquema).
-PODEM_TOCAR_EM_TAREFAS = {"tarefas_servico.py", "database.py", "main.py"}
+PODEM_TOCAR_EM_TAREFAS = {"tarefas_servico.py", "banco_de_dados.py", "main.py"}
 
 
 def test_a_politica_de_tarefas_vive_num_sitio_so():
@@ -196,13 +196,13 @@ def test_a_politica_de_tarefas_vive_num_sitio_so():
         for no in ast.walk(arvore):
             if isinstance(no, ast.Attribute) and no.attr in FUNCOES_DE_TAREFAS:
                 origem = getattr(no.value, "id", "")
-                assert origem != "database", (
-                    f"{arquivo.name} chama database.{no.attr}; use tarefas_servico."
+                assert origem != "banco_de_dados", (
+                    f"{arquivo.name} chama banco_de_dados.{no.attr}; use tarefas_servico."
                 )
-            elif isinstance(no, ast.ImportFrom) and no.module == "database":
+            elif isinstance(no, ast.ImportFrom) and no.module == "banco_de_dados":
                 trazidos = {alias.name for alias in no.names} & FUNCOES_DE_TAREFAS
                 assert not trazidos, (
-                    f"{arquivo.name} importa {sorted(trazidos)} de database."
+                    f"{arquivo.name} importa {sorted(trazidos)} de banco_de_dados."
                 )
             elif isinstance(no, ast.Constant) and isinstance(no.value, str):
                 sql = " ".join(no.value.lower().split())
@@ -219,14 +219,14 @@ def test_a_regra_das_tarefas_apanharia_uma_fuga():
     tarefas por fora têm de ser detetadas.
     """
     pela_funcao = [
-        "import database",
+        "import banco_de_dados",
         "def ler():",
-        "    return database.buscar_tarefas()",
+        "    return banco_de_dados.buscar_tarefas()",
     ]
     pelo_sql = [
-        "import database",
+        "import banco_de_dados",
         "def ler():",
-        "    with database.conectar() as c:",
+        "    with banco_de_dados.conectar() as c:",
         "        return c.execute('SELECT id FROM tarefas').fetchall()",
     ]
 
@@ -247,7 +247,7 @@ def test_a_regra_das_tarefas_apanharia_uma_fuga():
 
 def test_nenhum_plugin_fura_o_contrato():
     """Tudo o que um plugin usa da aplicação chega pelo ContextoPlugin."""
-    proibidos = {"database", "gui", "core.plugin_manager", "tarefas_servico"}
+    proibidos = {"banco_de_dados", "gui", "core.plugin_manager", "tarefas_servico"}
     for manifesto in PLUGINS.glob("*/plugin.json"):
         for arquivo in manifesto.parent.rglob("*.py"):
             importados = importados_por(arquivo)
@@ -268,6 +268,59 @@ def test_os_plugins_nao_dependem_uns_dos_outros():
                 assert raiz not in nomes - {pasta.name}, (
                     f"o plugin {pasta.name} importa o plugin {raiz}"
                 )
+
+
+# ============================================== O ESPAÇO DE NOMES DE TOPO
+
+
+def nomes_de_topo() -> set:
+    """Os nomes que ``src/`` ocupa no espaço global de módulos."""
+    return {p.stem for p in SRC.glob("*.py")} | {
+        p.name for p in SRC.iterdir() if p.is_dir() and p.name != "__pycache__"
+    }
+
+
+@pytest.fixture(scope="module")
+def nomes_declarados() -> dict:
+    return json.loads((ARQUITETURA / "nomes-de-topo.json").read_text(encoding="utf-8"))
+
+
+def test_todo_o_nome_de_topo_esta_declarado(nomes_declarados):
+    """ADR-0005: um nome de topo é uma decisão, e as decisões escrevem-se.
+
+    ``src/`` está no ``sys.path``: cada ficheiro e cada pasta ali ocupa um
+    nome no espaço global de módulos, partilhado com tudo o que esteja
+    instalado. Ninguém decidiu chamar ``workflow`` ao motor de regras — foi a
+    palavra que apareceu — e meses depois o build parou, porque o PyInstaller
+    traz um hook para o pacote ``workflow`` do PyPI.
+
+    Este teste não sabe adivinhar colisões futuras. Faz a única coisa que
+    ataca o problema na raiz: obriga a escolha do nome a ser uma decisão, no
+    dia em que o módulo é criado.
+    """
+    declarados = set(nomes_declarados["nomes"])
+    no_disco = nomes_de_topo()
+
+    novos = no_disco - declarados
+    assert not novos, (
+        f"Nomes de topo por declarar: {sorted(novos)}. Acrescente-os a "
+        f"docs/architecture/nomes-de-topo.json — e leia a regra que lá está "
+        f"antes de escolher a palavra."
+    )
+
+    fantasmas = declarados - no_disco
+    assert not fantasmas, (
+        f"O inventário fala de nomes que já não existem: {sorted(fantasmas)}."
+    )
+
+
+def test_as_excecoes_de_nome_tem_todas_uma_razao(nomes_declarados):
+    """Uma exceção sem razão escrita é só uma exceção."""
+    for nome, razao in nomes_declarados["excecoes_de_nome"].items():
+        if nome.startswith("_"):
+            continue
+        assert nome in nomes_de_topo(), f"o inventário mantém {nome!r}, que já não existe."
+        assert len(razao) > 40, f"a razão para manter {nome!r} é curta demais."
 
 
 # ====================================================== DOCUMENTOS FIÉIS

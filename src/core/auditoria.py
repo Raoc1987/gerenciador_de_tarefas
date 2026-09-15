@@ -367,3 +367,34 @@ def aplicar_retencao(dias: int) -> int:
     if removidos:
         logger.info("Auditoria: %d registo(s) removido(s) por retenção (%dd).", removidos, dias)
     return removidos
+
+
+#: Chave da configuração geral que fixa a política de retenção, em dias.
+CHAVE_RETENCAO = "auditoria_retencao_dias"
+
+#: Sem política definida não se apaga nada. O padrão de uma trilha de auditoria
+#: tem de ser guardar: apagar por omissão seria decidir pelo utilizador que o
+#: histórico dele não interessa, e é a decisão que não se consegue desfazer.
+RETENCAO_PADRAO_DIAS = 0
+
+
+def aplicar_retencao_configurada() -> int:
+    """Aplica a política de ``CHAVE_RETENCAO``. Devolve quantos registos removeu.
+
+    Chamada uma vez por arranque. Um valor ausente, inválido ou menor que 1
+    significa "guardar para sempre" e não remove nada.
+    """
+    from core import config
+
+    valor = config.obter(CHAVE_RETENCAO, RETENCAO_PADRAO_DIAS)
+    try:
+        dias = int(valor)
+    except (TypeError, ValueError):
+        logger.warning(
+            "Retenção da auditoria ignorada: %r não é um número de dias.", valor
+        )
+        return 0
+
+    if dias < 1:
+        return 0
+    return aplicar_retencao(dias)

@@ -13,6 +13,32 @@ plugins (ver `docs/architecture/`).
 
 ### Adicionado
 
+- **Framework de manutenção** (`docs/MANUTENCAO.md`): o que se antecipa
+  (preditiva), o que se faz por rotina (preventiva) e como se responde a uma
+  falha já ocorrida (corretiva), cada item com sinal, ferramenta, cadência e
+  responsável. Nenhum item corretivo assume a causa: começa sempre por
+  investigar.
+- **`--verificar-banco`**: mostra a versão do schema e o `PRAGMA
+  integrity_check`, abrindo o banco **só de leitura**. Um diagnóstico que
+  aplicasse migrações deixaria de ser um diagnóstico — e era a única forma de
+  ver o estado do banco de alguém sem abrir a aplicação, que é justamente o
+  que pode não estar a funcionar.
+- **As exceções deixaram de se perder** (`core/log.py`, `main.py`): as do
+  interpretador, as das *threads* e as dos *callbacks* do Tk vão todas para o
+  `app.log`. O Tk imprimia-as no `stderr`, que numa aplicação empacotada em
+  modo gráfico não existe: o botão não fazia nada e não ficava registo de
+  porquê.
+- **Retenção da auditoria aplicável**: a chave `auditoria_retencao_dias` em
+  `app_config.json` é aplicada no arranque. Sem chave definida não se apaga
+  nada — o padrão de uma trilha tem de ser guardar.
+- **CI**: a suíte passa a correr também por agendamento semanal; os ensaios do
+  instalador e da atualização passam a correr no CI (semanalmente e a pedido)
+  em vez de dependerem de alguém se lembrar; cobertura medida em cada
+  execução; Actions fixadas por SHA e sem permissões de escrita; Dependabot a
+  propor as atualizações das ferramentas e das Actions.
+- **Testes de arquitetura**: a regra "só biblioteca padrão" (ADR-0002) passa a
+  falhar um teste em vez de depender da revisão, e os manifestos dos plugins
+  embutidos passam a ser verificados contra a versão atual da aplicação.
 - **Dono das tarefas** (`tarefas_servico.py`, migração v6): quem cria uma
   tarefa passa a ser o seu dono. Um Colaborador vê e edita as suas; Gestor,
   Supervisor e Visualizador veem as de todos, com o nome de quem criou e um

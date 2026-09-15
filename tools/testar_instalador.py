@@ -128,11 +128,24 @@ def _esperar(condicao, segundos: int = 30) -> bool:
 
 
 def _versao_instalada(destino: Path, dados: Path) -> str:
+    """A versão que o executável instalado diz ter.
+
+    Quando não responde, devolve o motivo em vez de ``""``: uma verificação que
+    falha sem dizer o que obteve obriga quem lê o registo do CI a adivinhar.
+    """
     ambiente = dict(os.environ)
     ambiente["GDT_DATA_DIR"] = str(dados)
-    resultado = _correr([str(destino / f"{APP_ID}.exe"), "--version"], env=ambiente)
+    try:
+        resultado = _correr([str(destino / f"{APP_ID}.exe"), "--version"], env=ambiente)
+    except (OSError, subprocess.TimeoutExpired) as erro:
+        return f"(não respondeu: {erro})"
+
     saida = (resultado.stdout or b"").decode("utf-8", errors="replace").strip()
-    return saida.split()[-1] if saida else ""
+    if not saida:
+        erro = (resultado.stderr or b"").decode("utf-8", errors="replace").strip()
+        detalhe = f"; {erro[:200]}" if erro else ""
+        return f"(sem saída, código {resultado.returncode}{detalhe})"
+    return saida.split()[-1]
 
 
 def main(argumentos: list[str] | None = None) -> int:
@@ -177,7 +190,18 @@ def main(argumentos: list[str] | None = None) -> int:
         verificar("desinstalador criado", any(destino.glob("unins*.exe")))
         verificar("atalho no Menu Iniciar", atalho_menu_iniciar().is_file(),
                   str(atalho_menu_iniciar()))
-        verificar("versão correta", _versao_instalada(destino, dados) == APP_VERSION)
+        # A instalação silenciosa devolve o controlo antes de o último ficheiro
+        # estar no sítio — é a mesma assincronia que o `_esperar` já cobre na
+        # desinstalação. Correr o executável de imediato apanha-o a meio, e uma
+        # amostra única transformava isso numa falha sem explicação.
+        obtida = ""
+
+        def versao_bate() -> bool:
+            nonlocal obtida
+            obtida = _versao_instalada(destino, dados)
+            return obtida == APP_VERSION
+
+        verificar("versão correta", _esperar(versao_bate), obtida)
 
         print("== 3. primeira execução (cria dados do utilizador)")
         ambiente = dict(os.environ)

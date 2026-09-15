@@ -315,6 +315,14 @@ def pode(permissao) -> bool:
     if isinstance(permissao, Permissao):
         return sessao().pode(permissao)
 
+    # Um nome do núcleo em texto é a mesma permissão do núcleo. Sem isto,
+    # `pode("tarefas.ler")` era negado em silêncio até ao administrador — e um
+    # "não" sem razão é a pior resposta que este módulo pode dar.
+    try:
+        return sessao().pode(Permissao(str(permissao)))
+    except ValueError:
+        pass
+
     papeis = permissoes_de_modulos().get(str(permissao))
     if papeis is None:
         # Não registada: ou o módulo não está carregado, ou o nome está

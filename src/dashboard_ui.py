@@ -123,6 +123,12 @@ class PainelDashboard(ttk.Frame):
             cartao.grid(row=0, column=coluna, sticky="ew", padx=3, pady=4)
             self._linha_kpis.columnconfigure(coluna, weight=1)
 
+        # Segunda linha: o que os módulos declararem. Vazia e invisível
+        # quando não há nenhum — um painel não deve ter espaço reservado a
+        # coisas que talvez existam.
+        self._linha_modulos = ttk.Frame(self)
+        self._cartoes_modulos = {}
+
         graficos = ttk.Frame(self)
         graficos.pack(fill=tk.BOTH, expand=True, padx=8, pady=4)
         graficos.columnconfigure(0, weight=3)
@@ -157,6 +163,7 @@ class PainelDashboard(ttk.Frame):
         self._grafico_barras.definir_texto_sem_dados(carregar_texto("sem_dados_periodo"))
         if self._panorama is not None:
             self._mostrar(self._panorama)
+        self._mostrar_indicadores_de_modulos()
 
     @property
     def dias(self) -> int:
@@ -191,6 +198,46 @@ class PainelDashboard(ttk.Frame):
             self._mostrar_mensagem(carregar_texto("dashboard_erro"))
             return
         self._mostrar(self._panorama)
+
+    def _mostrar_indicadores_de_modulos(self) -> None:
+        """Desenha os cartões que os módulos instalados declararam.
+
+        O painel não sabe o que cada um mede. Pergunta ao registo, e mostra o
+        que a sessão puder ver — quem não pode ver um número não vê o cartão,
+        e não vê sequer que ele existe.
+        """
+        import indicadores
+
+        for cartao in self._cartoes_modulos.values():
+            cartao.destroy()
+        self._cartoes_modulos = {}
+
+        try:
+            leituras = [l for l in indicadores.ler() if l.indicador.dono]
+        except Exception:  # pragma: no cover - defensivo
+            logger.exception("Falha ao ler os indicadores dos módulos.")
+            return
+
+        if not leituras:
+            self._linha_modulos.pack_forget()
+            return
+
+        for coluna, leitura in enumerate(leituras):
+            cartao = CartaoKPI(
+                self._linha_modulos,
+                cor=COR_PRIMARIA if leitura.indicador.subir_e_bom else COR_ATENCAO,
+                subir_e_bom=leitura.indicador.subir_e_bom,
+            )
+            cartao.atualizar(
+                rotulo=carregar_texto(leitura.indicador.chave_titulo, leitura.chave),
+                valor=leitura.valor.formatado(),
+                variacao=leitura.valor.variacao,
+            )
+            cartao.grid(row=0, column=coluna, sticky="ew", padx=3, pady=4)
+            self._linha_modulos.columnconfigure(coluna, weight=1)
+            self._cartoes_modulos[leitura.chave] = cartao
+
+        self._linha_modulos.pack(fill=tk.X, padx=8, before=self._grafico_linhas.master)
 
     def exportar(self) -> Optional[Path]:
         """Gera o relatório do período e grava-o no formato escolhido.

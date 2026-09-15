@@ -287,5 +287,10 @@
   "pesquisa_fonte_tarefas": "Tarefas",
   "pesquisa_fonte_unidades": "Estrutura",
   "pesquisa_fonte_contas": "Contas",
-  "pesquisa_fonte_regras": "Automações"
+  "pesquisa_fonte_regras": "Automações",
+  "indicador_tarefas_total": "Tarefas",
+  "indicador_tarefas_atrasadas": "Atrasadas",
+  "indicador_tarefas_taxa": "Conclusão",
+  "indicador_estoque_itens": "Itens em inventário",
+  "indicador_estoque_em_falta": "Abaixo do mínimo"
 }

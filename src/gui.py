@@ -6,6 +6,7 @@ from tkinter import messagebox, ttk
 from auditoria_ui import JanelaAuditoria
 import alertas
 import automacoes
+import indicadores_incluidos
 import pesquisas_incluidas
 from core import auditoria, eventos, funcionalidades, permissoes
 from pesquisa_ui import JanelaPesquisa
@@ -85,6 +86,7 @@ def criar_janela(raiz: tk.Tk | None = None) -> tk.Tk:
     # A automação depois dela: assim o que uma regra faz também fica na trilha.
     automacoes.registar_incluidas()
     pesquisas_incluidas.registar_incluidas()
+    indicadores_incluidos.registar_incluidos()
     motor_de_regras.ativar()
     # A vigilancia depois do motor: assim o que ela anuncia ja encontra as
     # regras a ouvir.

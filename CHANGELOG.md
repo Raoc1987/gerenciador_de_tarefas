@@ -41,6 +41,28 @@ plugins (ver `docs/architecture/`).
 - `textos.py`: tradução partilhada dos insights, para a mesma conclusão não
   ser escrita de duas maneiras no ecrã e no relatório.
 
+### Adicionado
+
+- **Políticas por atributo** (`core/permissoes.py`, ADR-0006): o papel responde
+  a "podes concluir tarefas?"; uma política responde a "podes concluir
+  **esta**?". Uma política recebe o par `(ação, objeto)` e **só pode recusar**
+  — nunca concede, corre depois do papel e, se rebentar, recusa. É o que torna
+  seguro um plugin registar uma: no pior caso tranca alguém de fora do seu
+  próprio módulo, e isso vê-se; se pudesse conceder, o pior caso era abrir uma
+  porta em silêncio.
+- **Segregação de funções** (funcionalidade, **nasce desligada**): com ela
+  ligada, quem cria uma tarefa não a dá por concluída — nem quem administra,
+  porque um controlo que o dono da instalação contorna não é um controlo.
+  Reabrir continua a ser possível, e as tarefas anteriores às contas não são
+  abrangidas. Ligue-a só onde exista outra pessoa para fechar o trabalho.
+- Uma tentativa recusada por uma política publica `politica.recusou` e fica na
+  trilha de auditoria. É o que separa um controlo de um obstáculo: um
+  obstáculo impede e cala-se. Perguntar (`pode`) não conta como tentativa —
+  senão a trilha enchia-se do que a interface pergunta para desenhar botões.
+- Um plugin pode registar políticas sobre os seus objetos
+  (`contexto.registar_politica`), no seu espaço de nomes, e elas saem quando
+  ele é descarregado.
+
 ### Alterado
 
 - **Nomes de topo em português** (ADR-0005): `database.py` → `banco_de_dados.py`,

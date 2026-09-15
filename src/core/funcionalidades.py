@@ -101,6 +101,10 @@ CATALOGO: Dict[str, Funcionalidade] = {
         Funcionalidade("relatorios"),
         Funcionalidade("estrutura"),
         Funcionalidade("copia_seguranca", essencial=True),
+        # Nasce desligada: ligá-la por omissão tirava a toda a gente a
+        # capacidade de fechar o próprio trabalho. Quem a liga sabe
+        # porque é que a quer.
+        Funcionalidade("segregacao_de_funcoes", padrao=False),
     )
 }
 

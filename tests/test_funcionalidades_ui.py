@@ -121,8 +121,10 @@ def test_repor_volta_tudo_ao_inicio(janela):
     funcionalidades.definir("relatorios", False)
     janela.repor()
 
-    assert all(e.ativa for e in janela.estados())
-    assert all(bool(v.get()) for v in janela._variaveis.values())
+    # Repor devolve cada uma ao seu padrão, não liga tudo.
+    for e in janela.estados():
+        assert e.ativa is e.funcionalidade.padrao
+        assert bool(janela._variaveis[e.chave].get()) is e.ativa
 
 
 # ================================================================ PERMISSÕES

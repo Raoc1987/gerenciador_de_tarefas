@@ -445,13 +445,18 @@ para evitar:
 
 | Pergunta | Quem responde |
 |---|---|
-| Esta **pessoa** pode fazer isto? | `core/permissoes.py` |
+| Esta **pessoa** pode fazer isto? | `core/permissoes.py` — papéis |
+| Esta pessoa pode fazer isto **a isto**? | `core/permissoes.py` — políticas |
 | Esta **instalação** tem isto, de todo? | `core/funcionalidades.py` |
 
 As duas combinam-se: um administrador com todas as permissões do mundo não
 exporta relatórios se a instalação não os tiver.
 
-Tudo nasce ligado — atualizar não tira nada a ninguém. Desligar é deliberado,
+Uma funcionalidade nasce ligada — atualizar não tira nada a ninguém. A única
+exceção é a que **acrescenta uma restrição**: ligá-la por omissão mudava o que
+já funcionava, que é a mesma coisa vista do outro lado. Essas nascem
+desligadas, e um teste impede que alguma nasça assim sem a razão escrita.
+Desligar é deliberado,
 exige `sistema.admin` e fica na trilha de auditoria, porque muda o que toda a
 gente vê. O efeito é visível ao reabrir a aplicação: as abas e o menu são
 construídos no arranque.
@@ -466,6 +471,65 @@ contas e os plugins são o produto; a cópia de segurança não se desliga (uma
 opção que deixa ficar sem rede não é uma opção); e a trilha de auditoria tem
 o seu próprio mecanismo — parar de registar é uma decisão de conformidade, não
 uma preferência.
+
+## Políticas: quando o papel não chega
+
+O papel responde a *"podes concluir tarefas?"*. Quase toda a regra que uma
+empresa precisa tem a outra forma: *"podes concluir **esta**?"*. É a diferença
+entre ter a chave do arquivo e poder mexer numa pasta em concreto.
+
+Uma política recebe o par `(ação, objeto)` e devolve o motivo da recusa, ou
+nada. Três propriedades, e a primeira é a que sustenta as outras:
+
+1. **Só recusa. Nunca concede.** É o que torna seguro deixar um plugin
+   registar uma: no pior caso tranca alguém de fora do seu próprio módulo, e
+   isso vê-se e reclama-se. Se pudesse conceder, o pior caso era abrir uma
+   porta em silêncio — e ninguém repara numa porta aberta.
+2. **Corre depois do papel.** Se o papel já disse não, nenhuma política chega
+   a ser avaliada.
+3. **Rebenta fechada.** Uma política que levanta uma exceção recusa, com
+   registo. Uma regra de acesso partida não pode passar por regra cumprida.
+
+Uma tentativa recusada fica na trilha de auditoria. É o que separa um controlo
+de um obstáculo: um obstáculo impede e cala-se. Perguntar não conta como
+tentativa — senão a trilha enchia-se do que a interface pergunta só para
+decidir se desenha um botão.
+
+### Segregação de funções
+
+A política que vem com a aplicação, e que **nasce desligada**: com ela ligada,
+quem cria uma tarefa não a dá por concluída. Quem levanta o trabalho não é
+quem certifica que ficou feito.
+
+- **Não há exceção para quem administra.** Um controlo de segregação que o
+  dono da instalação contorna não é um controlo. O caminho para fechar uma
+  tarefa própria é outra pessoa fechá-la — ou desligar a funcionalidade, e
+  isso fica na trilha, que é exatamente o que um auditor quer poder ver.
+- **Reabrir continua a ser possível.** Travar o caminho de volta seria uma
+  armadilha, não um controlo.
+- **As tarefas anteriores às contas não são abrangidas.** Ninguém as criou,
+  por isso ninguém certifica o próprio trabalho ao fechá-las.
+
+Ligue-a só onde exista outra pessoa para fechar o trabalho. Ver
+[ADR-0006](docs/architecture/ADR-0006-politicas-por-atributo.md).
+
+### Um módulo traz as suas regras
+
+```python
+self.contexto.registar_politica(
+    "so_o_responsavel_baixa_stock",
+    acoes={"remover"}, tipos={"estoque.item"},
+    avaliar=lambda sessao, pedido: (
+        None if pedido.atributo("responsavel") == sessao.utilizador
+        else "estoque_so_o_responsavel"
+    ),
+)
+```
+
+O nome é prefixado com o id do plugin, e a política sai do registo quando o
+módulo é descarregado — senão continuava a travar ações sem haver onde ir
+desligá-la. O motivo é uma **chave de tradução**, não uma frase: quem foi
+recusado pode não falar a sua língua.
 
 ## Módulos e ferramentas incluídos
 

@@ -596,6 +596,38 @@ class ContextoPlugin:
             dono=self.manifesto.id,
         )
 
+    def registar_politica(
+        self, nome: str, acoes, tipos, avaliar, funcionalidade=None
+    ):
+        """Declara uma regra que **recusa** pedidos sobre objetos deste módulo.
+
+        Como nos indicadores e nos destinos, o nome é prefixado com o id do
+        plugin, e a política sai quando o plugin é descarregado.
+
+        Uma política só pode **tirar**: o papel decide primeiro, e o que ela
+        devolve é a recusa ou nada. É por isso que é seguro um plugin
+        registar uma — no pior caso tranca alguém de fora do seu próprio
+        módulo, que é visível e reclamável. Se pudesse conceder, um plugin
+        passava a poder abrir portas, e o contrato inteiro deixava de valer.
+
+        Args:
+            avaliar: recebe ``(sessao, pedido)`` e devolve ``None`` para
+                deixar passar, ou a **chave de tradução** do motivo da
+                recusa — quem a lê pode não falar a sua língua.
+        """
+        from core import permissoes as _permissoes
+
+        prefixo = f"{self.manifesto.id}."
+        completo = nome if str(nome).startswith(prefixo) else prefixo + str(nome)
+        return _permissoes.registar_politica(
+            completo,
+            acoes,
+            tipos,
+            avaliar,
+            funcionalidade=funcionalidade,
+            dono=self.manifesto.id,
+        )
+
     def utilizador(self) -> str:
         """Quem está em sessão, para o módulo registar quem fez o quê."""
         from core import permissoes as _permissoes

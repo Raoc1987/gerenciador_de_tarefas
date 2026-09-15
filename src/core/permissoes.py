@@ -26,7 +26,16 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Dict, FrozenSet, Iterable, Optional
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    FrozenSet,
+    Iterable,
+    List,
+    Mapping,
+    Optional,
+)
 
 from core import config
 from core.log import obter_logger
@@ -47,6 +56,22 @@ class PermissaoNegadaError(PermissionError):
         super().__init__(f"Permissão necessária: {nome}")
         self.permissao = permissao
         self.chave_mensagem = "permissao_negada"
+
+
+class PoliticaNegouError(PermissaoNegadaError):
+    """O papel concedia, mas uma política recusou **este** caso.
+
+    Subclasse de :class:`PermissaoNegadaError` de propósito: quem já apanhava
+    uma recusa continua a apanhá-la sem mudar nada. O que esta acrescenta é o
+    **motivo** — uma recusa sem razão é a pior resposta que este módulo pode
+    dar, e aqui há sempre uma razão, porque alguém a escreveu ao declarar a
+    política.
+    """
+
+    def __init__(self, permissao, motivo: str, politica: str = "") -> None:
+        super().__init__(permissao)
+        self.chave_mensagem = motivo or "permissao_negada"
+        self.politica = politica
 
 
 class Permissao(str, Enum):
@@ -240,6 +265,194 @@ def permissoes_de_modulos() -> Dict[str, FrozenSet[str]]:
     return juntas
 
 
+# ------------------------------------------------- políticas por atributo
+#
+# O RBAC responde a "podes fazer isto?". Toda a regra de negócio que uma
+# empresa realmente precisa tem a outra forma: "podes fazer isto **a isto**?".
+# É a diferença entre ter a chave do arquivo e poder mexer numa pasta em
+# concreto.
+#
+# Uma política é a segunda pergunta, e tem três propriedades que não são
+# negociáveis:
+#
+# 1. **Só recusa.** Nunca concede. Uma política mal escrita — ou vinda de um
+#    plugin — no pior caso tranca alguém de fora, o que é visível e
+#    reclamável. Se pudesse conceder, no pior caso abria uma porta em
+#    silêncio, e ninguém repara numa porta aberta.
+# 2. **Corre depois do papel.** Se o RBAC já disse não, nenhuma política
+#    chega a ser avaliada: não há nada a recusar e não se paga o custo.
+# 3. **Rebenta fechada.** Uma política que levanta uma exceção recusa, com
+#    registo. É o mesmo princípio do motor de importação: uma validação
+#    partida não pode passar por validação bem sucedida. Numa regra de
+#    acesso, rebentar aberta seria desligar a segurança sem ninguém saber.
+
+
+@dataclass(frozen=True)
+class Pedido:
+    """O que a sessão está a tentar fazer, e a quê.
+
+    Não é só o objeto: é o par ``(ação, objeto)``. Fingir que a permissão já
+    é a ação obriga a inventar uma permissão nova sempre que se quer
+    distinguir "editar" de "apagar" — e a granularidade dos papéis passaria a
+    ser decidida pelas políticas, que é exatamente ao contrário.
+
+    Attributes:
+        acao: o verbo — ``"criar"``, ``"concluir"``, ``"reabrir"``,
+            ``"remover"``. Vocabulário de quem regista o pedido.
+        tipo: o que é o objeto — ``"tarefa"``, ``"estoque.item"``.
+        atributos: os factos sobre o objeto. Texto e números simples; o
+            núcleo não conhece as classes de ninguém e não as vai importar.
+    """
+
+    acao: str
+    tipo: str
+    atributos: Mapping[str, Any] = field(default_factory=dict)
+
+    def atributo(self, nome: str, omissao: Any = None) -> Any:
+        return self.atributos.get(nome, omissao)
+
+
+#: Assinatura de uma política: recebe a sessão e o pedido, devolve ``None``
+#: para deixar passar, ou a **chave de tradução** do motivo para recusar.
+#:
+#: Chave e não frase: o motivo aparece a quem foi recusado, e esta aplicação
+#: fala três línguas.
+Avaliador = Callable[["Sessao", Pedido], Optional[str]]
+
+
+@dataclass(frozen=True)
+class Politica:
+    """Uma regra que pode recusar um pedido que o papel permitia."""
+
+    nome: str
+    acoes: FrozenSet[str]
+    tipos: FrozenSet[str]
+    avaliar: Avaliador
+    #: Interruptor no catálogo de funcionalidades. Sem ele, a política está
+    #: sempre a valer.
+    funcionalidade: Optional[str] = None
+    dono: str = ""
+
+    def aplica_se_a(self, pedido: Pedido) -> bool:
+        return pedido.acao in self.acoes and pedido.tipo in self.tipos
+
+    def ligada(self) -> bool:
+        """Se está a valer nesta instalação."""
+        if self.funcionalidade is None:
+            return True
+        from core import funcionalidades
+
+        try:
+            return funcionalidades.ativa(self.funcionalidade)
+        except Exception:
+            # Uma política presa a uma funcionalidade que não existe está mal
+            # declarada. Fechada: recusar de mais é recuperável, recusar de
+            # menos numa regra de acesso não é.
+            logger.exception(
+                "A política %s depende da funcionalidade %r, que não existe.",
+                self.nome,
+                self.funcionalidade,
+            )
+            return True
+
+
+_POLITICAS: Dict[str, Politica] = {}
+
+
+def registar_politica(
+    nome: str,
+    acoes: Iterable[str],
+    tipos: Iterable[str],
+    avaliar: Avaliador,
+    funcionalidade: Optional[str] = None,
+    dono: str = "",
+) -> Politica:
+    """Põe uma política a valer.
+
+    A inversão é a mesma das permissões de módulos: o núcleo avalia, mas não
+    conhece nenhuma regra de negócio — quem a declara vive fora.
+
+    Raises:
+        ValueError: nome vazio, sem ações ou sem tipos, avaliador que não é
+            chamável, ou — vindo de um módulo — nome fora do espaço de nomes
+            desse módulo.
+    """
+    nome = (nome or "").strip()
+    if not nome:
+        raise ValueError("Uma política precisa de um nome.")
+    acoes, tipos = frozenset(acoes or ()), frozenset(tipos or ())
+    if not acoes or not tipos:
+        raise ValueError(f"A política {nome!r} tem de dizer a que ações e tipos se aplica.")
+    if not callable(avaliar):
+        raise ValueError(f"A política {nome!r} precisa de um avaliador.")
+    if dono and not nome.startswith(f"{dono}."):
+        raise ValueError(
+            f"O módulo {dono!r} tem de prefixar as suas políticas com {dono + '.'!r}."
+        )
+
+    politica = Politica(nome, acoes, tipos, avaliar, funcionalidade, dono)
+    _POLITICAS[nome] = politica
+    logger.info("Política registada: %s (%s sobre %s)", nome, sorted(acoes), sorted(tipos))
+    return politica
+
+
+def esquecer_politicas_de_dono(dono: str) -> int:
+    """Tira as políticas de um dono — usado quando um plugin sai."""
+    if not dono:
+        return 0
+    saem = [nome for nome, p in _POLITICAS.items() if p.dono == dono]
+    for nome in saem:
+        _POLITICAS.pop(nome, None)
+    return len(saem)
+
+
+def limpar_politicas() -> None:
+    """Esvazia o registo. Estado global: os testes têm de o repor."""
+    _POLITICAS.clear()
+
+
+def politicas() -> List[Politica]:
+    """As políticas registadas, por nome."""
+    return [_POLITICAS[nome] for nome in sorted(_POLITICAS)]
+
+
+@dataclass(frozen=True)
+class Recusa:
+    """Uma política disse que não, e qual e porquê."""
+
+    politica: str
+    motivo: str
+    """Chave de tradução da razão, para ser mostrada na língua de quem lê."""
+
+
+def recusa(pedido: Pedido) -> Optional[Recusa]:
+    """A primeira política que recusa este pedido — ``None`` se nenhuma.
+
+    A primeira, e não todas: quem foi recusado precisa de uma razão, não de
+    uma lista. A ordem é a alfabética do nome, para a resposta ser sempre a
+    mesma e não depender da ordem em que os plugins carregaram.
+    """
+    atual = sessao()
+    for politica in politicas():
+        if not politica.aplica_se_a(pedido) or not politica.ligada():
+            continue
+        try:
+            motivo = politica.avaliar(atual, pedido)
+        except Exception:
+            logger.exception("A política %s rebentou a avaliar.", politica.nome)
+            return Recusa(politica.nome, "politica_falhou")
+        if motivo:
+            logger.info(
+                "Política %s recusou %s de %s sobre %s.",
+                politica.nome,
+                pedido.acao,
+                atual.utilizador,
+                pedido.tipo,
+            )
+            return Recusa(politica.nome, motivo)
+    return None
+
+
 @dataclass(frozen=True)
 class Sessao:
     """Quem está a usar a aplicação neste momento."""
@@ -308,14 +521,27 @@ def terminar_sessao() -> None:
     _sessao = None
 
 
-def pode(permissao) -> bool:
-    """Se a sessão atual tem a permissão.
+def pode(permissao, pedido: Optional[Pedido] = None) -> bool:
+    """Se a sessão atual pode fazer isto — e, havendo ``pedido``, a **isto**.
 
     Aceita uma :class:`Permissao` do núcleo ou o nome de uma permissão de
     módulo (``"estoque.ler"``). Uma permissão de módulo que ninguém registou
     é negada: ou o módulo não está carregado, ou o nome está errado — e nos
     dois casos a resposta certa é não.
+
+    Sem ``pedido``, a resposta é a do papel, exatamente como sempre foi. Com
+    ``pedido``, o papel continua a decidir primeiro: só se ele disser que sim
+    é que as políticas são consultadas, e elas só podem tirar.
     """
+    if not _concede_o_papel(permissao):
+        return False
+    if pedido is None:
+        return True
+    return recusa(pedido) is None
+
+
+def _concede_o_papel(permissao) -> bool:
+    """A pergunta do RBAC, isolada: o papel concede esta permissão?"""
     if isinstance(permissao, Permissao):
         return sessao().pode(permissao)
 
@@ -341,16 +567,61 @@ def pode(permissao) -> bool:
     return atual.papel.nome in papeis
 
 
-def exigir(permissao) -> None:
-    """Garante a permissão.
+def exigir(permissao, pedido: Optional[Pedido] = None) -> None:
+    """Garante a permissão — e, havendo ``pedido``, que nenhuma política recusa.
+
+    As duas recusas são distinguidas porque têm respostas diferentes: à
+    primeira, quem foi recusado precisa de outro papel; à segunda, o papel
+    está certo e o que falha é este caso em concreto — e a política diz
+    porquê.
 
     Raises:
-        PermissaoNegadaError: se a sessão não a tiver.
+        PermissaoNegadaError: se o papel não conceder.
+        PoliticaNegouError: se o papel conceder e uma política recusar.
     """
-    if not pode(permissao):
-        nome = permissao.value if isinstance(permissao, Permissao) else str(permissao)
+    nome = permissao.value if isinstance(permissao, Permissao) else str(permissao)
+    if not _concede_o_papel(permissao):
         logger.warning("Permissão negada: %s (papel %s)", nome, sessao().papel.nome)
         raise PermissaoNegadaError(permissao)
+
+    if pedido is None:
+        return
+
+    negada = recusa(pedido)
+    if negada is not None:
+        logger.warning(
+            "Política %s recusou %s sobre %s a %s.",
+            negada.politica,
+            pedido.acao,
+            pedido.tipo,
+            sessao().utilizador,
+        )
+        _anunciar_recusa(nome, pedido, negada)
+        raise PoliticaNegouError(permissao, negada.motivo, negada.politica)
+
+
+def _anunciar_recusa(permissao: str, pedido: Pedido, negada: "Recusa") -> None:
+    """Põe a tentativa recusada na trilha de auditoria.
+
+    Dentro de um ``try``: se o barramento falhar, a recusa **mantém-se**. Não
+    poder registar é mau; deixar passar porque não se conseguiu registar seria
+    pior, e trocar o erro de acesso por outro qualquer esconderia os dois.
+    """
+    try:
+        from core import eventos
+
+        eventos.publicar(
+            eventos.POLITICA_RECUSOU,
+            origem="permissoes",
+            politica=negada.politica,
+            motivo=negada.motivo,
+            permissao=permissao,
+            acao=pedido.acao,
+            tipo=pedido.tipo,
+            alvo=pedido.atributo("id"),
+        )
+    except Exception:  # pragma: no cover - defensivo
+        logger.exception("Não foi possível registar a recusa da política.")
 
 
 def permissoes_em_falta(necessarias: Iterable[Permissao]) -> FrozenSet[Permissao]:

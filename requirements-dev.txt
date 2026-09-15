@@ -2,7 +2,7 @@
 -r requirements.txt
 
 pytest>=8.0
-pytest-cov>=5.0
+pytest-cov>=7.1.0
 pyinstaller>=6.10
 
 # Só para VALIDAR nos testes o XLSX e o PDF que escrevemos à mão.

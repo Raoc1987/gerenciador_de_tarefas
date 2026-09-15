@@ -28,6 +28,14 @@ def pasta_do_plugin(raiz_projeto):
 
 
 @pytest.fixture
+def versao_do_plugin(pasta_do_plugin):
+    """Versão declarada no manifesto do plugin, para os testes não a fixarem."""
+    import json
+
+    return json.loads((pasta_do_plugin / "plugin.json").read_text(encoding="utf-8"))["version"]
+
+
+@pytest.fixture
 def zip_calendar(pasta_do_plugin, tmp_path):
     """Empacota o plugin real num ``.zip`` temporário."""
     return empacotar(pasta_do_plugin, tmp_path / "pacotes")
@@ -47,14 +55,14 @@ def test_pacote_tem_a_estrutura_esperada(zip_calendar):
     assert not any("__pycache__" in nome for nome in nomes)
 
 
-def test_nome_do_pacote_usa_id_e_versao(zip_calendar):
-    assert zip_calendar.name == "calendar-1.0.0.zip"
+def test_nome_do_pacote_usa_id_e_versao(zip_calendar, versao_do_plugin):
+    assert zip_calendar.name == f"calendar-{versao_do_plugin}.zip"
 
 
 # --------------------------------------------------------------- instalação
 
 
-def test_instalar_o_plugin_real(gerenciador, zip_calendar):
+def test_instalar_o_plugin_real(gerenciador, zip_calendar, versao_do_plugin):
     resultado = gerenciador.instalar_zip(zip_calendar)
     assert resultado.sucesso, resultado.detalhes
     assert resultado.plugin_id == "calendar"
@@ -62,7 +70,7 @@ def test_instalar_o_plugin_real(gerenciador, zip_calendar):
     registro = gerenciador.obter("calendar")
     assert registro.estado == EstadoPlugin.INSTALADO
     assert registro.nome == "Calendar Integration"
-    assert registro.versao == "1.0.0"
+    assert registro.versao == versao_do_plugin
     assert (gerenciador.diretorio / "calendar" / "idiomas" / "pt.json").is_file()
 
 
@@ -89,7 +97,7 @@ def test_idiomas_do_plugin_real(gerenciador, zip_calendar):
 
 
 def test_atualizacao_do_plugin_real(gerenciador, pasta_do_plugin, tmp_path, monkeypatch):
-    """Instala a v1.0.0 e atualiza para uma v1.1.0 empacotada na hora."""
+    """Instala a versão do repositório e atualiza para uma v1.1.0 empacotada na hora."""
     import json
     import shutil
 

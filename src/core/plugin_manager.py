@@ -43,7 +43,7 @@ from core.plugin_api import (
     TarefasComPermissoes,
     encontrar_classe_plugin,
 )
-from core.plugin_sources import FontePlugins
+from core.plugin_sources import FontePlugins, PluginDisponivel
 from core.version import APP_VERSION, comparar_versoes
 
 logger = obter_logger(__name__)
@@ -592,6 +592,7 @@ class PluginManager:
         self,
         caminho_zip: Path,
         permitir_atualizacao: bool = True,
+        permitir_reinstalacao: bool = False,
     ) -> ResultadoOperacao:
         """Instala (ou atualiza) um plugin a partir de um arquivo ``.zip``.
 
@@ -603,6 +604,13 @@ class PluginManager:
         Em atualização, a versão anterior é guardada e reposta se algo falhar,
         de modo a nunca deixar um plugin meio-atualizado. A configuração e os
         dados do plugin vivem fora da sua pasta e são preservados.
+
+        Args:
+            permitir_reinstalacao: aceita um pacote com a **mesma** versão da
+                instalada, para corrigir uma instalação que ficou para trás.
+                Um *downgrade* continua sempre recusado. Só a semeadura de
+                plugins embutidos o usa; a instalação pedida pelo utilizador
+                mantém a regra de sempre.
         """
         caminho_zip = Path(caminho_zip)
         try:
@@ -621,7 +629,8 @@ class PluginManager:
 
         if atualizacao and versao_anterior:
             comparacao = comparar_versoes(manifesto.versao, versao_anterior)
-            if comparacao <= 0 or not permitir_atualizacao:
+            aceite = comparacao > 0 or (comparacao == 0 and permitir_reinstalacao)
+            if not aceite or not permitir_atualizacao:
                 chave = "plugin_ja_instalado"
                 detalhes = (
                     f"Versão instalada: {versao_anterior}; "
@@ -699,6 +708,7 @@ class PluginManager:
         fonte: "FontePlugins",
         plugin_id: str,
         permitir_atualizacao: bool = True,
+        permitir_reinstalacao: bool = False,
     ) -> ResultadoOperacao:
         """Instala um plugin oferecido por uma fonte (local, embutida ou remota).
 
@@ -718,28 +728,47 @@ class PluginManager:
             logger.exception("Falha ao obter o pacote de %s.", plugin_id)
             return ResultadoOperacao(False, "plugin_erro_instalar", plugin_id, str(erro))
 
-        return self.instalar_zip(caminho, permitir_atualizacao=permitir_atualizacao)
+        return self.instalar_zip(
+            caminho,
+            permitir_atualizacao=permitir_atualizacao,
+            permitir_reinstalacao=permitir_reinstalacao,
+        )
 
     def semear_de_fonte(self, fonte: "FontePlugins") -> List[ResultadoOperacao]:
-        """Instala os plugins da fonte que ainda não existem localmente.
+        """Instala os plugins da fonte que faltam e refresca os que ficaram para trás.
 
         Usado no arranque para disponibilizar os plugins que acompanham a
-        aplicação. **Nunca** substitui um plugin já instalado: a versão do
-        utilizador manda, mesmo que seja mais antiga.
+        aplicação. **Nunca** faz um plugin recuar: uma versão instalada mais
+        recente do que a da fonte manda, e é deixada em paz.
+
+        Nos restantes casos a fonte manda, porque a cópia instalada saiu dela
+        num arranque anterior:
+
+        * versão da fonte mais nova — o plugin é atualizado;
+        * mesma versão, manifesto diferente — o plugin é refrescado. Sem isto,
+          quem instalou a aplicação antes de um campo ser acrescentado ao
+          manifesto embutido (uma permissão, por exemplo) ficava para sempre
+          com o manifesto antigo, enquanto uma instalação limpa já trazia o
+          novo — a mesma versão a significar duas coisas diferentes.
         """
         resultados: List[ResultadoOperacao] = []
         if not fonte.disponivel():
             return resultados
 
         for disponivel in fonte.listar():
-            if (self.diretorio / disponivel.id).exists():
-                continue
             if not disponivel.compativel(self.app_version):
                 logger.info(
                     "Plugin embutido %s ignorado por incompatibilidade.", disponivel.id
                 )
                 continue
-            resultado = self.instalar_de_fonte(fonte, disponivel.id)
+
+            decisao = self._decidir_semeadura(disponivel)
+            if decisao is None:
+                continue
+
+            resultado = self.instalar_de_fonte(
+                fonte, disponivel.id, permitir_reinstalacao=decisao
+            )
             logger.info(
                 "Semeadura de %s a partir de %s: %s",
                 disponivel.id,
@@ -748,6 +777,44 @@ class PluginManager:
             )
             resultados.append(resultado)
         return resultados
+
+    def _decidir_semeadura(self, disponivel: "PluginDisponivel") -> Optional[bool]:
+        """Se a semeadura deve instalar este plugin, e se é uma reinstalação.
+
+        Devolve ``None`` para deixar como está, ``False`` para instalar ou
+        atualizar normalmente e ``True`` quando é a mesma versão a ser
+        refrescada.
+        """
+        pasta = self.diretorio / disponivel.id
+        if not pasta.exists():
+            return False
+
+        try:
+            instalado = ManifestoPlugin.ler_de_pasta(pasta)
+        except ManifestoInvalidoError as erro:
+            # Uma pasta partida não é motivo para lhe passar por cima: pode
+            # não ser sequer o plugin embutido. Fica visível como INVALIDO.
+            logger.warning(
+                "Plugin instalado %s tem o manifesto ilegível (%s); a semeadura não lhe toca.",
+                disponivel.id,
+                erro,
+            )
+            return None
+
+        comparacao = comparar_versoes(disponivel.versao, instalado.versao)
+        if comparacao < 0:
+            return None
+        if comparacao > 0:
+            return False
+        if disponivel.manifesto == instalado:
+            return None
+
+        logger.info(
+            "Plugin embutido %s v%s difere do instalado com a mesma versão: a refrescar.",
+            disponivel.id,
+            disponivel.versao,
+        )
+        return True
 
     def inspecionar_zip(self, caminho_zip: Path) -> ManifestoPlugin:
         """Lê o manifesto de um ``.zip`` sem instalar nada.

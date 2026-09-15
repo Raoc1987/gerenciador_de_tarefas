@@ -507,11 +507,16 @@ def test_plugins_embutidos_sao_semeados_no_arranque(
 def test_semeadura_nao_substitui_o_plugin_do_utilizador(
     dialogos, pasta_plugins, raiz_projeto, criar_plugin, monkeypatch
 ):
-    """Uma versão já instalada pelo utilizador nunca é sobreposta."""
+    """Uma versão mais recente do que a embutida nunca é sobreposta.
+
+    É a única que o utilizador pode ter escolhido: a instalação recusa
+    *downgrades*, por isso tudo o que esteja **abaixo** da versão embutida
+    veio de um pacote anterior da própria aplicação e é atualizado.
+    """
     import core.plugin_manager as pm_modulo
     import gui
 
-    criar_plugin("calendar", version="0.9.0")
+    criar_plugin("calendar", version="9.9.0")
     monkeypatch.setattr(pm_modulo, "diretorio_plugins_instalados", lambda: pasta_plugins)
     monkeypatch.setattr(
         gui, "diretorio_plugins_embutidos", lambda: raiz_projeto / "plugins" / "available"
@@ -519,7 +524,7 @@ def test_semeadura_nao_substitui_o_plugin_do_utilizador(
 
     app = criar_janela_com_retentativa(gui.criar_janela)
     try:
-        assert app.gerenciador_de_plugins.versao_instalada("calendar") == "0.9.0"
+        assert app.gerenciador_de_plugins.versao_instalada("calendar") == "9.9.0"
     finally:
         app.destroy()
 

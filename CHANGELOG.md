@@ -86,6 +86,14 @@ plugins (ver `docs/architecture/`).
 
 ### Corrigido
 
+- **Plugins embutidos presos à versão instalada**: a semeadura do arranque
+  ignorava qualquer plugin cuja pasta já existisse, sem sequer olhar para a
+  versão. Quem instalou a aplicação antes de o `calendar` declarar
+  `permissions` ficava com o manifesto antigo e o plugin recusava-se a
+  arrancar ("não declarou a permissão 'tarefas.ler'"), enquanto uma
+  instalação limpa funcionava. A semeadura passa a atualizar quando a versão
+  embutida é mais nova e a refrescar quando a versão é a mesma mas o
+  manifesto mudou; uma versão instalada mais recente continua intocada.
 - O relatório mostrava o estado de uma tarefa no plural ("Atrasadas"), usava
   o cabeçalho do formulário como cabeçalho de coluna e truncava datas por
   repartir a largura por número de caracteres em vez de largura real.

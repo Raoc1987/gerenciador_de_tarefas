@@ -83,6 +83,13 @@ plugins (ver `docs/architecture/`).
   (`utils`, `calendar_widget`, `language_manager`, `core`) ficam congelados,
   com a razão escrita, e um teste verifica que coincidem com o que o
   executável leva lá dentro.
+- `docs/architecture/plugins-embutidos.json` guarda a impressão digital de
+  cada plugin que acompanha a aplicação, e um teste falha quando o conteúdo
+  muda sem a versão subir. A versão é o único sinal que a semeadura do
+  arranque tem para levar uma correção às máquinas onde a aplicação já está
+  instalada; sem esta regra, esquecer-se dela é silencioso e só aparece
+  meses depois, em casa de alguém. `python tools/impressao_plugins.py` diz o
+  que mudou, `--gravar` aceita.
 
 ### Corrigido
 

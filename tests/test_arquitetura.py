@@ -18,6 +18,8 @@ from pathlib import Path
 
 import pytest
 
+from tools import impressao_plugins
+
 RAIZ = Path(__file__).resolve().parent.parent
 SRC = RAIZ / "src"
 CORE = SRC / "core"
@@ -337,6 +339,146 @@ def test_os_plugins_nao_dependem_uns_dos_outros():
                 assert raiz not in nomes - {pasta.name}, (
                     f"o plugin {pasta.name} importa o plugin {raiz}"
                 )
+
+
+# ================================================== PLUGINS EMBUTIDOS
+
+
+@pytest.fixture(scope="module")
+def impressoes() -> dict:
+    """As impressões digitais declaradas dos plugins embutidos."""
+    dados = json.loads((ARQUITETURA / "plugins-embutidos.json").read_text(encoding="utf-8"))
+    return dados["plugins"]
+
+
+def test_todo_o_plugin_embutido_esta_declarado(impressoes):
+    no_disco = {pasta.name for pasta in impressao_plugins.pastas_de_plugins()}
+    declarados = set(impressoes)
+
+    novos = no_disco - declarados
+    assert not novos, (
+        f"Plugins embutidos por declarar: {sorted(novos)}. Corra "
+        "`python tools/impressao_plugins.py --gravar`."
+    )
+
+    fantasmas = declarados - no_disco
+    assert not fantasmas, (
+        f"A declaração fala de plugins que já não existem: {sorted(fantasmas)}."
+    )
+
+
+def test_um_plugin_embutido_nao_muda_sem_subir_a_versao(impressoes):
+    """A versão é o único sinal que chega a quem já tem a aplicação instalada.
+
+    A semeadura do arranque compara a versão embutida com a instalada. Um
+    plugin que muda e fica na mesma versão não chega a ninguém: a instalação
+    existente guarda o código antigo para sempre, enquanto uma instalação
+    limpa já traz o novo — a mesma versão a significar duas coisas. Foi
+    exatamente assim que o ``calendar`` ficou sem o ``permissions`` que já
+    estava no repositório, e o plugin recusava-se a arrancar.
+
+    Falhar aqui não é um teste a proteger-se a si próprio: é a pergunta "esta
+    mudança precisa de chegar às máquinas onde a aplicação já está?".
+    """
+    for pasta in impressao_plugins.pastas_de_plugins():
+        declarado = impressoes.get(pasta.name)
+        if declarado is None:  # o teste acima já se queixou disso
+            continue
+
+        atual = impressao_plugins.impressao_de_pasta(pasta)
+        if atual == declarado["impressao"]:
+            continue
+
+        versao = impressao_plugins.versao_de(pasta)
+        assert versao != declarado["versao"], (
+            f"O plugin {pasta.name} mudou mas continua em v{versao}. Suba a "
+            f"versão em plugins/available/{pasta.name}/plugin.json e corra "
+            "`python tools/impressao_plugins.py --gravar`. Sem isso, a mudança "
+            "não chega a quem já tem a aplicação instalada."
+        )
+        pytest.fail(
+            f"O plugin {pasta.name} subiu para v{versao} mas a declaração ficou "
+            f"em v{declarado['versao']}. Corra "
+            "`python tools/impressao_plugins.py --gravar`."
+        )
+
+
+def test_a_impressao_cobre_o_que_vai_no_pacote(tmp_path):
+    """O que é somado tem de ser o que é distribuído, não o que está no disco.
+
+    Se as duas listas de exclusões se separarem, a impressão passa a vigiar
+    uma árvore que ninguém instala.
+    """
+    import zipfile
+
+    from tools.empacotar_plugin import empacotar
+
+    for pasta in impressao_plugins.pastas_de_plugins():
+        with zipfile.ZipFile(empacotar(pasta, tmp_path / pasta.name)) as pacote:
+            # O pacote tem uma pasta de topo com o id; a impressão é relativa.
+            no_pacote = {nome.split("/", 1)[1] for nome in pacote.namelist()}
+        somados = {
+            arquivo.relative_to(pasta).as_posix()
+            for arquivo in impressao_plugins.arquivos_de(pasta)
+        }
+        assert somados == no_pacote, f"{pasta.name}: {somados ^ no_pacote}"
+
+
+def test_a_impressao_nao_muda_com_os_fins_de_linha(tmp_path):
+    """CRLF no Windows, LF no Linux, a mesma árvore: a mesma impressão.
+
+    Sem isto o teste falhava consoante a máquina, e uma regra que falha por
+    causa do sistema operativo é desligada na primeira semana.
+    """
+    origem = impressao_plugins.pastas_de_plugins()[0]
+    copia = tmp_path / origem.name
+    for arquivo in impressao_plugins.arquivos_de(origem):
+        destino = copia / arquivo.relative_to(origem)
+        destino.parent.mkdir(parents=True, exist_ok=True)
+        bruto = arquivo.read_bytes()
+        deitado = bruto.replace(b"\r\n", b"\n")
+        # Grava com os fins de linha ao contrário dos do disco.
+        destino.write_bytes(deitado if b"\r\n" in bruto else deitado.replace(b"\n", b"\r\n"))
+
+    assert impressao_plugins.impressao_de_pasta(copia) == (
+        impressao_plugins.impressao_de_pasta(origem)
+    )
+
+
+def test_a_impressao_apanharia_uma_mudanca_silenciosa(tmp_path):
+    """A regra acima só vale se falhar quando alguém muda mesmo alguma coisa.
+
+    Verificado aqui em vez de acreditado: editar, acrescentar e renomear têm
+    de mudar a impressão.
+    """
+    import shutil
+
+    origem = impressao_plugins.pastas_de_plugins()[0]
+    antes = impressao_plugins.impressao_de_pasta(origem)
+
+    def copiar(nome: str) -> Path:
+        destino = tmp_path / nome
+        shutil.copytree(origem, destino, ignore=shutil.ignore_patterns("__pycache__"))
+        return destino
+
+    editado = copiar("editado")
+    alvo = editado / "plugin.py"
+    alvo.write_text(alvo.read_text(encoding="utf-8") + "\nVALOR = 1\n", encoding="utf-8")
+    assert impressao_plugins.impressao_de_pasta(editado) != antes, (
+        "uma edição passou despercebida"
+    )
+
+    acrescentado = copiar("acrescentado")
+    (acrescentado / "novo.py").write_text("VALOR = 1\n", encoding="utf-8")
+    assert impressao_plugins.impressao_de_pasta(acrescentado) != antes, (
+        "um arquivo novo passou despercebido"
+    )
+
+    renomeado = copiar("renomeado")
+    (renomeado / "idiomas" / "pt.json").rename(renomeado / "idiomas" / "pt-PT.json")
+    assert impressao_plugins.impressao_de_pasta(renomeado) != antes, (
+        "renomear um arquivo passou despercebido"
+    )
 
 
 # ============================================== O ESPAÇO DE NOMES DE TOPO

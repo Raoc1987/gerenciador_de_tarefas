@@ -807,10 +807,25 @@ ele é desativado.
 
 ```bash
 python tools/empacotar_plugin.py plugins/available/calendar
-# -> dist/plugins/calendar-1.0.0.zip
+# -> dist/plugins/calendar-1.0.1.zip
 ```
 
 Depois, na aplicação: `Configurações → Plugins → + Instalar Plugin`.
+
+#### Mexer num plugin embutido: suba a versão
+
+Os plugins de `plugins/available/` são semeados no arranque, e a semeadura
+compara a versão embutida com a instalada. Um plugin que muda sem subir a
+versão não chega a quem já tem a aplicação: a instalação existente guarda o
+código antigo, enquanto uma instalação limpa traz o novo.
+
+`docs/architecture/plugins-embutidos.json` guarda a impressão digital de cada
+um e `tests/test_arquitetura.py` falha quando ela deixa de coincidir:
+
+```bash
+python tools/impressao_plugins.py            # o que mudou
+python tools/impressao_plugins.py --gravar   # aceitar, já com a versão nova
+```
 
 O `.zip` é tratado como conteúdo não confiável: caminhos com `..`, caminhos
 absolutos, ligações simbólicas, pacotes sem manifesto ou demasiado grandes são
@@ -875,7 +890,7 @@ gerenciador_de_tarefas/
 ├── assets/idiomas/             # pt.json, en.json, es.json
 ├── assets/icon.ico
 ├── installer/setup.iss         # instalador Inno Setup
-├── tools/                      # build, instalador, empacotar plugin, ícone
+├── tools/                      # build, instalador, plugins (empacotar, impressão), ícone
 ├── docs/architecture/          # visão, ADRs e roadmap
 ├── tests/                      # 545 testes
 ├── docs/AUDIT.md               # auditoria do estado inicial do projeto

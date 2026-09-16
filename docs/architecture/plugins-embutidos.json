@@ -1,0 +1,24 @@
+{
+  "_leia_me": "Impressão digital dos plugins que acompanham a aplicação. A semeadura do arranque só tem a versão para decidir se a cópia instalada na máquina de alguém está para trás: quando o conteúdo de um plugin embutido muda e a versão fica na mesma, a instalação existente guarda o código antigo para sempre, enquanto uma instalação limpa já traz o novo. Foi assim que o calendar passou a declarar `permissions` no repositório sem que ninguém instalado o recebesse — o plugin recusava-se a arrancar e só estava partido para quem já tinha a aplicação. tests/test_arquitetura.py falha quando estas impressões deixam de coincidir com o disco.",
+  "_regra": "Mudou o conteúdo de um plugin embutido? Sobe a versão em plugin.json. A versão não é uma etiqueta: é o único sinal que chega às máquinas onde a aplicação já está instalada.",
+  "_como_atualizar": "python tools/impressao_plugins.py --gravar (mostra o que mudou sem o argumento)",
+  "_o_que_entra": "Caminhos e conteúdo de tudo o que vai dentro do pacote, excluindo __pycache__ e companhia. Os fins de linha são normalizados nos arquivos de texto, senão a mesma árvore daria impressões diferentes no Windows e no Linux.",
+  "plugins": {
+    "atualizacoes": {
+      "versao": "1.0.0",
+      "impressao": "ebc5c94e2ccebee54ac1422002bdd00a8cb2a96b2f0b763c3bb87ec52fa75818"
+    },
+    "calculadora": {
+      "versao": "1.0.0",
+      "impressao": "0447966f5bc17c70dffb0f2e96ec401fd32010b34f9cd97a99f3da0e377c4ab4"
+    },
+    "calendar": {
+      "versao": "1.0.1",
+      "impressao": "799e55280715aa760dc898a77ba1aa689bc037e183a3971900b72269899ad908"
+    },
+    "estoque": {
+      "versao": "1.0.0",
+      "impressao": "08382d1e00f72e1b84c93019a8a3530d97267c0fcd94e3eb1e383998170f3a3e"
+    }
+  }
+}

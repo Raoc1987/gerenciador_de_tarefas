@@ -80,6 +80,12 @@ disciplina. Quando a versão é a mesma e o manifesto embutido já não é o que
 está instalado, a cópia instalada saiu de um pacote anterior desta aplicação e
 é substituída.
 
+A impressão digital tem o mesmo cuidado, e por uma razão aprendida à
+bruta: **normaliza os fins de linha**. A mesma pasta do repositório tem CRLF
+numa máquina Windows e LF numa Linux — é o git a decidir no checkout — e a
+primeira versão do inventário, calculada em Windows, deu os quatro plugins
+como alterados no CI em Linux, sem nada ter mudado.
+
 Comparam-se **manifestos interpretados, não bytes**. As cópias instaladas por
 uma versão antiga da aplicação estão em LF e as do repositório em CRLF: a
 comparar bytes, todos os plugins seriam reinstalados a cada arranque sem nada

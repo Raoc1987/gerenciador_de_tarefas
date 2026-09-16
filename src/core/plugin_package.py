@@ -304,6 +304,18 @@ def impressao_da_pasta(pasta: Path) -> str:
     (``__pycache__`` e companhia) ficam de fora: um plugin que corre escreve
     ``.pyc`` dentro da sua própria pasta, e isso não é uma modificação do
     utilizador.
+
+    **Os fins de linha são normalizados antes de entrar no resumo.** A mesma
+    pasta do repositório tem CRLF numa máquina Windows e LF numa Linux, porque
+    é o git a decidir no checkout; e as cópias instaladas por uma versão antiga
+    da aplicação estão em LF ao lado de um repositório em CRLF. Sem isto, a
+    mesma coisa teria duas impressões conforme a máquina — foi exatamente o que
+    partiu a verificação do inventário no CI. O que se quer saber é se o
+    *conteúdo* mudou, e um fim de linha não é conteúdo.
+
+    A normalização aplica-se a todos os arquivos, incluindo os binários. Num
+    binário é uma troca sem significado, mas é determinista, que é tudo o que
+    um resumo precisa de ser.
     """
     pasta = Path(pasta)
     digestor = hashlib.sha256()
@@ -315,6 +327,6 @@ def impressao_da_pasta(pasta: Path) -> str:
             continue
         digestor.update(relativo.as_posix().encode("utf-8"))
         digestor.update(b"\0")
-        digestor.update(arquivo.read_bytes())
+        digestor.update(arquivo.read_bytes().replace(b"\r\n", b"\n"))
         digestor.update(b"\0")
     return digestor.hexdigest()

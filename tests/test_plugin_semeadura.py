@@ -246,6 +246,29 @@ def test_o_que_foi_modificado_a_mao_nao_e_refrescado(
     assert "alterado à mão" in alterado.read_text(encoding="utf-8")
 
 
+def test_impressao_nao_depende_dos_fins_de_linha(tmp_path):
+    """A mesma pasta não pode ter duas impressões conforme a máquina.
+
+    O git decide os fins de linha no checkout: a mesma pasta do repositório
+    tem CRLF em Windows e LF em Linux. A impressão do inventário foi
+    calculada em Windows e o CI, em Linux, viu os quatro plugins embutidos
+    como alterados — sem nada ter mudado. Um fim de linha não é conteúdo.
+    """
+    from core.plugin_package import impressao_da_pasta
+
+    def escrever(nome: str, fim: bytes) -> str:
+        pasta = tmp_path / nome
+        pasta.mkdir()
+        (pasta / "plugin.py").write_bytes(b"a = 1" + fim + b"b = 2" + fim)
+        return impressao_da_pasta(pasta)
+
+    assert escrever("crlf", b"\r\n") == escrever("lf", b"\n")
+
+    # E continua a ver uma alteração a sério.
+    (tmp_path / "lf" / "plugin.py").write_bytes(b"a = 99")
+    assert impressao_da_pasta(tmp_path / "lf") != impressao_da_pasta(tmp_path / "crlf")
+
+
 # ============================================================== NÃO TOCAR
 
 

@@ -3,19 +3,19 @@
   "plugins": {
     "atualizacoes": {
       "versao": "1.0.1",
-      "impressao": "93099330bc8594beee84b7092ba4cc84140328898b2a4955aacd42e6775e0508"
+      "impressao": "6e9b107c67010a46644453b5aaf075c404edd8880f2d3e5c48fdf3a9e7df558b"
     },
     "calculadora": {
       "versao": "1.0.0",
-      "impressao": "48d53ac75aa91fc882d0586c6bb20c3d7af4e707cba5ff747842a03c0ceaba64"
+      "impressao": "84b89b75dbced02b1ba888923aaae1fa9becde6990e9eb7c71919c3e46ed4a21"
     },
     "calendar": {
       "versao": "1.0.1",
-      "impressao": "bdc38eda51da4b96b99e2ef22bfebb9c6be57318c4565dadf9479a749cdadc02"
+      "impressao": "d00f2a934dcc886590d2b0c579af8369ba3b403fc068459dfd1d918445887b9c"
     },
     "estoque": {
       "versao": "1.0.0",
-      "impressao": "374f24f1529bceb9b3dbd153a735e12ccf23d22b87d778756dee20867750b937"
+      "impressao": "c77ff522974dae404d652d80841b24e500dec82d55d4d3eb6296f8f78e884219"
     }
   }
 }

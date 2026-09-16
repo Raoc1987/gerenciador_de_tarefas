@@ -158,6 +158,94 @@ def test_plugin_embutido_ilegivel_e_reposto(
     assert gerenciador_no_banco.obter("demo").estado.utilizavel
 
 
+# =============================================================== REFRESCAR
+
+
+def test_mesma_versao_com_manifesto_diferente_refresca(
+    gerenciador_no_banco, fonte, embutir, pasta_plugins
+):
+    """A rede por baixo da disciplina da versão.
+
+    Subir a versão ao mexer num plugin embutido é obrigatório e há um teste de
+    arquitetura que o garante. Se mesmo assim uma alteração escapar, a mesma
+    versão passa a significar duas coisas — e quem já tem o plugin instalado
+    não devia ficar refém disso.
+    """
+    embutir("demo", version="1.0.0")
+    gerenciador_no_banco.semear_de_fonte(fonte)
+
+    embutir("demo", version="1.0.0", permissions=["tarefas.ler"])
+
+    assert (
+        gerenciador_no_banco.decidir_semeadura(fonte, "demo")
+        is SemeaduraDecisao.REFRESCAR
+    )
+    assert all(r.sucesso for r in gerenciador_no_banco.semear_de_fonte(fonte))
+
+    registro = gerenciador_no_banco.obter("demo")
+    assert [pp.value for pp in registro.manifesto.permissoes] == ["tarefas.ler"]
+
+
+def test_refrescar_nao_se_repete(gerenciador_no_banco, fonte, embutir):
+    """Refrescar uma vez resolve; refrescar a cada arranque era um defeito."""
+    embutir("demo", version="1.0.0")
+    gerenciador_no_banco.semear_de_fonte(fonte)
+    embutir("demo", version="1.0.0", permissions=["tarefas.ler"])
+    gerenciador_no_banco.semear_de_fonte(fonte)
+
+    assert gerenciador_no_banco.semear_de_fonte(fonte) == []
+    assert (
+        gerenciador_no_banco.decidir_semeadura(fonte, "demo") is SemeaduraDecisao.EM_DIA
+    )
+
+
+def test_refrescar_ignora_formatacao_do_manifesto(
+    gerenciador_no_banco, fonte, embutir, pasta_embutidos
+):
+    """Comparam-se manifestos interpretados, não bytes.
+
+    As cópias instaladas de uma versão antiga da aplicação estão em LF e as do
+    repositório em CRLF. A comparar bytes, todos os plugins seriam reinstalados
+    a cada arranque — sem nada ter mudado.
+    """
+    embutir("demo", version="1.0.0")
+    gerenciador_no_banco.semear_de_fonte(fonte)
+
+    manifesto = pasta_embutidos / "demo" / "plugin.json"
+    dados = json.loads(manifesto.read_text(encoding="utf-8"))
+    manifesto.write_bytes(
+        json.dumps(dados, indent=4, sort_keys=True).replace("\n", "\r\n").encode("utf-8")
+    )
+
+    assert (
+        gerenciador_no_banco.decidir_semeadura(fonte, "demo") is SemeaduraDecisao.EM_DIA
+    )
+    assert gerenciador_no_banco.semear_de_fonte(fonte) == []
+
+
+def test_o_que_foi_modificado_a_mao_nao_e_refrescado(
+    gerenciador_no_banco, fonte, embutir, pasta_plugins
+):
+    """A ordem das regras importa: quem mexeu vem antes de que versão é.
+
+    Sem isto, o refresco seria uma porta lateral para pisar exatamente o que a
+    regra da posse existe para proteger.
+    """
+    embutir("demo", version="1.0.0")
+    gerenciador_no_banco.semear_de_fonte(fonte)
+    alterado = pasta_plugins / "demo" / "plugin.py"
+    alterado.write_text(CORPO_OK + "\n# alterado à mão\n", encoding="utf-8")
+
+    embutir("demo", version="1.0.0", permissions=["tarefas.ler"])
+
+    assert (
+        gerenciador_no_banco.decidir_semeadura(fonte, "demo")
+        is SemeaduraDecisao.MODIFICADO
+    )
+    assert gerenciador_no_banco.semear_de_fonte(fonte) == []
+    assert "alterado à mão" in alterado.read_text(encoding="utf-8")
+
+
 # ============================================================== NÃO TOCAR
 
 

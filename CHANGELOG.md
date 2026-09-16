@@ -68,7 +68,10 @@ plugins (ver `docs/architecture/`).
   a ter dono — do aplicativo ou do utilizador — e a impressão digital do que
   foi instalado. Um plugin do aplicativo, intacto e desatualizado, é
   atualizado no arranque; um que o utilizador instalou ou modificou fica como
-  está, e só a ação **Repor originais**, na tela de plugins, lhe toca.
+  está, e só a ação **Repor originais**, na tela de plugins, lhe toca. Se uma
+  alteração escapar sem subir a versão, a mesma versão com um manifesto
+  diferente também é refrescada — comparando manifestos interpretados, não
+  bytes, para que fins de linha não provoquem reinstalações.
 - **O plugin Calendar não ativava numa instalação existente**: o manifesto em
   disco não declarava as permissões `tarefas.ler` e `tarefas.escrever`, que a
   versão do repositório já declarava desde que o SDK passou a exigi-las. Fica

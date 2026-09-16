@@ -92,6 +92,16 @@ class SemeaduraDecisao(Enum):
     ATUALIZAR = "por atualizar"
     """É da aplicação, ninguém lhe mexeu, e há uma versão embutida mais nova."""
 
+    REFRESCAR = "mesma versão, conteúdo diferente"
+    """A mesma versão a significar duas coisas.
+
+    A cópia instalada saiu de um pacote anterior da própria aplicação e o
+    manifesto embutido já não é aquele. Não devia acontecer — subir a versão é
+    obrigatório e há um teste que o garante — mas a disciplina não é uma
+    garantia de execução, e quem já tem o plugin instalado não devia depender
+    dela. Esta é a rede por baixo.
+    """
+
     EM_DIA = "em dia"
     """Nada a fazer."""
 
@@ -842,6 +852,9 @@ class PluginManager:
         * é da aplicação, ninguém lhe mexeu e a versão embutida é mais
           recente: **atualiza**. É por aqui que uma correção de segurança, uma
           permissão nova ou uma tradução nova chegam a quem já tinha o plugin;
+        * é da aplicação, intacto, mesma versão, manifesto diferente:
+          **refresca** — a cópia instalada saiu de um pacote anterior, e a
+          mesma versão não pode significar duas coisas;
         * é da aplicação mas foi modificado, ou passou a ser do utilizador:
           não lhe toca — fica para a reposição explícita;
         * está em dia: não faz nada.
@@ -877,7 +890,13 @@ class PluginManager:
                 )
                 continue
 
-            resultado = self.instalar_de_fonte(fonte, disponivel.id, forcar=repor)
+            # Refrescar é a mesma versão a ser reposta: sem forçar, a guarda
+            # de versão de instalar_zip recusava-o.
+            resultado = self.instalar_de_fonte(
+                fonte,
+                disponivel.id,
+                forcar=repor or decisao is SemeaduraDecisao.REFRESCAR,
+            )
             logger.info(
                 "Semeadura de %s a partir de %s (%s%s): %s",
                 disponivel.id,
@@ -920,8 +939,12 @@ class PluginManager:
 
         if not instalacao.intacta(destino):
             return SemeaduraDecisao.MODIFICADO
-        if comparar_versoes(disponivel.versao, manifesto.versao) > 0:
+
+        comparacao = comparar_versoes(disponivel.versao, manifesto.versao)
+        if comparacao > 0:
             return SemeaduraDecisao.ATUALIZAR
+        if comparacao == 0 and disponivel.manifesto != manifesto:
+            return SemeaduraDecisao.REFRESCAR
         return SemeaduraDecisao.EM_DIA
 
     def _manifesto_instalado(self, plugin_id: str) -> Optional[ManifestoPlugin]:

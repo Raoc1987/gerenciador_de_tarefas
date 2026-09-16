@@ -36,7 +36,7 @@ Um plugin instalado passa a ter **dono**, e o dono decide quem lhe pode tocar.
 
 | Posse | Quem o pôs lá | A semeadura pode substituí-lo? |
 |---|---|---|
-| **embutido** | a aplicação, na semeadura | **sim** — quando a versão embutida é mais recente e ninguém lhe mexeu |
+| **embutido** | a aplicação, na semeadura | **sim** — quando a cópia embutida está à frente da instalada e ninguém lhe mexeu |
 | **utilizador** | o próprio, de um `.zip` (ou da futura loja) | **não** — só com uma ação explícita dele |
 
 Quem instala por último é o dono. Instalar um pacote próprio por cima de um
@@ -46,16 +46,21 @@ tocar.
 Para saber se "ninguém lhe mexeu" não basta a posse: guarda-se também a
 **impressão digital** do conteúdo no momento em que foi instalado
 (`core.plugin_package.impressao_da_pasta`). No arranque, a pergunta é feita a
-cada plugin embutido e tem quatro respostas possíveis
-(`SemeaduraDecisao`):
+cada plugin embutido, e a resposta é uma de seis (`SemeaduraDecisao`):
 
 | Decisão | Situação | O que acontece |
 |---|---|---|
 | `INSTALAR` | não está em disco | instala |
 | `ATUALIZAR` | é nosso, intacto, e a versão embutida é mais recente | **substitui** |
+| `REFRESCAR` | é nosso, intacto, mesma versão, manifesto diferente | **substitui** |
 | `EM_DIA` | é nosso e está igual | nada |
 | `MODIFICADO` | é nosso, mas o conteúdo já não é o que lá pusemos | nada — fica retido |
 | `DO_UTILIZADOR` | passou a ser dele | nada — fica retido |
+
+**A ordem das regras é parte da decisão.** A posse vem primeiro, depois a
+integridade, e só então a versão. Trocar as duas últimas faria do refresco uma
+porta lateral para pisar exatamente o que a regra da posse existe para
+proteger; há um teste a fixar essa ordem.
 
 Uma exceção deliberada: um plugin **nosso cujo manifesto não se consegue ler**
 é reposto mesmo que a impressão não bata certo. Uma pasta ilegível não é uma
@@ -67,6 +72,19 @@ embutido sem lhe subir a versão é publicar uma correção que nunca sai do
 repositório — exatamente o que aconteceu com o Calendar. Por isso há um
 inventário (`plugins-embutidos.json`) com a versão e a impressão de cada um, e
 um teste que falha quando o conteúdo muda e o número fica na mesma.
+
+**E há uma rede por baixo dessa disciplina**, que é o `REFRESCAR`. Um teste
+garante a regra no repositório, mas não a garante numa build que já saiu daqui
+com o erro feito — e quem tem o plugin instalado não devia depender da nossa
+disciplina. Quando a versão é a mesma e o manifesto embutido já não é o que
+está instalado, a cópia instalada saiu de um pacote anterior desta aplicação e
+é substituída.
+
+Comparam-se **manifestos interpretados, não bytes**. As cópias instaladas por
+uma versão antiga da aplicação estão em LF e as do repositório em CRLF: a
+comparar bytes, todos os plugins seriam reinstalados a cada arranque sem nada
+ter mudado. `ManifestoPlugin` tem `extras` marcado `compare=False`, por isso
+um campo desconhecido no manifesto também não provoca uma reinstalação.
 
 **Os dois casos retidos têm saída.** A tela *Configurações → Plugins* oferece
 **Repor originais**: diz quais vai sobrepor, e só age depois de um sim. Não é
@@ -115,7 +133,7 @@ núcleo.
 
 ## Como se sabe que está a ser cumprido
 
-`tests/test_plugin_semeadura.py` percorre as cinco decisões, a adoção, a
+`tests/test_plugin_semeadura.py` percorre as seis decisões, a adoção, a
 reposição, o registo na auditoria — e o caso de origem, em
 `test_correcao_de_permissoes_chega_a_uma_instalacao_existente`: um plugin
 instalado sem as permissões que precisa, um embutido corrigido, e a correção a
@@ -131,3 +149,13 @@ chegar.
 
 `tests/test_gui.py` cobre a reposição pela tela, incluindo o caso em que não
 há nada a repor.
+
+## Crédito
+
+O `REFRESCAR` e a razão para comparar manifestos em vez de bytes vêm do ramo
+`claude/stoic-mayer-0cf059`, que atacou o mesmo problema em paralelo e por
+outro caminho: sem registo de posse, com a fonte a mandar exceto quando a
+versão instalada é mais recente. Não foi o caminho escolhido — a posse
+inferida da ordem das versões não distingue um plugin de terceiros de uma
+cópia antiga nossa, e comparar só o manifesto não vê uma alteração no código
+ou nas traduções — mas as duas ideias acima são boas e estão aqui.

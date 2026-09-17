@@ -196,6 +196,20 @@ _MIGRACOES: List[Sequence[str]] = [
         "ALTER TABLE auditoria ADD COLUMN antes TEXT NOT NULL DEFAULT '{}'",
         "ALTER TABLE auditoria ADD COLUMN depois TEXT NOT NULL DEFAULT '{}'",
     ),
+    # v12 -- de quem e cada plugin instalado, e o que a aplicacao la pos.
+    #
+    # Sem isto nao ha maneira de distinguir "este plugin veio dentro da
+    # aplicacao e esta por atualizar" de "o utilizador instalou esta versao e
+    # nao quer outra" -- e a semeadura, na duvida, nao tocava em nada. O
+    # resultado era um plugin embutido instalado uma vez e nunca mais
+    # corrigido (ADR-0006).
+    #
+    # As linhas antigas ficam com '' nas duas colunas: e a verdade, nao se
+    # sabe. A primeira semeadura depois da atualizacao adota-as.
+    (
+        "ALTER TABLE plugins ADD COLUMN proveniencia TEXT NOT NULL DEFAULT ''",
+        "ALTER TABLE plugins ADD COLUMN impressao TEXT NOT NULL DEFAULT ''",
+    ),
 ]
 
 #: Colunas devolvidas por :func:`buscar_tarefas` — contrato estável de que a

@@ -62,6 +62,7 @@ Cada peça é utilizável sozinha e testável sem interface.
 | Core: versão, caminhos, config, log | ✅ implementado |
 | Persistência com migrações versionadas | ✅ implementado |
 | Plugin Engine (ciclo de vida, ZIP seguro, rollback, fontes) | ✅ implementado |
+| Posse dos plugins e atualização dos embutidos ([ADR-0006](ADR-0006-posse-dos-plugins.md)) | ✅ implementado |
 | Idiomas (app + plugins) | ✅ implementado |
 | Empacotamento e instalador Windows | ✅ implementado e testado |
 | **Event Bus** | ✅ implementado |

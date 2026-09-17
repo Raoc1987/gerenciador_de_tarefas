@@ -244,6 +244,42 @@ def test_retencao_sem_nada_para_remover():
     assert auditoria.aplicar_retencao(dias=30) == 0
 
 
+def test_retencao_configurada_aplica_a_politica():
+    """Com política definida, o arranque encolhe a trilha."""
+    from core import config
+
+    antigo = (datetime.now() - timedelta(days=400)).isoformat(timespec="seconds")
+    auditoria.registar(Evento(nome=eventos.TAREFA_CRIADA, dados={"id": 1}, momento=antigo))
+    db.criar_tabela()
+    db.adicionar_tarefa("Recente")
+
+    config.definir(auditoria.CHAVE_RETENCAO, 365)
+    assert auditoria.aplicar_retencao_configurada() == 1
+    assert auditoria.contar() == 1
+
+
+def test_sem_politica_nao_se_apaga_nada():
+    """O padrão é guardar: apagar por omissão não se desfaz."""
+    antigo = (datetime.now() - timedelta(days=4000)).isoformat(timespec="seconds")
+    auditoria.registar(Evento(nome=eventos.TAREFA_CRIADA, dados={"id": 1}, momento=antigo))
+
+    assert auditoria.aplicar_retencao_configurada() == 0
+    assert auditoria.contar() == 1
+
+
+@pytest.mark.parametrize("valor", [0, -5, "sempre", None, ""])
+def test_politica_invalida_nao_apaga_nem_rebenta(valor):
+    """Uma configuração estragada não pode apagar a auditoria por acidente."""
+    from core import config
+
+    antigo = (datetime.now() - timedelta(days=4000)).isoformat(timespec="seconds")
+    auditoria.registar(Evento(nome=eventos.TAREFA_CRIADA, dados={"id": 1}, momento=antigo))
+
+    config.definir(auditoria.CHAVE_RETENCAO, valor)
+    assert auditoria.aplicar_retencao_configurada() == 0
+    assert auditoria.contar() == 1
+
+
 # ============================================================== CATÁLOGO
 
 

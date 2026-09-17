@@ -271,7 +271,7 @@ def criar_janela(raiz: tk.Tk | None = None) -> tk.Tk:
     app.gerenciador_de_plugins = gerenciador  # facilita testes e depuração
 
     def abrir_plugins():
-        JanelaPlugins(app, gerenciador)
+        JanelaPlugins(app, gerenciador, FontePastasLocais(diretorio_plugins_embutidos()))
 
     def abrir_auditoria():
         JanelaAuditoria(app)

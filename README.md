@@ -65,6 +65,23 @@ python -m pytest
 Alguns testes constroem janelas Tkinter reais e são automaticamente ignorados
 em ambientes sem interface gráfica.
 
+Para ver onde a suíte não chega:
+
+```bash
+python -m pytest --cov=src --cov-report=term-missing
+```
+
+### Verificar o banco de dados
+
+```bash
+python src/main.py --verificar-banco
+```
+
+Mostra a versão do schema e o resultado de `PRAGMA integrity_check`. Abre o
+banco **só de leitura**: é um diagnóstico, não aplica migrações nem repara
+nada. É o primeiro passo quando se suspeita de dados corrompidos — ver
+`docs/MANUTENCAO.md`.
+
 ### Verificar uma instalação
 
 ```bash
@@ -943,6 +960,15 @@ Princípios:
 Os plugins podem, no futuro, vir de uma loja online: `core/plugin_sources.py`
 já separa "de onde vem o pacote" de "como é validado e instalado", com
 `FonteZipsLocais`, `FontePastasLocais` e o esqueleto `FonteRemota`.
+
+Cada plugin instalado tem dono. Os que acompanham o aplicativo são dele: uma
+versão mais recente substitui a que está instalada no arranque, e é assim que
+uma correção chega a quem já o tinha. Os que o utilizador instalou — ou
+modificou à mão — ficam como estão, e só a ação **Repor originais**, na tela
+de plugins, lhes toca. Corrigir um plugin embutido **obriga a subir-lhe a
+versão** e a correr `python tools/inventario_plugins.py`; há um teste que
+falha se isso for esquecido. Ver
+`docs/architecture/ADR-0006-posse-dos-plugins.md`.
 
 ---
 

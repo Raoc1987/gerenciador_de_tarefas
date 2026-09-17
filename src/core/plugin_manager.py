@@ -16,6 +16,7 @@ import shutil
 import sys
 import tempfile
 from dataclasses import dataclass
+from enum import Enum
 from pathlib import Path
 from types import ModuleType
 from typing import Dict, List, Optional
@@ -43,7 +44,11 @@ from core.plugin_api import (
     TarefasComPermissoes,
     encontrar_classe_plugin,
 )
-from core.plugin_sources import FontePlugins
+from core.plugin_sources import (
+    PROVENIENCIA_EMBUTIDO,
+    PROVENIENCIA_UTILIZADOR,
+    FontePlugins,
+)
 from core.version import APP_VERSION, comparar_versoes
 
 logger = obter_logger(__name__)
@@ -70,6 +75,41 @@ class ResultadoOperacao:
 
     def __bool__(self) -> bool:
         return self.sucesso
+
+
+class SemeaduraDecisao(Enum):
+    """O que a semeadura tem a fazer a um plugin que a aplicação traz consigo.
+
+    As quatro respostas possíveis à pergunta do ADR-0006 — *este plugin é da
+    aplicação ou do utilizador, e pode ser substituído?* Existem como valores
+    e não como um ``bool`` porque a interface precisa de dizer **porquê** é
+    que um plugin ficou como está.
+    """
+
+    INSTALAR = "por instalar"
+    """Não está no disco."""
+
+    ATUALIZAR = "por atualizar"
+    """É da aplicação, ninguém lhe mexeu, e há uma versão embutida mais nova."""
+
+    REFRESCAR = "mesma versão, conteúdo diferente"
+    """A mesma versão a significar duas coisas.
+
+    A cópia instalada saiu de um pacote anterior da própria aplicação e o
+    manifesto embutido já não é aquele. Não devia acontecer — subir a versão é
+    obrigatório e há um teste que o garante — mas a disciplina não é uma
+    garantia de execução, e quem já tem o plugin instalado não devia depender
+    dela. Esta é a rede por baixo.
+    """
+
+    EM_DIA = "em dia"
+    """Nada a fazer."""
+
+    MODIFICADO = "modificado no disco"
+    """É da aplicação, mas o conteúdo já não é o que ela lá pôs."""
+
+    DO_UTILIZADOR = "instalado pelo utilizador"
+    """O utilizador instalou a sua própria versão: manda ele."""
 
 
 # -------------------------------------------------------------------- registo
@@ -109,8 +149,40 @@ class RegistroPlugin:
         return self.estado == EstadoPlugin.ATIVO
 
 
+@dataclass(frozen=True)
+class Instalacao:
+    """De quem é o plugin instalado, e o que a aplicação lá deixou (ADR-0006).
+
+    Um plugin embutido é da aplicação: as correções que ela publica têm de lhe
+    chegar. Um plugin instalado pelo utilizador é dele: a aplicação não lhe
+    mexe. Sem este registo as duas famílias são indistinguíveis, e a única
+    política segura passa a ser "não tocar em nada" — que é como um plugin
+    embutido fica instalado uma vez e nunca mais é corrigido.
+    """
+
+    proveniencia: str = ""
+    """``embutido``, ``utilizador``, ou ``""`` enquanto não se souber."""
+
+    impressao: str = ""
+    """Impressão digital do conteúdo no momento em que foi instalado."""
+
+    def intacta(self, pasta: Path) -> bool:
+        """Se o que está na pasta é exatamente o que a aplicação lá pôs.
+
+        Sem impressão guardada não há nada a comparar: a resposta honesta é
+        "não se sabe", e quem pergunta trata isso como intacta — ver a nota
+        sobre a adoção, no ADR-0006.
+        """
+        if not self.impressao:
+            return True
+        return self.impressao == plugin_package.impressao_da_pasta(pasta)
+
+
 class RegistroEstado:
-    """Porta de persistência do estado ativado/desativado dos plugins.
+    """Porta de persistência do estado dos plugins instalados.
+
+    Guarda o que não vive na pasta do plugin: se deve arrancar ativo, de quem
+    é (:class:`Instalacao`) e a impressão do que foi instalado.
 
     A implementação por omissão guarda em memória (útil em testes); a
     aplicação usa a implementação sobre o banco de dados
@@ -119,14 +191,35 @@ class RegistroEstado:
 
     def __init__(self) -> None:
         self._estado: Dict[str, bool] = {}
+        self._instalacoes: Dict[str, Instalacao] = {}
 
     def habilitados(self) -> Dict[str, bool]:
         """Mapa ``plugin_id -> habilitado``."""
         return dict(self._estado)
 
-    def registrar(self, manifesto: ManifestoPlugin, habilitado: bool = False) -> None:
-        """Regista (ou atualiza) um plugin instalado."""
+    def instalacao(self, plugin_id: str) -> Instalacao:
+        """De quem é o plugin, e o que foi instalado. Vazia se desconhecido."""
+        return self._instalacoes.get(plugin_id, Instalacao())
+
+    def registrar(
+        self,
+        manifesto: ManifestoPlugin,
+        habilitado: bool = False,
+        proveniencia: str = "",
+        impressao: str = "",
+    ) -> None:
+        """Regista (ou atualiza) um plugin instalado.
+
+        Quem instalou por último é o dono: instalar um pacote próprio por cima
+        de um plugin embutido transfere-o para o utilizador, e a semeadura
+        deixa de lhe tocar. Campos vazios não apagam o que já se sabia.
+        """
         self._estado.setdefault(manifesto.id, habilitado)
+        anterior = self.instalacao(manifesto.id)
+        self._instalacoes[manifesto.id] = Instalacao(
+            proveniencia=proveniencia or anterior.proveniencia,
+            impressao=impressao or anterior.impressao,
+        )
 
     def definir_habilitado(self, plugin_id: str, habilitado: bool) -> None:
         """Persiste a intenção do utilizador de ter o plugin ativo ou não."""
@@ -135,6 +228,7 @@ class RegistroEstado:
     def esquecer(self, plugin_id: str) -> None:
         """Remove o plugin do registo (após desinstalação)."""
         self._estado.pop(plugin_id, None)
+        self._instalacoes.pop(plugin_id, None)
 
 
 # ------------------------------------------------------------------ gerenciador
@@ -592,6 +686,8 @@ class PluginManager:
         self,
         caminho_zip: Path,
         permitir_atualizacao: bool = True,
+        proveniencia: str = PROVENIENCIA_UTILIZADOR,
+        forcar: bool = False,
     ) -> ResultadoOperacao:
         """Instala (ou atualiza) um plugin a partir de um arquivo ``.zip``.
 
@@ -603,6 +699,14 @@ class PluginManager:
         Em atualização, a versão anterior é guardada e reposta se algo falhar,
         de modo a nunca deixar um plugin meio-atualizado. A configuração e os
         dados do plugin vivem fora da sua pasta e são preservados.
+
+        Args:
+            proveniencia: de quem fica a ser o plugin — quem instala por
+                último é o dono (ADR-0006). Por omissão, do utilizador: esta é
+                a porta por onde ele instala à mão.
+            forcar: repõe mesmo que a versão seja igual ou mais antiga. É o
+                que "repor os plugins que vieram com a aplicação" quer dizer;
+                não é o que uma instalação normal deve fazer.
         """
         caminho_zip = Path(caminho_zip)
         try:
@@ -619,7 +723,7 @@ class PluginManager:
         estava_ativo = bool(existente and existente.ativo)
         atualizacao = destino.exists()
 
-        if atualizacao and versao_anterior:
+        if atualizacao and versao_anterior and not forcar:
             comparacao = comparar_versoes(manifesto.versao, versao_anterior)
             if comparacao <= 0 or not permitir_atualizacao:
                 chave = "plugin_ja_instalado"
@@ -660,7 +764,12 @@ class PluginManager:
         finally:
             shutil.rmtree(temporario, ignore_errors=True)
 
-        self._registro.registrar(manifesto, habilitado=False)
+        self._registro.registrar(
+            manifesto,
+            habilitado=False,
+            proveniencia=proveniencia,
+            impressao=plugin_package.impressao_da_pasta(destino),
+        )
         self.descobrir()
         chave = "plugin_atualizado" if atualizacao else "plugin_instalado"
         logger.info(
@@ -677,6 +786,7 @@ class PluginManager:
             id=manifesto.id,
             versao=manifesto.versao,
             versao_anterior=versao_anterior,
+            proveniencia=proveniencia,
         )
 
         # Um plugin que estava a correr volta a correr na versão nova.
@@ -699,11 +809,14 @@ class PluginManager:
         fonte: "FontePlugins",
         plugin_id: str,
         permitir_atualizacao: bool = True,
+        forcar: bool = False,
     ) -> ResultadoOperacao:
         """Instala um plugin oferecido por uma fonte (local, embutida ou remota).
 
         A fonte apenas entrega um ``.zip``; a validação e a instalação são as
-        mesmas de sempre, venha o pacote de onde vier.
+        mesmas de sempre, venha o pacote de onde vier. O que a fonte também
+        diz é **de quem fica a ser** o plugin
+        (:attr:`~core.plugin_sources.FontePlugins.proveniencia`).
         """
         try:
             disponivel = fonte.procurar(plugin_id)
@@ -718,36 +831,179 @@ class PluginManager:
             logger.exception("Falha ao obter o pacote de %s.", plugin_id)
             return ResultadoOperacao(False, "plugin_erro_instalar", plugin_id, str(erro))
 
-        return self.instalar_zip(caminho, permitir_atualizacao=permitir_atualizacao)
+        return self.instalar_zip(
+            caminho,
+            permitir_atualizacao=permitir_atualizacao,
+            proveniencia=fonte.proveniencia,
+            forcar=forcar,
+        )
 
-    def semear_de_fonte(self, fonte: "FontePlugins") -> List[ResultadoOperacao]:
-        """Instala os plugins da fonte que ainda não existem localmente.
+    # ------------------------------------------------------------ SEMEADURA
 
-        Usado no arranque para disponibilizar os plugins que acompanham a
-        aplicação. **Nunca** substitui um plugin já instalado: a versão do
-        utilizador manda, mesmo que seja mais antiga.
+    def semear_de_fonte(
+        self, fonte: "FontePlugins", repor: bool = False
+    ) -> List[ResultadoOperacao]:
+        """Põe no disco os plugins que a fonte oferece, segundo o ADR-0006.
+
+        Corre no arranque, com os plugins que acompanham a aplicação. Para
+        cada um decide entre quatro coisas (ver :meth:`decidir_semeadura`):
+
+        * não está instalado: instala;
+        * é da aplicação, ninguém lhe mexeu e a versão embutida é mais
+          recente: **atualiza**. É por aqui que uma correção de segurança, uma
+          permissão nova ou uma tradução nova chegam a quem já tinha o plugin;
+        * é da aplicação, intacto, mesma versão, manifesto diferente:
+          **refresca** — a cópia instalada saiu de um pacote anterior, e a
+          mesma versão não pode significar duas coisas;
+        * é da aplicação mas foi modificado, ou passou a ser do utilizador:
+          não lhe toca — fica para a reposição explícita;
+        * está em dia: não faz nada.
+
+        Args:
+            repor: ignora a posse e as modificações e volta a pôr o que veio
+                dentro da aplicação, mesmo na mesma versão. É a ação explícita
+                do utilizador, nunca o comportamento do arranque.
         """
         resultados: List[ResultadoOperacao] = []
         if not fonte.disponivel():
             return resultados
 
+        self.descobrir()
+        self._adotar_instalacoes(fonte)
+
+        retidas = (SemeaduraDecisao.MODIFICADO, SemeaduraDecisao.DO_UTILIZADOR)
         for disponivel in fonte.listar():
-            if (self.diretorio / disponivel.id).exists():
-                continue
             if not disponivel.compativel(self.app_version):
                 logger.info(
                     "Plugin embutido %s ignorado por incompatibilidade.", disponivel.id
                 )
                 continue
-            resultado = self.instalar_de_fonte(fonte, disponivel.id)
+
+            decisao = self.decidir_semeadura(fonte, disponivel.id)
+            if decisao is SemeaduraDecisao.EM_DIA:
+                continue
+            if decisao in retidas and not repor:
+                logger.info(
+                    "Plugin %s não semeado (%s): o que está no disco fica como está.",
+                    disponivel.id,
+                    decisao.value,
+                )
+                continue
+
+            # Refrescar é a mesma versão a ser reposta: sem forçar, a guarda
+            # de versão de instalar_zip recusava-o.
+            resultado = self.instalar_de_fonte(
+                fonte,
+                disponivel.id,
+                forcar=repor or decisao is SemeaduraDecisao.REFRESCAR,
+            )
             logger.info(
-                "Semeadura de %s a partir de %s: %s",
+                "Semeadura de %s a partir de %s (%s%s): %s",
                 disponivel.id,
                 fonte.nome,
+                decisao.value,
+                ", reposição" if repor else "",
                 "ok" if resultado.sucesso else resultado.detalhes,
             )
             resultados.append(resultado)
         return resultados
+
+    def decidir_semeadura(
+        self, fonte: "FontePlugins", plugin_id: str
+    ) -> "SemeaduraDecisao":
+        """O que a semeadura faria a este plugin — sem lhe fazer nada.
+
+        Está separada para que a interface possa dizer ao utilizador o que
+        ficou retido e porquê, com as mesmas regras que o arranque usa, e não
+        com uma segunda cópia delas a divergir com o tempo.
+        """
+        disponivel = fonte.procurar(plugin_id)
+        if disponivel is None:
+            return SemeaduraDecisao.EM_DIA
+
+        destino = self.diretorio / plugin_id
+        if not destino.exists():
+            return SemeaduraDecisao.INSTALAR
+
+        instalacao = self._registro.instalacao(plugin_id)
+        if instalacao.proveniencia and instalacao.proveniencia != fonte.proveniencia:
+            return SemeaduraDecisao.DO_UTILIZADOR
+
+        manifesto = self._manifesto_instalado(plugin_id)
+        if manifesto is None:
+            # O que está no disco não se consegue ler, e é da aplicação. Repor
+            # vem antes de perguntar se alguém lhe mexeu: uma pasta que não se
+            # lê não é uma alteração que valha a pena preservar, e deixá-la
+            # como está é deixar o plugin partido à espera de um clique.
+            return SemeaduraDecisao.ATUALIZAR
+
+        if not instalacao.intacta(destino):
+            return SemeaduraDecisao.MODIFICADO
+
+        comparacao = comparar_versoes(disponivel.versao, manifesto.versao)
+        if comparacao > 0:
+            return SemeaduraDecisao.ATUALIZAR
+        if comparacao == 0 and disponivel.manifesto != manifesto:
+            return SemeaduraDecisao.REFRESCAR
+        return SemeaduraDecisao.EM_DIA
+
+    def _manifesto_instalado(self, plugin_id: str) -> Optional[ManifestoPlugin]:
+        """Lê do disco o manifesto de um plugin instalado, ou ``None``.
+
+        Do disco e não de :meth:`descobrir`: a decisão da semeadura tem de ser
+        verdadeira sobre o que lá está agora, e não sobre o que foi lido da
+        última vez. Quem a consulta não devia ter de saber que precisa de
+        redescobrir primeiro.
+        """
+        try:
+            return ManifestoPlugin.ler_de_pasta(self.diretorio / plugin_id)
+        except ManifestoInvalidoError:
+            return None
+
+    def retidos_da_fonte(self, fonte: "FontePlugins") -> List[str]:
+        """Plugins que a fonte oferece e que a semeadura não pode atualizar.
+
+        São os que só uma reposição explícita destrava: os que o utilizador
+        modificou e os que passaram a ser dele.
+        """
+        self.descobrir()
+        return [
+            disponivel.id
+            for disponivel in fonte.listar()
+            if self.decidir_semeadura(fonte, disponivel.id)
+            in (SemeaduraDecisao.MODIFICADO, SemeaduraDecisao.DO_UTILIZADOR)
+        ]
+
+    def _adotar_instalacoes(self, fonte: "FontePlugins") -> None:
+        """Dá dono aos plugins instalados antes de existir este registo.
+
+        Uma instalação anterior ao ADR-0006 não diz de quem é cada plugin nem
+        o que a aplicação lá pôs. Os que a fonte oferece e que já estão no
+        disco são adotados por ela, com a impressão do que lá está **hoje**
+        como ponto de partida. A consequência está escrita no ADR: uma
+        modificação feita à mão antes desta versão não é reconhecível, e a
+        primeira atualização embutida passa-lhe por cima.
+        """
+        for disponivel in fonte.listar():
+            destino = self.diretorio / disponivel.id
+            if not destino.exists():
+                continue
+            if self._registro.instalacao(disponivel.id).proveniencia:
+                continue
+            manifesto = self._manifesto_instalado(disponivel.id)
+            if manifesto is None:
+                continue
+            self._registro.registrar(
+                manifesto,
+                habilitado=False,
+                proveniencia=fonte.proveniencia,
+                impressao=plugin_package.impressao_da_pasta(destino),
+            )
+            logger.info(
+                "Plugin %s adotado como %s: instalação anterior ao registo de posse.",
+                disponivel.id,
+                fonte.proveniencia,
+            )
 
     def inspecionar_zip(self, caminho_zip: Path) -> ManifestoPlugin:
         """Lê o manifesto de um ``.zip`` sem instalar nada.

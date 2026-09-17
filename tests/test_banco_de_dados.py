@@ -5,6 +5,7 @@ import sqlite3
 import pytest
 
 import banco_de_dados as db
+import main
 
 
 def test_criar_tabela_e_idempotencia(dados_isolados):
@@ -106,3 +107,58 @@ def test_rollback_em_erro():
             )
             conexao.execute("SELECT * FROM tabela_inexistente")
     assert [t[1] for t in db.buscar_tarefas()] == ["Antes do erro"]
+
+
+# ================================================ DIAGNÓSTICO DO BANCO
+
+
+def test_verificar_banco_diz_que_esta_intacto(capsys):
+    db.criar_tabela()
+    db.adicionar_tarefa("Tarefa")
+
+    assert main.verificar_banco() == 0
+    saida = capsys.readouterr().out
+    assert "integrity_check: ok" in saida
+    assert "BANCO OK" in saida
+
+
+def test_verificar_banco_mostra_a_versao_do_schema(capsys):
+    db.criar_tabela()
+    with db.conectar() as conexao:
+        esperada = int(conexao.execute("PRAGMA user_version").fetchone()[0])
+
+    main.verificar_banco()
+
+    assert f"versão do schema (user_version): {esperada}" in capsys.readouterr().out
+
+
+def test_verificar_banco_nao_migra_nada(capsys):
+    """Um diagnóstico que altera o banco deixa de ser um diagnóstico."""
+    caminho = db.caminho_bd()
+    caminho.parent.mkdir(parents=True, exist_ok=True)
+    with sqlite3.connect(caminho) as conexao:
+        conexao.execute("PRAGMA user_version = 0")
+
+    assert main.verificar_banco() == 0
+
+    with sqlite3.connect(caminho) as conexao:
+        assert int(conexao.execute("PRAGMA user_version").fetchone()[0]) == 0
+        tabelas = conexao.execute(
+            "SELECT name FROM sqlite_master WHERE type = 'table'"
+        ).fetchall()
+    assert tabelas == [], "a verificação criou tabelas"
+
+
+def test_verificar_banco_denuncia_ficheiro_estragado(capsys):
+    caminho = db.caminho_bd()
+    caminho.parent.mkdir(parents=True, exist_ok=True)
+    caminho.write_bytes(b"isto nao e um banco sqlite")
+
+    assert main.verificar_banco() == 1
+    assert "FALHA" in capsys.readouterr().out
+
+
+def test_verificar_banco_sem_banco_nenhum(capsys):
+    """Antes do primeiro arranque não há nada — e isso não é uma falha."""
+    assert main.verificar_banco() == 0
+    assert "ainda não existe" in capsys.readouterr().out

@@ -11,4 +11,4 @@ openpyxl>=3.1
 pypdf>=4.0
 
 # Só para regenerar assets/icon.ico (tools/gerar_icone.py).
-pillow>=10.0
+pillow>=12.3.0

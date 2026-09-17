@@ -89,25 +89,21 @@ Também concluído: **relatórios e exportação** e **auditoria persistida**.
 
 Também concluído: **autenticação** e o **plugin de atualizações**.
 
-A seguir, por ordem de valor:
+### O que vem a seguir
 
-1. **SDK de dados e permissões para plugins** — um módulo de negócio precisa
-   de tabelas próprias, permissões próprias e migrações próprias, e o
-   `ContextoPlugin` ainda não dá nada disso. Tem de vir **antes** do primeiro
-   módulo, ou ele acabará a importar `banco_de_dados` diretamente. (A resolver
-   também aí: um plugin que importe um módulo vizinho usa um nome global —
-   dois plugins com um `verificador.py` colidiriam.)
-2. **Módulo Projetos** — primeiro módulo de gestão, já como plugin, para
-   provar que o Plugin Engine aguenta um módulo de negócio a sério: tabelas
-   próprias, permissões próprias e eventos próprios.
-3. **Multiempresa** — isolamento de dados por empresa.
-4. **Licenciamento** — só depois de existir algo que valha a pena licenciar.
-5. **Cifrar o banco** — hoje a autenticação protege o uso da aplicação, não o
-   ficheiro em disco.
+**Não está aqui.** Está em [CLASSIFICACAO.md](CLASSIFICACAO.md), e está lá
+sozinho de propósito.
 
-Uma nota sobre a ordem: o `ContextoPlugin` ainda não oferece tabelas próprias
-nem permissões próprias a um plugin. Isso tem de ser decidido **antes** do
-primeiro módulo de negócio, ou o módulo acabará a importar `banco_de_dados`
-diretamente e a furar a arquitetura.
+Esta secção já teve a sua própria lista, e a lista envelheceu sem ninguém
+reparar: continuava a dizer que o `ContextoPlugin` não oferecia tabelas nem
+permissões próprias a um plugin, várias etapas depois de passar a oferecer
+as duas. Não foi desleixo — foi o resultado previsível de a mesma decisão
+estar escrita em dois sítios. Dois roteiros divergem; a única pergunta é
+quando.
+
+`CLASSIFICACAO.md` é o que se mantém, porque é o que um teste obriga a
+manter: nenhum módulo ou plugin pode existir sem lá constar. Um documento
+que falha a construção quando mente vale mais do que dois que concordam
+por acaso.
 
 Ver os ADRs nesta pasta para as decisões e os seus porquês.

@@ -8,7 +8,7 @@ pyinstaller>=6.10
 # Só para VALIDAR nos testes o XLSX e o PDF que escrevemos à mão.
 # Não entram no executável — ver docs/architecture/ADR-0002.
 openpyxl>=3.1
-pypdf>=4.0
+pypdf>=6.18.1
 
 # Só para regenerar assets/icon.ico (tools/gerar_icone.py).
 pillow>=12.3.0

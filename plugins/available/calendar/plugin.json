@@ -1,7 +1,7 @@
 {
   "id": "calendar",
   "name": "Calendar Integration",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "author": "Gerenciador de Tarefas",
   "description": "Mostra as tarefas num calendário mensal e permite criar tarefas numa data.",
   "min_app_version": "1.0.0",

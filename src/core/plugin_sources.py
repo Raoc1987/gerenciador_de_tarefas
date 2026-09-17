@@ -30,12 +30,17 @@ from core.plugin_api import (
     PacoteInvalidoError,
 )
 from core.paths import diretorio_plugins_temp
+from core.plugin_package import IGNORADOS
 from core.version import APP_VERSION
 
 logger = obter_logger(__name__)
 
-#: Nomes que nunca entram num pacote gerado a partir de uma pasta.
-IGNORADOS = {"__pycache__", ".git", ".pytest_cache", ".DS_Store"}
+#: Um plugin que veio dentro da aplicação. A aplicação responde por ele: as
+#: correções que publica têm de lhe chegar (ADR-0006).
+PROVENIENCIA_EMBUTIDO = "embutido"
+
+#: Um plugin que o utilizador instalou. É dele; a aplicação não lhe mexe.
+PROVENIENCIA_UTILIZADOR = "utilizador"
 
 
 @dataclass(frozen=True)
@@ -68,6 +73,15 @@ class FontePlugins(ABC):
     """Contrato comum a todas as fontes de plugins."""
 
     nome: str = "fonte"
+
+    proveniencia: str = PROVENIENCIA_UTILIZADOR
+    """De quem fica a ser o plugin que esta fonte entrega.
+
+    Por omissão, do utilizador: instalar de uma pasta de downloads ou da loja
+    é uma decisão dele, e a aplicação não volta a essa pasta por sua conta.
+    Não confundir com :attr:`PluginDisponivel.origem`, que é apenas a frase
+    que diz de que pasta ou URL o pacote veio.
+    """
 
     def disponivel(self) -> bool:
         """Se a fonte pode ser consultada agora (pasta existe, rede acessível...)."""
@@ -145,6 +159,7 @@ class FontePastasLocais(FontePlugins):
     """
 
     nome = "plugins embutidos"
+    proveniencia = PROVENIENCIA_EMBUTIDO
 
     def __init__(self, pasta: Path) -> None:
         self.pasta = Path(pasta)

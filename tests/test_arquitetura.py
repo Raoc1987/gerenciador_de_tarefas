@@ -392,6 +392,98 @@ def test_as_excecoes_de_nome_tem_todas_uma_razao(nomes_declarados):
         assert len(razao) > 40, f"a razão para manter {nome!r} é curta demais."
 
 
+# ============================================= OS PLUGINS QUE VÊM DENTRO
+
+
+@pytest.fixture(scope="module")
+def inventario_embutidos() -> dict:
+    """Versão e impressão digital de cada plugin que acompanha a aplicação."""
+    dados = json.loads(
+        (ARQUITETURA / "plugins-embutidos.json").read_text(encoding="utf-8")
+    )
+    return dados["plugins"]
+
+
+def impressoes_dos_embutidos() -> dict:
+    """O que está hoje em ``plugins/available``, lido do disco."""
+    import sys
+
+    sys.path.insert(0, str(SRC))
+    from core.plugin_package import impressao_da_pasta
+
+    atual = {}
+    for pasta in sorted(p for p in PLUGINS.iterdir() if p.is_dir()):
+        manifesto = pasta / "plugin.json"
+        if not manifesto.is_file():
+            continue
+        dados = json.loads(manifesto.read_text(encoding="utf-8"))
+        atual[dados["id"]] = {
+            "versao": dados["version"],
+            "impressao": impressao_da_pasta(pasta),
+        }
+    return atual
+
+
+def test_mexer_num_plugin_embutido_obriga_a_subir_a_versao(inventario_embutidos):
+    """ADR-0006: a versão é o que faz uma correção chegar a quem já a precisa.
+
+    A semeadura compara versões. Um plugin embutido corrigido sem subir de
+    versão fica corrigido no repositório e continua partido em todas as
+    instalações que existem — foi assim que o Calendar passou a declarar as
+    permissões de que precisa e, na máquina de quem já o tinha, continuou a
+    falhar a ativação durante uma versão inteira.
+
+    Este teste não sabe o que a alteração fez. Sabe que o conteúdo mudou, e
+    que o número que decide se ela sai daqui ficou na mesma.
+    """
+    atual = impressoes_dos_embutidos()
+
+    novos = set(atual) - set(inventario_embutidos)
+    assert not novos, (
+        f"Plugins embutidos por declarar: {sorted(novos)}. "
+        f"Corra: python tools/inventario_plugins.py"
+    )
+    fantasmas = set(inventario_embutidos) - set(atual)
+    assert not fantasmas, (
+        f"O inventário fala de plugins que já não existem: {sorted(fantasmas)}."
+    )
+
+    for plugin_id, declarado in sorted(inventario_embutidos.items()):
+        agora = atual[plugin_id]
+        if agora["impressao"] == declarado["impressao"]:
+            assert agora["versao"] == declarado["versao"], (
+                f"{plugin_id}: a versão subiu para {agora['versao']} sem nada ter "
+                f"mudado no conteúdo. Corra: python tools/inventario_plugins.py"
+            )
+            continue
+        assert agora["versao"] != declarado["versao"], (
+            f"{plugin_id}: o conteúdo mudou e a versão continua em "
+            f"{agora['versao']}. Quem já tem este plugin instalado nunca vai "
+            f"receber a alteração (ADR-0006). Suba a versão em "
+            f"plugins/available/{plugin_id}/plugin.json e corra: "
+            f"python tools/inventario_plugins.py"
+        )
+
+
+def test_cada_plugin_embutido_declara_o_acesso_que_usa():
+    """Um plugin que usa as tarefas tem de as pedir no manifesto.
+
+    O campo ``permissions`` é o contrato: sem ele o ``ContextoPlugin`` recusa
+    o acesso em tempo de execução, e o plugin instala-se para falhar mais
+    tarde. Ausente e vazio não são a mesma coisa — vazio é uma afirmação
+    ("não acede a nada"), ausente é um esquecimento.
+    """
+    for pasta in sorted(p for p in PLUGINS.iterdir() if p.is_dir()):
+        manifesto = pasta / "plugin.json"
+        if not manifesto.is_file():
+            continue
+        dados = json.loads(manifesto.read_text(encoding="utf-8"))
+        assert "permissions" in dados, (
+            f"{pasta.name}: o manifesto não diz a que acede. Declare "
+            f'"permissions": [] se não acede a nada.'
+        )
+
+
 # ====================================================== DOCUMENTOS FIÉIS
 
 

@@ -13,6 +13,11 @@ plugins (ver `docs/architecture/`).
 
 ### Adicionado
 
+- **Guia de contribuições** (`CONTRIBUTING.md`): o que classificar antes de
+  escrever código (ADR-0004), as regras que falham um teste quando são
+  violadas, o que tem de acompanhar cada mudança e o que uma boa issue traz.
+  O README prometia um guia em inglês que nunca existiu no repositório.
+
 - **Framework de manutenção** (`docs/MANUTENCAO.md`): o que se antecipa
   (preditiva), o que se faz por rotina (preventiva) e como se responde a uma
   falha já ocorrida (corretiva), cada item com sinal, ferramenta, cadência e

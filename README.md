@@ -989,7 +989,9 @@ aplicação e confirma que tarefas, configurações e plugins sobreviveram.
 
 ## 🤝 Contribuições
 
-Veja o guia de contribuições em `CONTRIBUTING.md` (disponível em inglês).
+Veja o [guia de contribuições](CONTRIBUTING.md): o que classificar antes de
+escrever código, as regras que falham um teste quando são violadas, e o que
+tem de acompanhar cada mudança.
 
 ## 📝 Licença
 

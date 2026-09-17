@@ -69,7 +69,7 @@ plugins (ver `docs/architecture/`).
 
 ### Adicionado
 
-- **Políticas por atributo** (`core/permissoes.py`, ADR-0006): o papel responde
+- **Políticas por atributo** (`core/permissoes.py`, ADR-0007): o papel responde
   a "podes concluir tarefas?"; uma política responde a "podes concluir
   **esta**?". Uma política recebe o par `(ação, objeto)` e **só pode recusar**
   — nunca concede, corre depois do papel e, se rebentar, recusa. É o que torna

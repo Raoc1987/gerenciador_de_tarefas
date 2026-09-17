@@ -503,6 +503,46 @@ def test_a_classificacao_cobre_tudo_o_que_existe(classificacao):
             assert pasta.name in classificacao, f"o plugin {pasta.name} não está classificado."
 
 
+def test_nenhum_numero_de_adr_se_repete():
+    """Dois ADRs com o mesmo número são duas decisões com a mesma morada.
+
+    Aconteceu: dois ramos a andar em paralelo escolheram ambos o 0006 — um
+    para a posse dos plugins, outro para as políticas de acesso. O git juntou
+    os dois sem se queixar, porque os nomes dos ficheiros eram diferentes, e
+    a partir daí "ver ADR-0006" no meio do código deixava de apontar para
+    sítio nenhum em concreto.
+
+    Escolher o número seguinte é a parte fácil. O que faltava era alguém
+    reparar, e é isso que este teste faz.
+    """
+    import re
+    from collections import defaultdict
+
+    por_numero = defaultdict(list)
+    for adr in sorted(ARQUITETURA.glob("ADR-*.md")):
+        achado = re.match(r"ADR-(\d+)", adr.name)
+        assert achado, f"{adr.name} não começa por ADR-<número>."
+        por_numero[achado.group(1)].append(adr.name)
+
+    repetidos = {n: f for n, f in por_numero.items() if len(f) > 1}
+    assert not repetidos, (
+        f"Números de ADR repetidos: {repetidos}. Renumere o mais recente — "
+        f"o número já publicado é referido a partir do código."
+    )
+
+
+def test_o_numero_no_titulo_e_o_do_ficheiro():
+    """Um ADR renumerado no nome e não no título mente duas vezes."""
+    import re
+
+    for adr in sorted(ARQUITETURA.glob("ADR-*.md")):
+        numero = re.match(r"ADR-(\d+)", adr.name).group(1)
+        primeira = adr.read_text(encoding="utf-8").splitlines()[0]
+        assert primeira.startswith(f"# ADR-{numero}"), (
+            f"{adr.name} começa por {primeira!r}, que não é o seu número."
+        )
+
+
 def test_cada_adr_tem_decisao_e_consequencias():
     adrs = sorted(ARQUITETURA.glob("ADR-*.md"))
     assert len(adrs) >= 4, "as decisões de arquitetura vivem em ADRs."

@@ -57,7 +57,7 @@ consolidar o que existe, não abrir mais uma frente.
 
 | # | Bloco | Categoria | Porquê agora | Depende de |
 |---|---|---|---|---|
-| 3 | ABAC (regras por atributo) | **feito** | Uma política decide sobre o objeto, não só sobre o verbo, e **só pode recusar** — é o que torna seguro um plugin registar uma. Entrou com uma regra a sério a usá-la (segregação de funções), para não ser um motor à espera de utilizador. Ver ADR-0006 | hierarquia |
+| 3 | ABAC (regras por atributo) | **feito** | Uma política decide sobre o objeto, não só sobre o verbo, e **só pode recusar** — é o que torna seguro um plugin registar uma. Entrou com uma regra a sério a usá-la (segregação de funções), para não ser um motor à espera de utilizador. Ver ADR-0007 | hierarquia |
 
 ### Faz-se depois, por esta ordem
 

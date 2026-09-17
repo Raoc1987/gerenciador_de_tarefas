@@ -1,4 +1,4 @@
-# ADR-0006 — Uma política só pode recusar
+# ADR-0007 — Uma política só pode recusar
 
 Data: 2026-09-15 · Estado: aceite
 

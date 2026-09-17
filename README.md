@@ -528,7 +528,7 @@ quem certifica que ficou feito.
   por isso ninguém certifica o próprio trabalho ao fechá-las.
 
 Ligue-a só onde exista outra pessoa para fechar o trabalho. Ver
-[ADR-0006](docs/architecture/ADR-0006-politicas-por-atributo.md).
+[ADR-0007](docs/architecture/ADR-0007-politicas-por-atributo.md).
 
 ### Um módulo traz as suas regras
 

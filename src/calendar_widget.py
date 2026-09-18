@@ -6,6 +6,7 @@ meses e selecionar um dia. Dias com tarefas são destacados.
 
 from __future__ import annotations
 
+from aparencia import fonte
 import calendar
 import tkinter as tk
 from datetime import date
@@ -42,7 +43,7 @@ class CalendarioWidget(ttk.Frame):
         self._cabecalho = ttk.Frame(self)
         self._cabecalho.pack(fill=tk.X)
         ttk.Button(self._cabecalho, text="◀", width=3, command=self._mes_anterior).pack(side=tk.LEFT)
-        self._rotulo_mes = ttk.Label(self._cabecalho, anchor=tk.CENTER, font=("Arial", 11, "bold"))
+        self._rotulo_mes = ttk.Label(self._cabecalho, anchor=tk.CENTER, font=fonte("destaque", negrito=True))
         self._rotulo_mes.pack(side=tk.LEFT, expand=True, fill=tk.X)
         ttk.Button(self._cabecalho, text="▶", width=3, command=self._mes_seguinte).pack(side=tk.LEFT)
 

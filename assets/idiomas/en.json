@@ -328,5 +328,10 @@
   "plugin_repor_embutidos": "Restore originals",
   "plugin_repor_confirmar": "This restores the version that shipped with the application, replacing what is installed: {nomes}.\n\nThese plugins' settings and data are preserved. Continue?",
   "plugin_repor_nada": "The plugins that shipped with the application are already as they should be.",
-  "plugin_repostos": "{quantos} plugin(s) restored to the version that shipped with the application."
+  "plugin_repostos": "{quantos} plugin(s) restored to the version that shipped with the application.",
+  "aparencia": "Appearance",
+  "aparencia_claro": "light",
+  "aparencia_escuro": "dark",
+  "aparencia_alternar": "Switch to {modo} mode",
+  "aparencia_ao_reabrir": "The application will use {modo} mode next time you open it."
 }

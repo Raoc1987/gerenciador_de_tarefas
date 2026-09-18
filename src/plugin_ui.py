@@ -14,6 +14,7 @@ ficam disponíveis num campo à parte (e sempre no log).
 
 from __future__ import annotations
 
+from aparencia import fonte
 import tkinter as tk
 from pathlib import Path
 from tkinter import filedialog, messagebox, ttk
@@ -187,7 +188,7 @@ class JanelaPlugins(tk.Toplevel):
         cabecalho = ttk.Frame(self)
         cabecalho.pack(fill=tk.X, padx=12, pady=(12, 6))
         ttk.Label(
-            cabecalho, text=carregar_texto("plugins"), font=("Arial", 14, "bold")
+            cabecalho, text=carregar_texto("plugins"), font=fonte("subtitulo", negrito=True)
         ).pack(side=tk.LEFT)
         ttk.Button(
             cabecalho,

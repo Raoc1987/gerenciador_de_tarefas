@@ -18,12 +18,16 @@ from analitica.insights import Insight, Nivel
 from core import eventos, permissoes
 from core.log import obter_logger
 from core.permissoes import Permissao
+from aparencia import cores, fonte
 from language_manager import carregar_texto
 from relatorios import exportadores, servico
 from relatorios.construtor import relatorio_de_tarefas
 from textos import texto_do_insight
 from componentes.graficos import (
     COR_ALERTA,
+    PREENCHER_ATENCAO,
+    PREENCHER_BOM,
+    PREENCHER_MAU,
     COR_ATENCAO,
     COR_NEUTRA,
     COR_PRIMARIA,
@@ -39,11 +43,15 @@ logger = obter_logger(__name__)
 #: Espera antes de recalcular, para uma rajada de eventos dar um só recálculo.
 ATRASO_ATUALIZACAO_MS = 250
 
-CORES_POR_NIVEL = {
-    Nivel.CRITICO: COR_ALERTA,
-    Nivel.ATENCAO: COR_ATENCAO,
-    Nivel.POSITIVO: COR_SECUNDARIA,
-    Nivel.INFORMACAO: COR_NEUTRA,
+#: Que token de cor corresponde a cada nível — o **nome**, não o valor.
+#:
+#: Guardar o valor aqui prendia a aplicação ao modo que estava em vigor
+#: quando este módulo foi lido, que é sempre o claro.
+TOKEN_POR_NIVEL = {
+    Nivel.CRITICO: "mau",
+    Nivel.ATENCAO: "aviso",
+    Nivel.POSITIVO: "bom",
+    Nivel.INFORMACAO: "texto_suave",
 }
 
 MARCAS_POR_NIVEL = {
@@ -88,7 +96,7 @@ class PainelDashboard(ttk.Frame):
         barra = ttk.Frame(self)
         barra.pack(fill=tk.X, pady=(8, 4), padx=8)
 
-        self._titulo = ttk.Label(barra, font=("Arial", 13, "bold"))
+        self._titulo = ttk.Label(barra, font=fonte("subtitulo", negrito=True))
         self._titulo.pack(side=tk.LEFT)
 
         self._botao_atualizar = ttk.Button(barra, command=self.atualizar, width=12)
@@ -113,11 +121,16 @@ class PainelDashboard(ttk.Frame):
         # Fluxo (criadas/concluídas) leva variação face ao período anterior;
         # estado (pendentes/atrasadas/taxa) não leva — não há histórico de estado.
         self._cartoes = {
-            "criadas": CartaoKPI(self._linha_kpis, cor=COR_PRIMARIA),
-            "concluidas": CartaoKPI(self._linha_kpis, cor=COR_SECUNDARIA),
-            "pendentes": CartaoKPI(self._linha_kpis, cor=COR_ATENCAO),
-            "atrasadas": CartaoKPI(self._linha_kpis, cor=COR_ALERTA, subir_e_bom=False),
-            "taxa": CartaoKPI(self._linha_kpis, cor=COR_PRIMARIA),
+            # Só o que é mesmo um estado leva cor. "Criadas: 6" não é bom
+            # nem mau — é um número, e pintá-lo obrigava quem lê a decidir
+            # o que a cor queria dizer.
+            "criadas": CartaoKPI(self._linha_kpis),
+            "concluidas": CartaoKPI(self._linha_kpis),
+            "pendentes": CartaoKPI(self._linha_kpis),
+            "atrasadas": CartaoKPI(
+                self._linha_kpis, cor=cores()["mau"], subir_e_bom=False
+            ),
+            "taxa": CartaoKPI(self._linha_kpis),
         }
         for coluna, cartao in enumerate(self._cartoes.values()):
             cartao.grid(row=0, column=coluna, sticky="ew", padx=3, pady=4)
@@ -340,7 +353,7 @@ class PainelDashboard(ttk.Frame):
                 (carregar_texto("estado_pendentes"), kpis.pendentes - kpis.atrasadas),
                 (carregar_texto("estado_atrasadas"), kpis.atrasadas),
             ],
-            cores=(COR_SECUNDARIA, COR_ATENCAO, COR_ALERTA),
+            cores=(PREENCHER_BOM, PREENCHER_ATENCAO, PREENCHER_MAU),
         )
 
         self._mostrar_insights(visao.insights)
@@ -363,8 +376,8 @@ class PainelDashboard(ttk.Frame):
             ttk.Label(
                 linha,
                 text=MARCAS_POR_NIVEL[insight.nivel],
-                foreground=CORES_POR_NIVEL[insight.nivel],
-                font=("Arial", 10, "bold"),
+                foreground=cores()[TOKEN_POR_NIVEL[insight.nivel]],
+                font=fonte("destaque", negrito=True),
                 width=2,
             ).pack(side=tk.LEFT)
             ttk.Label(linha, text=texto_do_insight(insight), wraplength=680, justify=tk.LEFT).pack(

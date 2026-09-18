@@ -11,6 +11,7 @@ remédio para um mapeamento errado é apagar tudo à mão.
 
 from __future__ import annotations
 
+from aparencia import cores, fonte
 import tkinter as tk
 from pathlib import Path
 from tkinter import filedialog, ttk
@@ -24,9 +25,9 @@ from language_manager import carregar_texto
 
 logger = obter_logger(__name__)
 
-COR_NEUTRA = "#7a8794"
-COR_ERRO = "#c0392b"
-COR_BOA = "#2c7a3f"
+COR_NEUTRA = cores()["texto_suave"]
+COR_ERRO = cores()["mau"]
+COR_BOA = cores()["bom"]
 
 TIPOS = [("CSV / Excel", "*.csv *.xlsx *.txt *.tsv"), ("Todos", "*.*")]
 
@@ -53,7 +54,7 @@ class JanelaImportacao(tk.Toplevel):
 
         # --- 1. ficheiro
         ttk.Label(corpo, text=carregar_texto("importar_passo_ficheiro"),
-                  font=("Arial", 10, "bold")).pack(anchor=tk.W)
+                  font=fonte("destaque", negrito=True)).pack(anchor=tk.W)
         linha = ttk.Frame(corpo)
         linha.pack(fill=tk.X, pady=(2, 0))
         self.botao_escolher = ttk.Button(
@@ -65,7 +66,7 @@ class JanelaImportacao(tk.Toplevel):
 
         # --- 2. destino
         ttk.Label(corpo, text=carregar_texto("importar_passo_destino"),
-                  font=("Arial", 10, "bold")).pack(anchor=tk.W, pady=(12, 2))
+                  font=fonte("destaque", negrito=True)).pack(anchor=tk.W, pady=(12, 2))
         self.destino_var = tk.StringVar()
         self.seletor_destino = ttk.Combobox(
             corpo, textvariable=self.destino_var, state="readonly", width=38
@@ -75,13 +76,13 @@ class JanelaImportacao(tk.Toplevel):
 
         # --- 3. colunas
         ttk.Label(corpo, text=carregar_texto("importar_passo_colunas"),
-                  font=("Arial", 10, "bold")).pack(anchor=tk.W, pady=(12, 2))
+                  font=fonte("destaque", negrito=True)).pack(anchor=tk.W, pady=(12, 2))
         self.mapa_frame = ttk.Frame(corpo)
         self.mapa_frame.pack(fill=tk.X)
 
         # --- 4. previsão
         ttk.Label(corpo, text=carregar_texto("importar_passo_previsao"),
-                  font=("Arial", 10, "bold")).pack(anchor=tk.W, pady=(12, 2))
+                  font=fonte("destaque", negrito=True)).pack(anchor=tk.W, pady=(12, 2))
         self.tabela_previsao = ttk.Treeview(corpo, show="headings", height=8)
         self.tabela_previsao.pack(fill=tk.BOTH, expand=True)
 

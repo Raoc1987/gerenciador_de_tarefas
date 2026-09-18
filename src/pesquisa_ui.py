@@ -11,6 +11,7 @@ quatro, e numa base grande nota-se.
 
 from __future__ import annotations
 
+from aparencia import cores, fonte
 import tkinter as tk
 from tkinter import ttk
 from typing import Dict, List, Optional
@@ -22,7 +23,7 @@ from pesquisa import Resultado
 
 logger = obter_logger(__name__)
 
-COR_NEUTRA = "#7a8794"
+COR_NEUTRA = cores()["texto_suave"]
 
 #: Quanto tempo se espera, em ms, depois da última tecla.
 ESPERA_MS = 250
@@ -42,7 +43,7 @@ class JanelaPesquisa(tk.Toplevel):
         corpo = ttk.Frame(self, padding=12)
         corpo.pack(fill=tk.BOTH, expand=True)
 
-        self.entrada = ttk.Entry(corpo, font=("Arial", 12))
+        self.entrada = ttk.Entry(corpo, font=fonte("destaque"))
         self.entrada.pack(fill=tk.X)
         self.entrada.bind("<KeyRelease>", self._ao_escrever)
         self.entrada.bind("<Return>", lambda _: self.procurar())

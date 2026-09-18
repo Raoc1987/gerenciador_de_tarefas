@@ -10,6 +10,7 @@ ocupa mais e diz menos: o que interessa a quem organiza é o desenho.
 
 from __future__ import annotations
 
+from aparencia import cores, fonte
 import tkinter as tk
 from tkinter import messagebox, simpledialog, ttk
 from typing import Dict, List, Optional
@@ -22,7 +23,7 @@ from language_manager import carregar_texto
 
 logger = obter_logger(__name__)
 
-COR_NEUTRA = "#7a8794"
+COR_NEUTRA = cores()["texto_suave"]
 
 
 def nome_do_tipo(tipo: TipoUnidade) -> str:
@@ -51,7 +52,7 @@ class JanelaOrganizacao(tk.Toplevel):
         cabecalho = ttk.Frame(self)
         cabecalho.pack(fill=tk.X, padx=12, pady=(12, 6))
         ttk.Label(
-            cabecalho, text=carregar_texto("estrutura"), font=("Arial", 14, "bold")
+            cabecalho, text=carregar_texto("estrutura"), font=fonte("subtitulo", negrito=True)
         ).pack(side=tk.LEFT)
         ttk.Button(
             cabecalho,

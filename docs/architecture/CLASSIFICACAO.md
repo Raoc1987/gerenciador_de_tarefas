@@ -36,6 +36,7 @@ interface) · **Module** (domínio de negócio, como plugin) · **Plugin**
 | Ações que a aplicação oferece às regras | Ligação | `src/automacoes.py` |
 | Tela das automações | UI | `src/regras_ui.py` |
 | Gráficos | Service (UI) | `src/componentes/` |
+| **Aparência (tokens e tema)** | **Service (UI)** | `src/aparencia/` |
 | Interface | UI | `src/*_ui.py`, `gui.py` |
 | Calendar Integration | Plugin | `plugins/available/calendar/` |
 | Verificação de atualizações | Plugin | `plugins/available/atualizacoes/` |

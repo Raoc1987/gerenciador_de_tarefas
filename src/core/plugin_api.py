@@ -468,6 +468,61 @@ class InterfaceAnfitria(Protocol):
         """Mostra uma mensagem informativa ao utilizador."""
 
 
+class Aparencia(Protocol):
+    """O que o contrato precisa de saber sobre a aparência — e mais nada.
+
+    O Core **não pode** importar o módulo que pinta a aplicação: importa
+    ``tkinter``, e a regra de camadas diz que quem não toca na interface
+    também não toca no que a pinta. Mas o contrato dos plugins vive aqui.
+
+    A saída é a inversão: o Core declara o que precisa, e quem está por cima
+    fornece. É o mesmo padrão das permissões de módulos e das políticas — o
+    núcleo avalia, quem sabe do domínio regista.
+    """
+
+    def cor(self, papel: str) -> str: ...
+
+    def fonte(self, tamanho: str, negrito: bool) -> tuple: ...
+
+    def espaco(self, nome: str) -> int: ...
+
+
+class _SemAparencia:
+    """O que responde quando ninguém instalou aparência nenhuma.
+
+    Acontece a correr sem interface — num teste, num agendamento. Devolver
+    valores neutros é melhor do que rebentar: um plugin que pergunte a cor não
+    tem de saber se há janela.
+    """
+
+    def cor(self, papel: str) -> str:
+        return ""
+
+    def fonte(self, tamanho: str, negrito: bool) -> tuple:
+        return ()
+
+    def espaco(self, nome: str) -> int:
+        return 0
+
+
+_aparencia: "Aparencia" = _SemAparencia()
+
+
+def instalar_aparencia(fornecedor: "Aparencia") -> None:
+    """Diz ao contrato onde ir buscar cores, letras e espaços.
+
+    Chamada pela camada de interface no arranque. O Core continua sem saber
+    que módulo é.
+    """
+    global _aparencia
+    _aparencia = fornecedor
+
+
+def aparencia_da_aplicacao() -> "Aparencia":
+    """O fornecedor em vigor."""
+    return _aparencia
+
+
 @dataclass
 class ContextoPlugin:
     """Tudo o que um plugin pode usar da aplicação.
@@ -627,6 +682,42 @@ class ContextoPlugin:
             funcionalidade=funcionalidade,
             dono=self.manifesto.id,
         )
+
+    def cor(self, papel: str) -> str:
+        """Uma cor da paleta, pelo **papel** — ``"texto_suave"``, ``"mau"``.
+
+        Os widgets ttk de um plugin já herdam o tema sem pedir nada: as
+        classes de estilo são globais. Isto é para o que o ttk não alcança —
+        desenhar num ``Canvas``, sobretudo.
+
+        Pedir o papel e não o valor é o que faz a aba do módulo acompanhar o
+        modo escuro. Um plugin que escreva a cor à mão fica a ser o único
+        sítio claro de uma janela escura.
+
+        Sem aparência instalada — a correr sem interface, num teste — devolve
+        ``""``, que o Tk lê como "a de origem". Um plugin não tem de saber se
+        há tema.
+
+        Raises:
+            KeyError: papel que não existe.
+        """
+        return aparencia_da_aplicacao().cor(papel)
+
+    def fonte(self, tamanho: str = "corpo", negrito: bool = False) -> tuple:
+        """Uma letra da escala da aplicação.
+
+        Raises:
+            ValueError: tamanho fora da escala.
+        """
+        return aparencia_da_aplicacao().fonte(tamanho, negrito)
+
+    def espaco(self, nome: str = "normal") -> int:
+        """Um degrau da escala de espaçamento, em píxeis.
+
+        Raises:
+            KeyError: degrau que não existe.
+        """
+        return aparencia_da_aplicacao().espaco(nome)
 
     def utilizador(self) -> str:
         """Quem está em sessão, para o módulo registar quem fez o quê."""

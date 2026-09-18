@@ -20,16 +20,53 @@ from dataclasses import dataclass, field
 from tkinter import ttk
 from typing import Callable, List, Optional, Sequence, Tuple
 
-# Paleta: distinguível, legível sobre fundos claros, sem depender de tema.
-COR_PRIMARIA = "#25639c"
-COR_SECUNDARIA = "#2f9e5f"
-COR_ALERTA = "#c0392b"
-COR_ATENCAO = "#d38b1a"
-COR_NEUTRA = "#7a8794"
-COR_GRELHA = "#dfe4e8"
-COR_TEXTO = "#33404d"
+import aparencia
+from aparencia import ESPACO, cores, fonte, paleta
+from aparencia.paleta import CLARO as _CLARO
 
-PALETA = (COR_PRIMARIA, COR_SECUNDARIA, COR_ATENCAO, COR_ALERTA, COR_NEUTRA)
+# As cores vêm da paleta (ver :mod:`aparencia`), e não escritas aqui.
+#
+# Estavam escritas aqui, e o cinzento de texto secundário dava 3.67 de
+# contraste sobre branco — abaixo do mínimo de 4.5 da WCAG. Não foi um
+# descuido de quem o escolheu: foi escolhido a olho, e a olho não se vê a
+# diferença entre 3.67 e 4.5. Vê-se com uma medição, que agora existe.
+#
+# Os nomes ficam: um plugin pode estar a importá-los.
+COR_PRIMARIA = _CLARO["acento"]
+COR_SECUNDARIA = _CLARO["bom"]
+COR_ALERTA = _CLARO["mau"]
+COR_ATENCAO = _CLARO["aviso"]
+COR_NEUTRA = _CLARO["texto_suave"]
+COR_GRELHA = _CLARO["contorno_subtil"]
+COR_TEXTO = _CLARO["texto"]
+
+PALETA = paleta.SERIES_CLARO
+
+# Preencher não é escrever, e eu tinha-os tratado como a mesma coisa.
+#
+# Uma cor de texto é escolhida para dar 4.5:1 sobre o fundo, o que a puxa
+# para escura. Usada numa barra de meio ecrã, essa mesma escura fica pesada e
+# a suplantar tudo o resto — a barra "Em dia" saiu castanha e a berrar. Um
+# preenchimento precisa de ~3:1 para se distinguir do fundo, e mais do que
+# isso é ruído.
+PREENCHER_BOM = "#2F9E6E"
+PREENCHER_ATENCAO = "#D9A22B"
+PREENCHER_MAU = "#D9534F"
+PREENCHER_PRIMARIO = "#3D7FE0"
+
+
+def _agora() -> dict:
+    """As cores do modo **em vigor**, e não as de quando o módulo foi lido.
+
+    Resolvi-as no import, e o modo escuro mostrou porque é que isso estava
+    errado: ao importar, o modo é sempre o claro, por isso os títulos dos
+    gráficos ficavam quase pretos sobre fundo escuro — invisíveis — e a
+    grelha ficava a brilhar. Uma cor de desenho pergunta-se na altura de
+    desenhar.
+    """
+    from aparencia import cores
+
+    return cores()
 
 
 def _fundo_do_tema(widget: tk.Misc) -> str:
@@ -120,7 +157,7 @@ class _GraficoBase(ttk.Frame):
                 12,
                 text=self._titulo,
                 anchor=tk.W,
-                fill=COR_TEXTO,
+                fill=_agora()["texto"],
                 font=("Arial", 10, "bold"),
             )
 
@@ -129,7 +166,7 @@ class _GraficoBase(ttk.Frame):
                 largura / 2,
                 altura / 2,
                 text=self._texto_sem_dados,
-                fill=COR_NEUTRA,
+                fill=_agora()["texto_suave"],
                 font=("Arial", 10),
             )
             return
@@ -160,16 +197,16 @@ class _GraficoBase(ttk.Frame):
         for indice in range(divisoes + 1):
             fracao = indice / divisoes
             y = y1 - (y1 - y0) * fracao
-            self.canvas.create_line(x0, y, x1, y, fill=COR_GRELHA)
+            self.canvas.create_line(x0, y, x1, y, fill=_agora()["contorno_subtil"])
             self.canvas.create_text(
                 x0 - 6,
                 y,
                 text=self._formatar_numero(maximo * fracao),
                 anchor=tk.E,
-                fill=COR_NEUTRA,
+                fill=_agora()["texto_suave"],
                 font=("Arial", 8),
             )
-        self.canvas.create_line(x0, y0, x0, y1, fill=COR_GRELHA)
+        self.canvas.create_line(x0, y0, x0, y1, fill=_agora()["contorno_subtil"])
 
     @staticmethod
     def _formatar_numero(valor: float) -> str:
@@ -295,7 +332,7 @@ class GraficoLinhas(_GraficoBase):
                 y1 + 8,
                 text=etiqueta,
                 anchor=tk.W if indice == 0 else tk.E,
-                fill=COR_NEUTRA,
+                fill=_agora()["texto_suave"],
                 font=("Arial", 8),
             )
 
@@ -324,7 +361,7 @@ class GraficoLinhas(_GraficoBase):
                 y,
                 text=serie.nome,
                 anchor=tk.W,
-                fill=COR_NEUTRA,
+                fill=_agora()["texto_suave"],
                 font=("Arial", 8),
             )
             deslocamento = self.canvas.bbox(texto)[2] + 14
@@ -383,14 +420,14 @@ class GraficoBarras(_GraficoBase):
                 centro,
                 topo - 8,
                 text=self._formatar_numero(valor),
-                fill=COR_TEXTO,
+                fill=_agora()["texto"],
                 font=("Arial", 9, "bold"),
             )
             self.canvas.create_text(
                 centro,
                 y1 + 10,
                 text=rotulo,
-                fill=COR_NEUTRA,
+                fill=_agora()["texto_suave"],
                 font=("Arial", 8),
                 width=espaco,
             )
@@ -405,18 +442,33 @@ class CartaoKPI(ttk.Frame):
         rotulo: str = "",
         valor: str = "—",
         variacao: Optional[float] = None,
-        cor: str = COR_PRIMARIA,
+        cor: Optional[str] = None,
         subir_e_bom: bool = True,
         **kwargs,
     ) -> None:
-        super().__init__(master, relief=tk.GROOVE, borderwidth=1, padding=10, **kwargs)
+        # O relevo GROOVE era o bisel que dava o ar de aplicação antiga. Um
+        # cartão distingue-se do fundo por ser mais claro e ter uma linha de
+        # 1px — é o que o estilo Cartao.TFrame faz.
+        kwargs.setdefault("style", "Cartao.TFrame")
+        super().__init__(master, padding=aparencia.ESPACO["confortavel"], **kwargs)
         self._subir_e_bom = subir_e_bom
 
-        self._rotulo = ttk.Label(self, text=rotulo, foreground=COR_NEUTRA, font=("Arial", 9))
+        # Sem cor pedida, o número é texto normal.
+        #
+        # Antes, cada cartão levava a sua: cinco cartões seguidos saíam com
+        # cinco cores, e uma fila assim não tem nada em destaque — tem cinco
+        # coisas a disputar a atenção. A cor fica para o cartão que diz mesmo
+        # alguma coisa sobre o estado, e a variação continua a ter a sua.
+        self._rotulo = ttk.Label(self, text=rotulo, style="Suave.TLabel")
         self._rotulo.pack(anchor=tk.W)
-        self._valor = ttk.Label(self, text=valor, foreground=cor, font=("Arial", 20, "bold"))
-        self._valor.pack(anchor=tk.W)
-        self._variacao = ttk.Label(self, text="", font=("Arial", 8))
+        self._valor = ttk.Label(
+            self,
+            text=valor,
+            foreground=cor or _agora()["texto"],
+            font=aparencia.fonte("display", negrito=True),
+        )
+        self._valor.pack(anchor=tk.W, pady=(aparencia.ESPACO["minimo"], 0))
+        self._variacao = ttk.Label(self, text="", font=aparencia.fonte("micro"))
         self._variacao.pack(anchor=tk.W)
 
         self.atualizar(rotulo, valor, variacao)
@@ -443,5 +495,6 @@ class CartaoKPI(ttk.Frame):
 
         seta = "▲" if variacao > 0 else ("▼" if variacao < 0 else "•")
         bom = (variacao > 0) == self._subir_e_bom
-        cor = COR_NEUTRA if variacao == 0 else (COR_SECUNDARIA if bom else COR_ALERTA)
+        c = _agora()
+        cor = c["texto_suave"] if variacao == 0 else (c["bom"] if bom else c["mau"])
         self._variacao.config(text=f"{seta} {abs(variacao):.1f}%", foreground=cor)

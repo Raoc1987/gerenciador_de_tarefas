@@ -14,3 +14,10 @@ htmlcov/
 
 # Instalador
 installer/Output/
+
+# Ambiente de quem desenvolve: editor e segredos locais. Nada disto diz
+# respeito a outra pessoa, e o .env nunca deve chegar ao repositório.
+.env
+.vscode/
+.idea/
+.DS_Store

@@ -56,6 +56,10 @@ EVENTOS_AUDITAVEIS: Dict[str, str] = {
     eventos.UNIDADE_REMOVIDA: "id",
     # Ligar ou desligar uma parte do produto muda o que toda a gente vê.
     eventos.FUNCIONALIDADE_ALTERADA: "id",
+    # Uma tentativa que uma política travou. É o que separa um controlo
+    # de um obstáculo: quem audita quer ver as tentativas, não só o que
+    # passou. O alvo é o objeto sobre o qual se tentou agir.
+    eventos.POLITICA_RECUSOU: "alvo",
     # Uma automação que correu fez alguma coisa em nome de alguém: fica na
     # trilha, senão haveria alterações sem autor aparente.
     # Um alerta é uma afirmação da aplicação sobre o trabalho de alguém: fica

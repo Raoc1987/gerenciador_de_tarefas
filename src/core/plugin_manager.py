@@ -1089,6 +1089,9 @@ class PluginManager:
         remover_textos_plugin(plugin_id)
         # Um módulo descarregado deixa de conceder o que quer que fosse.
         permissoes_core.esquecer_permissoes_de_modulo(plugin_id)
+        # ... e deixa de recusar. Uma política de um plugin que já saiu
+        # continuaria a travar ações sem que houvesse onde ir desligá-la.
+        permissoes_core.esquecer_politicas_de_dono(plugin_id)
         # ... e deixa de contribuir para o painel e para a pesquisa.
         try:
             import indicadores

@@ -105,3 +105,34 @@ estão congelados por causa dos plugins instalados, e um `gdt/` que tivesse de
 manter `utils` e `calendar_widget` no topo à mesma seria meio caminho com o
 custo inteiro. Se um dia houver forma de migrar plugins instalados, é essa a
 decisão a rever — e é por isso que fica escrita aqui.
+
+## Revisão da condição (2026-09-17)
+
+A condição escrita acima — *"se um dia houver forma de migrar plugins
+instalados"* — foi reexaminada depois de o [ADR-0006](ADR-0006-posse-dos-plugins.md)
+entrar. **Cumpriu-se em metade, e a metade que falta é a que interessa.**
+
+O que mudou: um plugin que **acompanha a aplicação** já se atualiza sozinho.
+A semeadura passou a comparar versões e a conhecer a posse, por isso os quatro
+plugins embutidos poderiam ser publicados numa versão nova a importar de
+`gdt.utils`, e essa versão chegaria a quem já os tem.
+
+O que não mudou: um plugin **escrito por outra pessoa** — instalado de um
+`.zip`, ou vindo de uma futura loja — continua a não ter caminho nenhum. Ele
+escreve `import utils` e nós não temos como o reescrever à distância. E é
+exatamente por causa desses que os nomes estão congelados; para os nossos
+nunca foi preciso congelar nada.
+
+Resta a variante com camada de compatibilidade: mover tudo para `gdt/` e
+deixar `utils`, `calendar_widget`, `language_manager` e `core` no topo como
+reexportações finas. Reduziria o espaço de topo de trinta e dois nomes para
+cinco — mas os cinco que ficavam continuariam a ser os expostos, e é
+precisamente o cenário que a decisão original já pesou e chamou "meio caminho
+com o custo inteiro". Não há informação nova que mude essa conta: **a decisão
+mantém-se**.
+
+O que a tornaria diferente, e vale a pena escrever para não ser preciso
+redescobrir: um mecanismo que faça chegar uma mudança nossa a um plugin que
+não é nosso. Enquanto isso não existir, mover tudo é pagar um `sed` por toda a
+base de código — e um degrau no `git blame` de cada linha — para ficar com os
+mesmos nomes arriscados no topo.

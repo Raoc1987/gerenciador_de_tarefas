@@ -70,6 +70,15 @@ UNIDADE_REMOVIDA = "unidade.removida"
 
 FUNCIONALIDADE_ALTERADA = "funcionalidade.alterada"
 
+#: Uma política recusou uma ação que o papel permitia.
+#:
+#: A auditoria ouve ``*``, por isso isto fica na trilha. É o que separa um
+#: controlo de um obstáculo: quem audita quer poder ver **as tentativas**, não
+#: só as ações que passaram. Publicado por :func:`core.permissoes.exigir` — o
+#: ponto onde se está mesmo a tentar fazer, e não por ``pode``, que a interface
+#: chama para decidir se desenha um botão.
+POLITICA_RECUSOU = "politica.recusou"
+
 ANALISE_ALERTA = "analise.alerta"
 ANALISE_RESOLVIDO = "analise.resolvido"
 
@@ -89,7 +98,8 @@ EVENTOS_DO_NUCLEO = (
     PLUGIN_ATUALIZADO, PLUGIN_REMOVIDO, PLUGIN_ERRO, SESSAO_INICIADA,
     SESSAO_TERMINADA, SESSAO_FALHADA, UTILIZADOR_CRIADO, UTILIZADOR_ALTERADO,
     UTILIZADOR_REMOVIDO, UNIDADE_CRIADA, UNIDADE_ALTERADA, UNIDADE_REMOVIDA,
-    FUNCIONALIDADE_ALTERADA, ANALISE_ALERTA, ANALISE_RESOLVIDO,
+    FUNCIONALIDADE_ALTERADA, POLITICA_RECUSOU,
+    ANALISE_ALERTA, ANALISE_RESOLVIDO,
     WORKFLOW_EXECUTADA, WORKFLOW_LIMITE,
     APP_INICIADA, APP_ENCERRADA, IDIOMA_ALTERADO,
 )

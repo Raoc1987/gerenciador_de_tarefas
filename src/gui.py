@@ -17,7 +17,7 @@ from core.log import obter_logger
 from core.paths import caminho_recurso, diretorio_plugins_embutidos
 from core.plugin_manager import PluginManager
 from core.plugin_registry import RegistroEstadoBanco
-from core.permissoes import Permissao, PermissaoNegadaError
+from core.permissoes import Permissao, PermissaoNegadaError, PoliticaNegouError
 from core.plugin_sources import FontePastasLocais
 from dashboard_ui import PainelDashboard
 import tarefas_servico
@@ -222,6 +222,22 @@ def criar_janela(raiz: tk.Tk | None = None) -> tk.Tk:
         entrada_data.delete(0, tk.END)
         recarregar_lista()
 
+    def avisar_recusa(erro: PermissaoNegadaError) -> None:
+        """Mostra a razão certa para esta recusa.
+
+        Sem isto, uma tarefa recusada por uma política dizia "a tarefa é de
+        outra pessoa" — que é o contrário do que se passa, porque a
+        segregação de funções recusa precisamente as que **são** suas. Uma
+        mensagem errada é pior do que nenhuma: manda corrigir o que não está
+        mal.
+        """
+        motivo = (
+            erro.chave_mensagem
+            if isinstance(erro, PoliticaNegouError)
+            else "tarefa_de_outro"
+        )
+        messagebox.showwarning(carregar_texto("aviso"), carregar_texto(motivo))
+
     def acao_concluir():
         tarefa_id = tarefa_selecionada()
         if tarefa_id is None:
@@ -230,10 +246,8 @@ def criar_janela(raiz: tk.Tk | None = None) -> tk.Tk:
         if atual is not None:
             try:
                 tarefas_servico.concluir(tarefa_id, not atual[3])
-            except PermissaoNegadaError:
-                messagebox.showwarning(
-                    carregar_texto("aviso"), carregar_texto("tarefa_de_outro")
-                )
+            except PermissaoNegadaError as erro:
+                avisar_recusa(erro)
         recarregar_lista()
 
     def acao_remover():
@@ -247,10 +261,8 @@ def criar_janela(raiz: tk.Tk | None = None) -> tk.Tk:
         ):
             try:
                 tarefas_servico.remover(tarefa_id)
-            except PermissaoNegadaError:
-                messagebox.showwarning(
-                    carregar_texto("aviso"), carregar_texto("tarefa_de_outro")
-                )
+            except PermissaoNegadaError as erro:
+                avisar_recusa(erro)
             recarregar_lista()
 
     # ------------------------------------------------------------- plugins

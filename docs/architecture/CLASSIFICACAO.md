@@ -42,6 +42,7 @@ interface) · **Module** (domínio de negócio, como plugin) · **Plugin**
 | **Estoque** (inventário) | **Module** | `plugins/available/estoque/` |
 | **Calculadora** (simples, científica, conversões, financeira) | **Plugin** | `plugins/available/calculadora/` |
 | Permissões trazidas por um módulo | Core (contrato) | `core/permissoes.py`, `core/plugin_api.py` |
+| **Políticas por atributo (ABAC)** | **Core (contrato)** | `core/permissoes.py`, `src/politicas_incluidas.py` |
 
 ## O que foi proposto
 
@@ -49,9 +50,14 @@ Ordenado por **valor sobre custo**, não pela ordem em que foi proposto.
 
 ### Faz-se a seguir
 
+**A fila está vazia.** Não é um convite a inventar: o que resta está na
+lista de baixo, e cada item tem escrito o que falta acontecer antes de
+valer a pena. Quando nada tem a condição cumprida, a resposta certa é
+consolidar o que existe, não abrir mais uma frente.
+
 | # | Bloco | Categoria | Porquê agora | Depende de |
 |---|---|---|---|---|
-| 3 | ABAC (regras por atributo) | **Core** | O caso que mais pesava — "o gestor vê o seu departamento" — já está feito com a hierarquia. O que falta do ABAC é o caso geral: regras por atributo arbitrário | hierarquia |
+| 3 | ABAC (regras por atributo) | **feito** | Uma política decide sobre o objeto, não só sobre o verbo, e **só pode recusar** — é o que torna seguro um plugin registar uma. Entrou com uma regra a sério a usá-la (segregação de funções), para não ser um motor à espera de utilizador. Ver ADR-0007 | hierarquia |
 
 ### Faz-se depois, por esta ordem
 

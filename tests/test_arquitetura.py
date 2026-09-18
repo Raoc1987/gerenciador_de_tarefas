@@ -38,6 +38,7 @@ INTERFACE = {
     # Importa tkinter: quem não pode tocar na interface também não
     # pode tocar no que a pinta.
     "aparencia",
+    "navegacao",
 }
 
 

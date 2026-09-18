@@ -209,6 +209,54 @@ def _botoes(estilo: ttk.Style, c: Dict[str, str], e: Dict[str, int]) -> None:
     )
 
 
+def _lateral(estilo: ttk.Style, c: Dict[str, str], e: Dict[str, int], corpo: tuple) -> None:
+    """Os itens da barra lateral.
+
+    São botões, e não etiquetas com um clique agarrado: um botão já traz o
+    foco por teclado, o Espaço e o Enter, e o estado desativado. Refazer isso
+    à mão dá quase sempre uma coisa que o rato usa e o teclado não.
+
+    Sem contorno e sem fundo até o rato lá passar: uma lista de doze caixas
+    pesa mais do que a página que elas abrem.
+    """
+    estilo.configure(
+        "Lateral.TButton",
+        background=c["superficie_alta"],
+        foreground=c["texto_suave"],
+        bordercolor=c["superficie_alta"],
+        borderwidth=0,
+        relief="flat",
+        anchor="w",
+        padding=(e["confortavel"], e["normal"] - 1),
+        font=corpo,
+    )
+    estilo.map(
+        "Lateral.TButton",
+        background=[("active", c["superficie_baixa"]), ("pressed", c["superficie_baixa"])],
+        foreground=[("active", c["texto"])],
+        bordercolor=[("focus", c["foco"])],
+    )
+    # O que está aberto: fundo com a tinta do acento, texto com o acento.
+    # Nem tudo colorido, nem indistinguível do resto.
+    estilo.configure(
+        "LateralAtivo.TButton",
+        background=c["acento_suave"],
+        foreground=c["acento"],
+        bordercolor=c["acento_suave"],
+        borderwidth=0,
+        relief="flat",
+        anchor="w",
+        padding=(e["confortavel"], e["normal"] - 1),
+        font=corpo,
+    )
+    estilo.map(
+        "LateralAtivo.TButton",
+        background=[("active", c["acento_suave"]), ("pressed", c["acento_suave"])],
+        foreground=[("active", c["acento"])],
+        bordercolor=[("focus", c["foco"])],
+    )
+
+
 def _entradas(estilo: ttk.Style, c: Dict[str, str], e: Dict[str, int]) -> None:
     for classe in ("TEntry", "TCombobox", "TSpinbox"):
         estilo.configure(
@@ -398,6 +446,7 @@ def aplicar(raiz: tk.Misc, novo_modo: str = "claro") -> ttk.Style:
     _superficies(estilo, c, e, destaque)
     _texto(estilo, c, raiz, pequeno, destaque)
     _botoes(estilo, c, e)
+    _lateral(estilo, c, e, corpo)
     _entradas(estilo, c, e)
     _tabelas(estilo, c, e, pequeno)
     _abas(estilo, c, e, corpo, destaque)

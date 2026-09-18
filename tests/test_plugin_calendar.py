@@ -49,6 +49,22 @@ def zip_calendar(pasta_do_plugin, tmp_path):
 # ------------------------------------------------------------ empacotamento
 
 
+def _contentor_principal(raiz):
+    """O contentor principal, encontrado pela interface e não pelo tipo.
+
+    A concha de navegação substituiu o ``ttk.Notebook`` e implementa os
+    mesmos métodos, de propósito. Um teste que exija a classe passa a testar
+    a arrumação interna em vez do comportamento.
+    """
+    por_ver = [raiz]
+    while por_ver:
+        widget = por_ver.pop(0)
+        if all(hasattr(widget, n) for n in ("add", "forget", "tab", "tabs", "index")):
+            return widget
+        por_ver.extend(widget.winfo_children())
+    raise AssertionError("não há contentor principal")
+
+
 def test_pacote_tem_a_estrutura_esperada(zip_calendar):
     import zipfile
 
@@ -159,9 +175,7 @@ def test_plugin_real_na_janela(pasta_plugins, zip_calendar, tmp_path, monkeypatc
         assert gerenciador.ativar("calendar").sucesso
         app.update()
 
-        notebook = next(
-            w for w in _todos(app) if isinstance(w, ttk.Notebook)
-        )
+        notebook = _contentor_principal(app)
         titulos = [notebook.tab(i, "text") for i in range(notebook.index("end"))]
         assert titulos == ["Dashboard", "Tarefas", "Calendário"]
 

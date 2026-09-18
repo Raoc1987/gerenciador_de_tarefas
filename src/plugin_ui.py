@@ -107,6 +107,16 @@ class AnfitriaoGUI:
 
     def remover_abas(self, plugin_id: str) -> None:
         """Remove todas as abas criadas por um plugin."""
+        # A barra lateral e a paleta são limpas aqui, e não no gerenciador:
+        # o núcleo não importa interface (ADR-0001), e este anfitrião é
+        # precisamente a peça da interface que o núcleo já avisa quando um
+        # plugin sai. Um destino de um plugin descarregado é um botão que
+        # abre um painel destruído.
+        from navegacao import comandos, registo
+
+        registo.esquecer_por_dono(plugin_id)
+        comandos.esquecer_por_dono(plugin_id)
+
         for moldura in self._abas.pop(plugin_id, []):
             self._titulos.pop(moldura, None)
             try:

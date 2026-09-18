@@ -333,5 +333,17 @@
   "aparencia_claro": "claro",
   "aparencia_escuro": "escuro",
   "aparencia_alternar": "Mudar para o modo {modo}",
-  "aparencia_ao_reabrir": "A aplicação passa ao modo {modo} da próxima vez que a abrir."
+  "aparencia_ao_reabrir": "A aplicação passa ao modo {modo} da próxima vez que a abrir.",
+  "comandos_titulo": "Comandos",
+  "comandos_sem_resultado": "Nada com esse nome.",
+  "comando_ir_para": "Ir para {destino}",
+  "comandos_geral": "Geral",
+  "comandos_navegar": "Navegar",
+  "comandos_sistema": "Sistema",
+  "grupo_principal": "Principal",
+  "grupo_operacoes": "Operações",
+  "grupo_inteligencia": "Inteligência",
+  "grupo_sistema": "Sistema",
+  "atalho_pesquisa": "Ctrl+F",
+  "atalho_comandos": "Ctrl+K"
 }

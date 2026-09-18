@@ -17,6 +17,8 @@ from core.log import obter_logger
 from core.paths import caminho_recurso, diretorio_plugins_embutidos
 from core.plugin_manager import PluginManager
 from core.plugin_registry import RegistroEstadoBanco
+from aparencia import ESPACO, cores, fonte, guardar_modo
+from aparencia import modo as aparencia_modo
 from core.permissoes import Permissao, PermissaoNegadaError, PoliticaNegouError
 from core.plugin_sources import FontePastasLocais
 from dashboard_ui import PainelDashboard
@@ -99,35 +101,49 @@ def criar_janela(raiz: tk.Tk | None = None) -> tk.Tk:
     app = raiz if raiz is not None else tk.Tk()
     app.deiconify()
     app.title(carregar_texto("titulo"))
-    app.geometry("800x600")
+    # 800x600 era o tamanho de um ecrã de 2005. Com painel, gráficos e
+    # tabelas, obriga a redimensionar antes de se poder trabalhar.
+    app.geometry("1180x740")
+    app.minsize(940, 620)
     _aplicar_icone(app)
 
-    # ------------------------------------------------------------ topo
-    frame_topo = ttk.Frame(app)
-    frame_topo.pack(pady=10)
+    # --------------------------------------------------- barra de topo
+    #
+    # Era um ecrã de abertura: o nome do produto em corpo 18 ao centro, a
+    # sessão por baixo e o seletor de idioma a flutuar no meio. Gastava cerca
+    # de 130px de altura para dizer o que a barra de título da janela já
+    # dizia, e empurrava o trabalho para baixo da dobra.
+    #
+    # Agora é uma barra: identidade à esquerda, quem está em sessão e o
+    # idioma à direita. O que importa é o que está por baixo dela.
+    barra = ttk.Frame(app, style="Alta.TFrame", padding=(ESPACO["seccao"], ESPACO["normal"]))
+    barra.pack(fill=tk.X)
+    ttk.Separator(app, orient=tk.HORIZONTAL).pack(fill=tk.X)
 
-    # Variável de idioma (mostra o rótulo, guarda o código)
     rotulos_idioma = {rotulo: codigo for codigo, rotulo in IDIOMAS_SUPORTADOS.items()}
     idioma_var = tk.StringVar(value=IDIOMAS_SUPORTADOS[idioma_atual()])
 
-    label_titulo = ttk.Label(frame_topo, font=("Arial", 18))
-    label_titulo.pack()
-
-    label_sessao = ttk.Label(frame_topo, foreground="#7a8794", font=("Arial", 9))
-    label_sessao.pack()
+    label_titulo = ttk.Label(barra, style="Destaque.TLabel", background=cores()["superficie_alta"])
+    label_titulo.pack(side=tk.LEFT)
 
     dropdown = ttk.OptionMenu(
-        frame_topo,
+        barra,
         idioma_var,
         idioma_var.get(),
         *rotulos_idioma.keys(),
         command=lambda _=None: mudar_idioma(),
     )
-    dropdown.pack(pady=5)
+    dropdown.pack(side=tk.RIGHT, padx=(ESPACO["confortavel"], 0))
+
+    label_sessao = ttk.Label(barra, style="Suave.TLabel", background=cores()["superficie_alta"])
+    label_sessao.pack(side=tk.RIGHT)
 
     # ------------------------------------------- abas (tarefas + plugins)
     notebook = ttk.Notebook(app)
-    notebook.pack(fill=tk.BOTH, expand=True, padx=10)
+    notebook.pack(
+        fill=tk.BOTH, expand=True,
+        padx=ESPACO["seccao"], pady=(ESPACO["confortavel"], ESPACO["confortavel"]),
+    )
 
     # A aba só é construída se a instalação tiver o painel: criá-la e escondê-la
     # seria pagar o custo de a desenhar para não a mostrar.
@@ -136,25 +152,29 @@ def criar_janela(raiz: tk.Tk | None = None) -> tk.Tk:
         painel_dashboard = PainelDashboard(notebook)
         notebook.add(painel_dashboard, text=carregar_texto("dashboard"))
 
-    aba_tarefas = ttk.Frame(notebook)
+    aba_tarefas = ttk.Frame(notebook, padding=ESPACO["seccao"])
     notebook.add(aba_tarefas, text=carregar_texto("tarefas"))
 
     # ------------------------------------------------- formulário de tarefa
     frame_form = ttk.Frame(aba_tarefas)
-    frame_form.pack(pady=5)
+    frame_form.pack(fill=tk.X, pady=(ESPACO["largo"], ESPACO["normal"]))
 
     label_descricao = ttk.Label(frame_form)
-    label_descricao.grid(row=0, column=0, padx=4, sticky=tk.W)
-    entrada_descricao = ttk.Entry(frame_form, width=45)
-    entrada_descricao.grid(row=1, column=0, padx=4)
+    label_descricao.grid(row=0, column=0, sticky=tk.W, pady=(0, ESPACO["minimo"]))
+    entrada_descricao = ttk.Entry(frame_form)
+    entrada_descricao.grid(row=1, column=0, sticky=tk.EW)
+    frame_form.columnconfigure(0, weight=1)
 
     label_data = ttk.Label(frame_form)
-    label_data.grid(row=0, column=1, padx=4, sticky=tk.W)
-    entrada_data = ttk.Entry(frame_form, width=16)
-    entrada_data.grid(row=1, column=1, padx=4)
+    label_data.grid(row=0, column=1, sticky=tk.W, padx=(ESPACO["confortavel"], 0),
+                    pady=(0, ESPACO["minimo"]))
+    entrada_data = ttk.Entry(frame_form, width=14)
+    entrada_data.grid(row=1, column=1, padx=(ESPACO["confortavel"], 0))
 
-    botao_adicionar = ttk.Button(frame_form, command=lambda: acao_adicionar())
-    botao_adicionar.grid(row=1, column=2, padx=4)
+    botao_adicionar = ttk.Button(
+        frame_form, style="Destaque.TButton", command=lambda: acao_adicionar()
+    )
+    botao_adicionar.grid(row=1, column=2, padx=(ESPACO["confortavel"], 0))
 
     # Só faz sentido escolher entre "as minhas" e "todas" a quem vê todas.
     apenas_minhas = tk.BooleanVar(value=False)
@@ -162,20 +182,33 @@ def criar_janela(raiz: tk.Tk | None = None) -> tk.Tk:
         frame_form, variable=apenas_minhas, command=lambda: recarregar_lista()
     )
     if tarefas_servico.ve_tudo():
-        caixa_minhas.grid(row=1, column=3, padx=(12, 0))
+        caixa_minhas.grid(row=1, column=3, padx=(ESPACO["largo"], 0))
 
     # -------------------------------------------------------- lista + ações
-    lista = tk.Listbox(aba_tarefas, width=80, height=15)
-    lista.pack(pady=10)
+    _c = cores()
+    lista = tk.Listbox(
+        aba_tarefas,
+        height=15,
+        borderwidth=1,
+        relief=tk.SOLID,
+        highlightthickness=0,
+        activestyle="none",
+        background=_c["superficie"],
+        foreground=_c["texto"],
+        selectbackground=_c["acento_suave"],
+        selectforeground=_c["texto"],
+        font=fonte("corpo"),
+    )
+    lista.pack(fill=tk.BOTH, expand=True, pady=(0, ESPACO["confortavel"]))
 
     frame_acoes = ttk.Frame(aba_tarefas)
-    frame_acoes.pack()
+    frame_acoes.pack(fill=tk.X, pady=(0, ESPACO["largo"]))
     botao_concluir = ttk.Button(frame_acoes, command=lambda: acao_concluir())
-    botao_concluir.grid(row=0, column=0, padx=4)
+    botao_concluir.grid(row=0, column=0)
     botao_remover = ttk.Button(frame_acoes, command=lambda: acao_remover())
-    botao_remover.grid(row=0, column=1, padx=4)
+    botao_remover.grid(row=0, column=1, padx=ESPACO["normal"])
     botao_atualizar = ttk.Button(frame_acoes, command=lambda: recarregar_lista())
-    botao_atualizar.grid(row=0, column=2, padx=4)
+    botao_atualizar.grid(row=0, column=2)
 
     # Ids das tarefas na mesma ordem da Listbox.
     ids_visiveis = []
@@ -316,9 +349,25 @@ def criar_janela(raiz: tk.Tk | None = None) -> tk.Tk:
             )
 
     # ------------------------------------------------------------- rodapé
-    rodape = ttk.Label(app, font=("Arial", 10))
-    rodape.pack(side=tk.BOTTOM, pady=5)
+    rodape = ttk.Label(app, style="Tenue.TLabel")
+    rodape.pack(side=tk.BOTTOM, pady=(0, ESPACO["normal"]))
     atualizar_relógio(rodape)
+
+    def alternar_aparencia():
+        """Troca entre claro e escuro, e guarda a escolha.
+
+        O efeito vê-se ao reabrir: os widgets já existentes foram construídos
+        com as cores em vigor, e reconstruir a janela inteira a meio do
+        trabalho de alguém é pior do que pedir que a feche. É o mesmo que as
+        funcionalidades já fazem, e a mensagem diz isso em vez de deixar a
+        pessoa a pensar que não funcionou.
+        """
+        novo = "escuro" if aparencia_modo() == "claro" else "claro"
+        guardar_modo(novo)
+        messagebox.showinfo(
+            carregar_texto("aparencia"),
+            carregar_texto("aparencia_ao_reabrir", modo=carregar_texto(f"aparencia_{novo}")),
+        )
 
     # ------------------------------------------------------------- idiomas
     def construir_menu():
@@ -330,6 +379,15 @@ def criar_janela(raiz: tk.Tk | None = None) -> tk.Tk:
         )
         configuracoes.add_command(
             label=carregar_texto("importar") + "...", command=abrir_importacao
+        )
+        configuracoes.add_command(
+            label=carregar_texto(
+                "aparencia_alternar",
+                modo=carregar_texto(
+                    "aparencia_escuro" if aparencia_modo() == "claro" else "aparencia_claro"
+                ),
+            ),
+            command=alternar_aparencia,
         )
         if permissoes.pode(Permissao.UTILIZADORES_GERIR):
             configuracoes.add_command(

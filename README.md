@@ -489,6 +489,42 @@ opção que deixa ficar sem rede não é uma opção); e a trilha de auditoria t
 o seu próprio mecanismo — parar de registar é uma decisão de conformidade, não
 uma preferência.
 
+## Aparência
+
+Cores, espaços e tipos de letra vivem em `src/aparencia/`, e um ecrã pede o
+**papel** — nunca o valor:
+
+```python
+ttk.Label(pai, text="Total", style="Suave.TLabel")
+ttk.Label(pai, text="128", font=fonte("display", negrito=True))
+caixa.pack(padx=ESPACO["largo"])
+```
+
+`texto_suave` continua a chamar-se `texto_suave` no modo escuro, onde é mais
+claro do que o fundo. É por isso que o modo escuro custa um dicionário em vez
+de uma passagem por toda a base de código.
+
+**"Bonito" é uma opinião e não se testa. Legível é um número.** Cada par de
+cores que aparece mesmo no ecrã é medido contra os limiares da WCAG 2.1, nos
+dois modos, e uma paleta que não passa não entra. Foi a medição que encontrou
+o problema que estava lá: o cinzento do texto secundário dava **3,67** de
+contraste sobre branco, abaixo do mínimo de 4,5. Ninguém errou de propósito —
+foi escolhido a olho, e a olho não se vê a diferença entre 3,67 e 4,5.
+
+Dois testes de arquitetura impedem a decadência: nenhum ecrã escreve uma cor
+em hexadecimal, nenhum escolhe a sua própria família de letra. Sem eles, o
+sistema dura até ao dia em que alguém tem pressa.
+
+O modo escuro escolhe-se em `Configurações → Mudar para o modo escuro`, e o
+efeito vê-se ao reabrir — os widgets já existentes foram construídos com as
+cores em vigor. Ver [ADR-0008](docs/architecture/ADR-0008-aparencia.md).
+
+### Um plugin acompanha sem fazer nada
+
+Os widgets ttk de um módulo herdam o tema: as classes de estilo são globais.
+Para o que o ttk não alcança — desenhar num `Canvas` — o contexto oferece
+`cor()`, `fonte()` e `espaco()`.
+
 ## Políticas: quando o papel não chega
 
 O papel responde a *"podes concluir tarefas?"*. Quase toda a regra que uma

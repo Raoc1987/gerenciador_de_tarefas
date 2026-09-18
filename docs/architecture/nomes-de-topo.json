@@ -46,6 +46,7 @@
     "textos": "Frases derivadas de números, traduzidas.",
     "utilizadores_ui": "Ecrã de contas e papéis.",
     "utils": "Ver expostos_a_plugins.",
-    "politicas_incluidas": "Políticas de acesso por atributo que vêm com a aplicação."
+    "politicas_incluidas": "Políticas de acesso por atributo que vêm com a aplicação.",
+    "aparencia": "Cores, espaços e tipos de letra, e a sua aplicação ao ttk."
   }
 }

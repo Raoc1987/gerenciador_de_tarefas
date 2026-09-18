@@ -6,6 +6,7 @@ leitura: nada nesta janela apaga registos.
 
 from __future__ import annotations
 
+from aparencia import cores, fonte
 import tkinter as tk
 from tkinter import messagebox, ttk
 from typing import List, Optional
@@ -44,7 +45,7 @@ class JanelaAuditoria(tk.Toplevel):
         cabecalho = ttk.Frame(self)
         cabecalho.pack(fill=tk.X, padx=12, pady=(12, 6))
         ttk.Label(
-            cabecalho, text=carregar_texto("auditoria"), font=("Arial", 14, "bold")
+            cabecalho, text=carregar_texto("auditoria"), font=fonte("subtitulo", negrito=True)
         ).pack(side=tk.LEFT)
 
         ttk.Button(cabecalho, text=carregar_texto("atualizar_lista"), command=self.recarregar).pack(
@@ -93,7 +94,7 @@ class JanelaAuditoria(tk.Toplevel):
 
         rodape = ttk.Frame(self)
         rodape.pack(fill=tk.X, padx=12, pady=8)
-        self._resumo = ttk.Label(rodape, foreground="#7a8794")
+        self._resumo = ttk.Label(rodape, foreground=cores()["texto_suave"])
         self._resumo.pack(side=tk.LEFT)
         ttk.Button(rodape, text=carregar_texto("fechar"), command=self.destroy).pack(side=tk.RIGHT)
 

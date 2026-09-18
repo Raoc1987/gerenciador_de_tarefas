@@ -69,6 +69,23 @@ plugins (ver `docs/architecture/`).
 
 ### Adicionado
 
+- **Aparência** (`src/aparencia/`, ADR-0008): cores, espaços e tipos de letra
+  num sítio só, aplicados ao ttk uma vez no arranque. O programa deixa de usar
+  o tema de origem do sistema — relevo nenhum, uma escala de espaçamento, e
+  uma cor de ênfase usada pouco. **Modo escuro**, escolhido em
+  `Configurações` e guardado entre arranques.
+- Cada par de cores que aparece no ecrã é **medido** contra os limiares da
+  WCAG 2.1, nos dois modos, por `tests/test_aparencia.py`. Foi a medição que
+  encontrou o que já lá estava: o cinzento do texto secundário dava 3,67 de
+  contraste sobre branco, abaixo do mínimo de 4,5.
+- Dois testes de arquitetura impedem a decadência: nenhum ecrã escreve uma cor
+  em hexadecimal nem escolhe a sua própria família de letra.
+- Um plugin acompanha o tema sem fazer nada (as classes de estilo são
+  globais); para desenhar num `Canvas`, o contexto dá `cor()`, `fonte()` e
+  `espaco()`.
+
+### Adicionado
+
 - **Políticas por atributo** (`core/permissoes.py`, ADR-0007): o papel responde
   a "podes concluir tarefas?"; uma política responde a "podes concluir
   **esta**?". Uma política recebe o par `(ação, objeto)` e **só pode recusar**

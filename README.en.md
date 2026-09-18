@@ -22,6 +22,7 @@ Runtime uses the Python standard library only: no external dependencies.
 - 📊 Dashboard with KPIs, charts, forecast and plain-language analysis
 - 📄 Reports exported to PDF, XLSX and CSV — written without extra dependencies
 - 🔍 Audit trail of what happened, read-only in the UI
+- 🎨 Design system with light and dark modes — every colour pair on screen is measured against WCAG 2.1 thresholds by a test, in both modes
 - ⚖️ Attribute policies: rules that answer "can you do this **to this**?" — they can only refuse, never grant, and refusals reach the audit trail
 - 🧾 Optional separation of duties: whoever creates a task does not mark it done — not even an administrator
 - ✅ Add, complete and delete tasks, with due dates

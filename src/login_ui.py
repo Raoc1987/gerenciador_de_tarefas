@@ -13,6 +13,7 @@ deixar um sistema aberto.
 
 from __future__ import annotations
 
+from aparencia import cores, fonte
 import tkinter as tk
 from tkinter import ttk
 from typing import Optional
@@ -24,8 +25,8 @@ from language_manager import carregar_texto
 
 logger = obter_logger(__name__)
 
-COR_ERRO = "#c0392b"
-COR_NEUTRA = "#7a8794"
+COR_ERRO = cores()["mau"]
+COR_NEUTRA = cores()["texto_suave"]
 
 
 class _JanelaModal(tk.Toplevel):
@@ -103,7 +104,7 @@ class JanelaLogin(_JanelaModal):
         corpo.pack(fill=tk.BOTH, expand=True)
 
         ttk.Label(
-            corpo, text=carregar_texto("titulo"), font=("Arial", 15, "bold")
+            corpo, text=carregar_texto("titulo"), font=fonte("titulo", negrito=True)
         ).grid(row=0, column=0, columnspan=2, pady=(0, 4))
         ttk.Label(
             corpo, text=carregar_texto("iniciar_sessao"), foreground=COR_NEUTRA
@@ -168,7 +169,7 @@ class JanelaPrimeiroAdministrador(_JanelaModal):
         corpo.pack(fill=tk.BOTH, expand=True)
 
         ttk.Label(
-            corpo, text=carregar_texto("primeiro_administrador"), font=("Arial", 14, "bold")
+            corpo, text=carregar_texto("primeiro_administrador"), font=fonte("subtitulo", negrito=True)
         ).grid(row=0, column=0, columnspan=2, pady=(0, 4))
         ttk.Label(
             corpo,

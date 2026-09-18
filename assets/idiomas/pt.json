@@ -328,5 +328,10 @@
   "plugin_repor_embutidos": "Repor originais",
   "plugin_repor_confirmar": "Isto volta a pôr a versão que veio com o aplicativo, substituindo o que está instalado: {nomes}.\n\nAs configurações e os dados destes plugins são preservados. Deseja continuar?",
   "plugin_repor_nada": "Os plugins que vieram com o aplicativo já estão como devem estar.",
-  "plugin_repostos": "{quantos} plugin(s) repostos na versão que veio com o aplicativo."
+  "plugin_repostos": "{quantos} plugin(s) repostos na versão que veio com o aplicativo.",
+  "aparencia": "Aparência",
+  "aparencia_claro": "claro",
+  "aparencia_escuro": "escuro",
+  "aparencia_alternar": "Mudar para o modo {modo}",
+  "aparencia_ao_reabrir": "A aplicação passa ao modo {modo} da próxima vez que a abrir."
 }

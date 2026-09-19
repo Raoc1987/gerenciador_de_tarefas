@@ -49,6 +49,8 @@
     "politicas_incluidas": "Políticas de acesso por atributo que vêm com a aplicação.",
     "aparencia": "Cores, espaços e tipos de letra, e a sua aplicação ao ttk.",
     "navegacao": "A concha: barra lateral, barra de topo e área de conteúdo.",
-    "navegacao_incluida": "Onde as secções que vêm com a aplicação vivem na barra lateral."
+    "navegacao_incluida": "Onde as secções que vêm com a aplicação vivem na barra lateral.",
+    "painel": "Motor do painel: widgets declarados, grelha que se reparte, e o contexto dos filtros.",
+    "painel_incluido": "Os widgets de painel que vêm com a aplicação."
   }
 }

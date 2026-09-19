@@ -38,6 +38,7 @@ interface) · **Module** (domínio de negócio, como plugin) · **Plugin**
 | Gráficos | Service (UI) | `src/componentes/` |
 | **Aparência (tokens e tema)** | **Service (UI)** | `src/aparencia/` |
 | **Concha de navegação (sidebar, topbar)** | **Service (UI)** | `src/navegacao/` |
+| **Motor do painel (widgets, grelha, filtros)** | **Service (UI)** | `src/painel/` |
 | Interface | UI | `src/*_ui.py`, `gui.py` |
 | Calendar Integration | Plugin | `plugins/available/calendar/` |
 | Verificação de atualizações | Plugin | `plugins/available/atualizacoes/` |

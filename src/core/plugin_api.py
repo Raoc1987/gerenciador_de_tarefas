@@ -505,6 +505,39 @@ class _SemAparencia:
         return 0
 
 
+class Painel(Protocol):
+    """O que o contrato precisa do painel — e mais nada.
+
+    Segunda inversão pelo mesmo desenho do ADR-0008, e pela mesma razão: o
+    painel importa ``tkinter``, o Core não importa interface, e o contrato
+    dos plugins vive no Core. Duas são um padrão; se aparecer uma terceira,
+    vale a pena juntá-las num fornecedor só.
+    """
+
+    def registar_widget(self, **kwargs): ...
+
+
+class _SemPainel:
+    """O que responde quando não há painel — a correr sem interface."""
+
+    def registar_widget(self, **kwargs):
+        return None
+
+
+_painel: "Painel" = _SemPainel()
+
+
+def instalar_painel(fornecedor: "Painel") -> None:
+    """Diz ao contrato onde registar widgets de painel."""
+    global _painel
+    _painel = fornecedor
+
+
+def painel_da_aplicacao() -> "Painel":
+    """O fornecedor em vigor."""
+    return _painel
+
+
 _aparencia: "Aparencia" = _SemAparencia()
 
 
@@ -718,6 +751,34 @@ class ContextoPlugin:
             KeyError: degrau que não existe.
         """
         return aparencia_da_aplicacao().espaco(nome)
+
+    def registar_widget_de_painel(
+        self, nome: str, chave_titulo: str, construir, largura: int = 1,
+        ordem: int = 100, permissao=None,
+    ):
+        """Põe um widget deste módulo no painel principal.
+
+        Um indicador (:meth:`registar_indicador`) é um **número**. Isto é o
+        resto: um gráfico, uma tabela, uma lista — o que um módulo precise de
+        mostrar e não caiba num cartão.
+
+        ``construir`` recebe o widget pai e devolve um widget do Tk. Se esse
+        widget tiver ``atualizar(contexto)``, o painel chama-o sempre que os
+        filtros mudarem; o contexto traz o período e os dados já calculados,
+        para o widget não abrir a sua própria ligação ao banco e não dar um
+        número diferente do cartão do lado.
+
+        Como nos indicadores, o nome é prefixado com o id do plugin, e o
+        widget sai do painel quando o plugin é descarregado. A correr sem
+        interface devolve ``None``: um módulo não tem de saber se há janela.
+        """
+        prefixo = f"{self.manifesto.id}."
+        completo = nome if str(nome).startswith(prefixo) else prefixo + str(nome)
+        return painel_da_aplicacao().registar_widget(
+            id=completo, chave_titulo=chave_titulo, construir=construir,
+            largura=largura, ordem=ordem, permissao=permissao,
+            dono=self.manifesto.id,
+        )
 
     def utilizador(self) -> str:
         """Quem está em sessão, para o módulo registar quem fez o quê."""

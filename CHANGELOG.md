@@ -69,6 +69,20 @@ plugins (ver `docs/architecture/`).
 
 ### Adicionado
 
+- **Motor do painel** (`src/painel/`, ADR-0010): o painel desenha o que estiver
+  **registado**, em vez de uma lista fixa escrita à mão. Um módulo passa a
+  poder pôr um **gráfico** no painel principal
+  (`contexto.registar_widget_de_painel`), e não só um número.
+- A grelha **reparte-se com a largura**: quatro colunas num ecrã largo, duas
+  num portátil a 1366×768, uma numa janela estreita.
+- Os dados vão ao widget, e não o contrário: o contexto leva o período e o
+  panorama já calculado, para dois cartões não darem números diferentes da
+  mesma coisa. É também a forma dos filtros globais.
+- Um widget sem permissão **não é construído**; um widget que rebente não
+  apaga os outros.
+
+### Adicionado
+
 - **Concha de navegação** (`src/navegacao/`, ADR-0009): barra lateral com
   grupos em vez de uma fila de abas, barra de topo com o nome da secção, e
   **paleta de comandos** em `Ctrl+K`. A concha implementa a interface do

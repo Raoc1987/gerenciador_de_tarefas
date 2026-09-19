@@ -39,6 +39,7 @@ INTERFACE = {
     # pode tocar no que a pinta.
     "aparencia",
     "navegacao",
+    "painel",
 }
 
 

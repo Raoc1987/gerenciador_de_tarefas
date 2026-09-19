@@ -83,6 +83,18 @@ plugins (ver `docs/architecture/`).
 
 ### Adicionado
 
+- **Um plugin passa a poder substituir uma tabela**
+  (`dados.migrar(..., reconstroi_tabelas=True)`). Não era possível: o SQLite
+  não sabe tirar uma restrição, e apagar uma tabela que tem filhos falha com
+  as chaves estrangeiras ligadas — sendo que `PRAGMA foreign_keys = OFF` é
+  **ignorado em silêncio dentro de uma transação**, que é onde uma migração
+  corre. Na prática, um módulo com uma chave estrangeira nunca podia mudar a
+  tabela pai. O modo novo faz o procedimento recomendado pelo SQLite e
+  **verifica** com `PRAGMA foreign_key_check` antes de gravar: se ficou uma
+  referência pendurada, desfaz tudo e a versão do esquema não avança.
+
+### Adicionado
+
 - **Motor do painel** (`src/painel/`, ADR-0010): o painel desenha o que estiver
   **registado**, em vez de uma lista fixa escrita à mão. Um módulo passa a
   poder pôr um **gráfico** no painel principal

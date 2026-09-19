@@ -103,10 +103,48 @@ class Ambito:
 
     dono: Optional[str] = None
     unidades: Sequence[int] = ()
+    #: As unidades da empresa de quem está em sessão, quando há mais de uma
+    #: empresa na instalação. Vazio significa **sem isolamento** — ver
+    #: :func:`ambito`.
+    empresa: Sequence[int] = ()
 
     @property
     def ve_tudo(self) -> bool:
         return self.dono is None
+
+
+def unidades_da_minha_empresa() -> Sequence[int]:
+    """As unidades da empresa de quem está em sessão — vazio se não se aplica.
+
+    "Ver todas" queria dizer *todas as tarefas da instalação*, incluindo as de
+    outras empresas. Numa instalação com uma empresa só isso é a mesma coisa;
+    com duas, é uma fuga de dados entre clientes.
+
+    Devolve vazio — ou seja, **sem isolamento** — em três casos, e os três são
+    deliberados:
+
+    * **há uma empresa ou nenhuma.** Filtrar não mudava o que se vê, e
+      mudaria o que acontece a uma instalação que hoje funciona. O isolamento
+      só começa a valer quando a segunda empresa é criada;
+    * **quem está em sessão não tem unidade.** Não pertence a empresa
+      nenhuma: limitá-lo à "sua" empresa deixava-o sem nada. É o caso de
+      quem administra sem estar na estrutura;
+    * **a estrutura não responde.** Um erro a ler a organização não pode
+      esconder tarefas — deixa tudo como estava e fica no registo.
+    """
+    try:
+        if len(organizacao.raizes()) < 2:
+            return ()
+        minha = unidade_atual()
+        if minha is None:
+            return ()
+        empresa = organizacao.empresa_de(minha)
+        if empresa is None:
+            return ()
+        return [u.id for u in organizacao.descendentes(empresa.id)]
+    except Exception:  # pragma: no cover - defensivo
+        logger.exception("Falha a determinar a empresa da sessão.")
+        return ()
 
 
 def ambito() -> Ambito:
@@ -114,14 +152,14 @@ def ambito() -> Ambito:
 
     Três casos, por ordem de alcance:
 
-    * quem tem ``tarefas.ver_todas`` não tem filtro nenhum;
+    * quem tem ``tarefas.ver_todas`` vê tudo **da sua empresa**;
     * quem tem ``tarefas.ver_unidade`` vê as suas e as da sua sub-árvore.
       Sem unidade atribuída, a sub-árvore é vazia e sobra o caso seguinte —
       é o que mantém quem ainda não montou estrutura exatamente como estava;
     * os restantes veem as suas e as que não têm dono.
     """
     if ve_tudo():
-        return Ambito()
+        return Ambito(empresa=unidades_da_minha_empresa())
 
     eu = utilizador_atual()
     if not ve_a_unidade():
@@ -162,6 +200,7 @@ def listar(incluir_concluidas: bool = True, apenas_minhas: bool = False) -> List
         incluir_concluidas=incluir_concluidas,
         de=alcance.dono,
         unidades=alcance.unidades,
+        empresa=alcance.empresa,
     )
 
 
@@ -170,7 +209,8 @@ def listar_por_data(data_iso: str, apenas_minhas: bool = False) -> List[tuple]:
     _exigir_leitura()
     alcance = Ambito(dono=utilizador_atual()) if apenas_minhas else ambito()
     return banco_de_dados.tarefas_por_data(
-        data_iso, de=alcance.dono, unidades=alcance.unidades
+        data_iso, de=alcance.dono, unidades=alcance.unidades,
+        empresa=alcance.empresa,
     )
 
 
@@ -179,7 +219,7 @@ def listar_completas(apenas_minhas: bool = False) -> List[tuple]:
     _exigir_leitura()
     alcance = Ambito(dono=utilizador_atual()) if apenas_minhas else ambito()
     return banco_de_dados.buscar_tarefas_completas(
-        de=alcance.dono, unidades=alcance.unidades
+        de=alcance.dono, unidades=alcance.unidades, empresa=alcance.empresa
     )
 
 
@@ -209,7 +249,14 @@ def pode_ver(tarefa_id: int) -> bool:
 
     alcance = ambito()
     if alcance.ve_tudo:
-        return True
+        if not alcance.empresa:
+            return True
+        # Quem vê tudo vê tudo **da sua empresa**. Uma tarefa sem unidade é
+        # anterior à estrutura e não pertence a empresa nenhuma: fica dentro,
+        # como fica na listagem. As duas respostas têm de coincidir, senão há
+        # tarefas que aparecem na lista e não abrem — ou o contrário.
+        da_tarefa = banco_de_dados.unidade_de(tarefa_id)
+        return da_tarefa is None or da_tarefa in alcance.empresa
     if criador in (alcance.dono, banco_de_dados.SEM_DONO):
         return True
     return bool(alcance.unidades) and banco_de_dados.unidade_de(tarefa_id) in alcance.unidades
@@ -277,8 +324,11 @@ def contar_por_dono() -> List[Tuple[str, int]]:
     _exigir_leitura()
     if not ve_tudo():
         return [(utilizador_atual(), len(listar()))]
+    # Pelo âmbito, e não pela tabela inteira: sem isto, a contagem por pessoa
+    # somava as tarefas das outras empresas — um número que ninguém conseguia
+    # explicar a partir do que estava no ecrã.
     contagem: dict = {}
-    for linha in banco_de_dados.buscar_tarefas_completas():
+    for linha in listar_completas():
         criador = linha[6] or banco_de_dados.SEM_DONO
         contagem[criador] = contagem.get(criador, 0) + 1
     return sorted(contagem.items())

@@ -67,6 +67,20 @@ plugins (ver `docs/architecture/`).
 - `textos.py`: tradução partilhada dos insights, para a mesma conclusão não
   ser escrita de duas maneiras no ecrã e no relatório.
 
+### Alterado
+
+- **"Ver todas" passa a querer dizer "as tarefas da minha empresa"**
+  (ADR-0011). Antes, quem tinha `tarefas.ver_todas` via as tarefas de **todas
+  as empresas** da instalação. Com uma empresa isso era a mesma coisa; com
+  duas, era uma fuga entre clientes.
+- Nada muda para quem tem **uma empresa só**, **nenhuma estrutura**, ou **não
+  está na estrutura**: o isolamento começa a valer no dia em que a segunda
+  empresa é criada. As tarefas anteriores à estrutura continuam visíveis para
+  toda a gente — não pertencem a empresa nenhuma, e escondê-las faria
+  desaparecer o histórico do ecrã.
+- A contagem por pessoa passou a respeitar o âmbito: somava as tarefas das
+  outras empresas.
+
 ### Adicionado
 
 - **Concha de navegação** (`src/navegacao/`, ADR-0009): barra lateral com

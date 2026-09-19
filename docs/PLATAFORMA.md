@@ -1,6 +1,6 @@
 # Auditoria do plano de plataforma — o que existe, o que falta
 
-Data: 2026-09-18 · Commit base: `main` depois do PR #23
+Data: 2026-09-19 · Atualizado a cada etapa concluída
 
 Este documento responde à **Regra 4** ("não reescrever cegamente") e à
 **Regra 104** ("indicar claramente IMPLEMENTADO / NÃO IMPLEMENTADO / NÃO
@@ -42,29 +42,31 @@ a regra 37 do próprio plano avisa.
 | 27–28 | Tendência, média móvel, forecast, anomalias, insights | `analitica/series.py`, `analitica/insights.py`, `alertas.py` |
 | 79 | Sistema de alertas por regra | `src/alertas.py` |
 | 84–85 | Instalador; dados fora de `Program Files` | Inno Setup; `core/paths.py` |
-| 86 | Testes | 1275, mais o autoteste do binário congelado |
-| 101 | ADR para decisões relevantes | 8 ADRs |
+| 86 | Testes | 1305, mais o autoteste do binário congelado |
+| 101 | ADR para decisões relevantes | 10 ADRs |
+| 6–7, 10, 12 | Sidebar com grupos, barra de topo, **Command Palette** (`Ctrl+K`) | `src/navegacao/`, ADR-0009 |
+| 44 | **Isolamento entre empresas** — para as tarefas | `tarefas_servico.py`, ADR-0011 |
 
 ## Implementado em parte
 
 | § | Estado real |
 |---|---|
-| 10 | **Top bar** existe, mas só com identidade, sessão e idioma. Falta pesquisa, notificações e seletor de contexto |
+| 10 | **Top bar** com nome da secção, pesquisa, Command Palette e sessão. Faltam **notificações** e o seletor de contexto |
+| 19 | **Dashboard Builder** (escolher e guardar arranjos por pessoa) não existe |
 | 25 | **Visualization Engine**: há linhas, barras e KPI. Faltam os restantes tipos |
-| 44 | **Multiempresa**: a estrutura suporta várias raízes (uma empresa é uma raiz), mas **não há isolamento** — quem tem `tarefas.ver_todas` vê todas as raízes, e os dados de plugin não têm noção de inquilino |
+| 44 | **Multiempresa**: as **tarefas** já estão isoladas por empresa ([ADR-0011](architecture/ADR-0011-isolamento-entre-empresas.md)). **Os dados dos plugins não** — `core/plugin_dados.py` dá um ficheiro por plugin, sem noção de empresa. Não há seletor de empresa na interface |
 | 56–58 | **Estados**: há vazio e erro em vários sítios, mas não é sistemático |
 | 60 | **Acessibilidade**: contraste medido e garantido por teste. Navegação por teclado **não verificada** |
 | 36 | **ERP modular**: a infraestrutura está feita e provada por um módulo (Estoque). Faltam os outros |
 
 ## Não implementado
 
-Por ordem do plano: sidebar (§6–7), Command Palette (§12), dashboards por
-perfil (§16–18), Dashboard Builder (§19), Widget System (§20), grid (§21),
-filtros globais (§22), drill-down e drill-through (§23–24), Data Science Lab
-(§29–32), BI Center e camada analítica separada (§33–34), Report Builder
-(§78), Notification Center (§42), gestão documental (§48), DataTable
-empresarial (§55), workers fora da UI (§59), atalhos (§61), Copilot e agentes
-(§62–66), Licensing (§69), API (§71), Command Center (§80).
+Por ordem do plano: dashboards por perfil (§16–18), drill-down e
+drill-through (§23–24), Data Science Lab (§29–32), BI Center e camada
+analítica separada (§33–34), Report Builder (§78), Notification Center (§42),
+gestão documental (§48), DataTable empresarial (§55), workers fora da UI
+(§59), atalhos além de `Ctrl+F` e `Ctrl+K` (§61), Copilot e agentes (§62–66),
+Licensing (§69), API (§71), Command Center (§80).
 
 ## Não validado
 
@@ -88,20 +90,28 @@ O plano manda implementar os módulos ERP (§36) e os dashboards especializados
 razão: primeiro o DNA — Core, dados, eventos, plugins, serviços, UI, analytics,
 segurança — e só depois os módulos.
 
-Essa parte está feita. O que falta do DNA, e que bloqueia tudo o resto, é a
-**concha de navegação**: sem sidebar, sem Command Palette e sem um sítio onde
-um módulo se registe para aparecer, cada módulo novo volta a ser uma aba
-acrescentada à mão em `gui.py` — e a `gui.py` passa a saber de todos eles, que
-é o monólito de volta pela porta das traseiras.
+Essa parte está feita, e a ordem seguida foi esta:
 
-Por isso a ordem é:
+1. ~~**Design System**~~ — feito (ADR-0008). Tudo o que viesse depois herdava
+   o aspeto sem fazer nada.
+2. ~~**Concha de navegação**~~ (§6, 7, 10, 12) — feito (ADR-0009). Um módulo
+   declara onde vive, em vez de ser uma linha à mão em `gui.py`.
+3. **Dashboard Engine** (§19–22) — em revisão. Um módulo põe um gráfico no
+   painel, e não só um número.
+4. ~~**Isolamento entre empresas**~~ (§44) — feito **para as tarefas**
+   (ADR-0011). **Não** para os dados dos plugins, que é a peça seguinte e
+   maior: mexe no contrato.
+5. O resto, um de cada vez, classificado antes de escrito (§37).
 
-1. **Concha de navegação** (§6, 7, 10, 12) — sidebar, top bar, Command Palette,
-   e o registo por onde um módulo declara onde vive. Um plugin passa a poder
-   pôr-se na barra lateral sem que a aplicação o conheça.
-2. **Dashboard Engine** (§19–21) — widgets registados, grelha, filtros.
-3. **Isolamento entre empresas** (§44) — o único cujo custo cresce com a espera.
-4. O resto, um de cada vez, classificado antes de escrito (§37).
+**A seguir**, por ordem de valor sobre custo:
+
+- **isolamento dos dados de plugin por empresa** — fecha a outra metade da
+  §44, e é o que falta para um módulo de negócio ser multiempresa;
+- **Notification Center** (§42) — os alertas já existem e já são publicados;
+  falta o sítio onde se leem;
+- **medir o que nunca foi medido** (§68, §81, §82) — desempenho, 1366×768,
+  DPI a 125%, navegação por teclado. A regra 68 do plano diz "não otimizar sem
+  medir"; a consequência simétrica é não afirmar que está bom sem medir.
 
 O que **não** proponho fazer tão cedo, e porquê: Copilot e agentes (§62–66)
 precisam de um fornecedor de LLM — rede, chave, custo por pergunta e dados da

@@ -417,6 +417,7 @@ def abrir_aplicacao(ao_abrir_sessao=None, ao_abrir_principal=None) -> int:
     import aparencia
     import gui
     import login_ui
+    import painel
     from core import auditoria, utilizadores
 
     logger = obter_logger("main")
@@ -437,6 +438,7 @@ def abrir_aplicacao(ao_abrir_sessao=None, ao_abrir_principal=None) -> int:
     try:
         aparencia.aplicar(raiz, aparencia.modo_guardado())
         aparencia.instalar_no_contrato()
+        painel.instalar_no_contrato()
     except Exception:  # pragma: no cover - defensivo
         logger.exception("Não foi possível aplicar a aparência.")
 

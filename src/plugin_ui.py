@@ -113,9 +113,11 @@ class AnfitriaoGUI:
         # plugin sai. Um destino de um plugin descarregado é um botão que
         # abre um painel destruído.
         from navegacao import comandos, registo
+        from painel import esquecer_por_dono as esquecer_widgets
 
         registo.esquecer_por_dono(plugin_id)
         comandos.esquecer_por_dono(plugin_id)
+        esquecer_widgets(plugin_id)
 
         for moldura in self._abas.pop(plugin_id, []):
             self._titulos.pop(moldura, None)

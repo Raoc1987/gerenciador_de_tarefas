@@ -18,7 +18,7 @@ from analitica.insights import Insight, Nivel
 from core import eventos, permissoes
 from core.log import obter_logger
 from core.permissoes import Permissao
-from aparencia import cores, fonte
+from aparencia import ESPACO, cores, fonte
 from language_manager import carregar_texto
 from relatorios import exportadores, servico
 from relatorios.construtor import relatorio_de_tarefas
@@ -94,10 +94,15 @@ class PainelDashboard(ttk.Frame):
 
     def _construir(self) -> None:
         barra = ttk.Frame(self)
-        barra.pack(fill=tk.X, pady=(8, 4), padx=8)
+        barra.pack(fill=tk.X, pady=(ESPACO["largo"], ESPACO["normal"]),
+                   padx=ESPACO["seccao"])
 
+        # O título fica, mas escondido: a concha já põe o nome da secção na
+        # barra de topo, e vê-lo duas vezes na mesma janela faz parecer que
+        # há duas coisas abertas. Fica construído porque a tradução e os
+        # testes falam dele, e porque uma instalação sem concha — um painel
+        # embutido noutro sítio — volta a precisar dele.
         self._titulo = ttk.Label(barra, font=fonte("subtitulo", negrito=True))
-        self._titulo.pack(side=tk.LEFT)
 
         self._botao_atualizar = ttk.Button(barra, command=self.atualizar, width=12)
         self._botao_atualizar.pack(side=tk.RIGHT)

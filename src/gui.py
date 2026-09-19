@@ -17,7 +17,9 @@ from core.log import obter_logger
 from core.paths import caminho_recurso, diretorio_plugins_embutidos
 from core.plugin_manager import PluginManager
 from core.plugin_registry import RegistroEstadoBanco
+import navegacao_incluida
 from aparencia import ESPACO, cores, fonte, guardar_modo
+from navegacao import Concha, PaletaDeComandos, comandos
 from aparencia import modo as aparencia_modo
 from core.permissoes import Permissao, PermissaoNegadaError, PoliticaNegouError
 from core.plugin_sources import FontePastasLocais
@@ -107,43 +109,30 @@ def criar_janela(raiz: tk.Tk | None = None) -> tk.Tk:
     app.minsize(940, 620)
     _aplicar_icone(app)
 
-    # --------------------------------------------------- barra de topo
+    # ------------------------------------------------ concha de navegação
     #
-    # Era um ecrã de abertura: o nome do produto em corpo 18 ao centro, a
-    # sessão por baixo e o seletor de idioma a flutuar no meio. Gastava cerca
-    # de 130px de altura para dizer o que a barra de título da janela já
-    # dizia, e empurrava o trabalho para baixo da dobra.
-    #
-    # Agora é uma barra: identidade à esquerda, quem está em sessão e o
-    # idioma à direita. O que importa é o que está por baixo dela.
-    barra = ttk.Frame(app, style="Alta.TFrame", padding=(ESPACO["seccao"], ESPACO["normal"]))
-    barra.pack(fill=tk.X)
-    ttk.Separator(app, orient=tk.HORIZONTAL).pack(fill=tk.X)
+    # A concha substitui o ttk.Notebook e implementa os métodos que ele
+    # oferecia (add, forget, tab, select). É o que permite que nem a
+    # aplicação nem um único plugin instalado tenham de mudar para passarem
+    # a aparecer numa barra lateral.
+    navegacao_incluida.registar_incluidos()
 
     rotulos_idioma = {rotulo: codigo for codigo, rotulo in IDIOMAS_SUPORTADOS.items()}
     idioma_var = tk.StringVar(value=IDIOMAS_SUPORTADOS[idioma_atual()])
 
-    label_titulo = ttk.Label(barra, style="Destaque.TLabel", background=cores()["superficie_alta"])
-    label_titulo.pack(side=tk.LEFT)
+    # ------------------------------------------- abas (tarefas + plugins)
+    notebook = Concha(app)
+    notebook.pack(fill=tk.BOTH, expand=True)
 
     dropdown = ttk.OptionMenu(
-        barra,
+        notebook.topo(),
         idioma_var,
         idioma_var.get(),
         *rotulos_idioma.keys(),
         command=lambda _=None: mudar_idioma(),
     )
     dropdown.pack(side=tk.RIGHT, padx=(ESPACO["confortavel"], 0))
-
-    label_sessao = ttk.Label(barra, style="Suave.TLabel", background=cores()["superficie_alta"])
-    label_sessao.pack(side=tk.RIGHT)
-
-    # ------------------------------------------- abas (tarefas + plugins)
-    notebook = ttk.Notebook(app)
-    notebook.pack(
-        fill=tk.BOTH, expand=True,
-        padx=ESPACO["seccao"], pady=(ESPACO["confortavel"], ESPACO["confortavel"]),
-    )
+    notebook.ligar_pesquisa(lambda: abrir_pesquisa())
 
     # A aba só é construída se a instalação tiver o painel: criá-la e escondê-la
     # seria pagar o custo de a desenhar para não a mostrar.
@@ -427,16 +416,75 @@ def criar_janela(raiz: tk.Tk | None = None) -> tk.Tk:
         atualizar_textos()
     # Ctrl+F é como se usa uma pesquisa; um menu sem atalho é uma pesquisa
     # que ninguém usa.
+    # ------------------------------------------------ paleta de comandos
+    def registar_comandos():
+        """Põe na paleta o que a aplicação sabe fazer.
+
+        Cada secção da barra lateral entra como "Ir para X": quem já sabe o
+        nome chega lá sem procurar na lista. As ações entram com a permissão
+        que já exigiam — a paleta não abre portas, só encurta caminhos.
+        """
+        comandos.limpar()
+        for painel in notebook.tabs():
+            widget = app.nametowidget(painel)
+            titulo = notebook.tab(widget, "text")
+            comandos.registar(
+                f"ir.{titulo}",
+                chave_titulo=carregar_texto("comando_ir_para", destino=titulo),
+                executar=lambda w=widget: notebook.select(w),
+                chave_grupo="comandos_navegar",
+            )
+        comandos.registar("abrir.pesquisa", "pesquisar", abrir_pesquisa,
+                          chave_grupo="comandos_geral")
+        comandos.registar("abrir.plugins", "plugins", abrir_plugins,
+                          chave_grupo="comandos_sistema")
+        comandos.registar("abrir.importar", "importar", abrir_importacao,
+                          chave_grupo="comandos_geral")
+        comandos.registar("abrir.utilizadores", "utilizadores", abrir_utilizadores,
+                          chave_grupo="comandos_sistema",
+                          permissao=Permissao.UTILIZADORES_GERIR.value)
+        comandos.registar("abrir.auditoria", "auditoria", abrir_auditoria,
+                          chave_grupo="comandos_sistema",
+                          permissao=Permissao.SISTEMA_ADMIN.value)
+        comandos.registar("abrir.copia", "backup", abrir_backup,
+                          chave_grupo="comandos_sistema",
+                          permissao=Permissao.SISTEMA_ADMIN.value)
+        comandos.registar("abrir.funcionalidades", "funcionalidades", abrir_funcionalidades,
+                          chave_grupo="comandos_sistema",
+                          permissao=Permissao.SISTEMA_ADMIN.value)
+        comandos.registar("abrir.automacoes", "automacoes", abrir_automacoes,
+                          chave_grupo="comandos_sistema",
+                          permissao=Permissao.SISTEMA_ADMIN.value)
+        comandos.registar("aparencia.alternar",
+                          chave_titulo=carregar_texto(
+                              "aparencia_alternar",
+                              modo=carregar_texto(
+                                  "aparencia_escuro" if aparencia_modo() == "claro"
+                                  else "aparencia_claro"
+                              ),
+                          ),
+                          executar=alternar_aparencia,
+                          chave_grupo="comandos_sistema")
+
+    def abrir_comandos(_evento=None):
+        registar_comandos()
+        PaletaDeComandos(app)
+
+    notebook.ligar_comandos(abrir_comandos)
+
     app.bind_all("<Control-f>", abrir_pesquisa)
     app.bind_all("<Control-F>", abrir_pesquisa)
+    app.bind_all("<Control-k>", abrir_comandos)
+    app.bind_all("<Control-K>", abrir_comandos)
 
     def atualizar_textos():
         """Reaplica todos os textos visíveis conforme o idioma atual."""
         app.title(carregar_texto("titulo"))
-        label_titulo.config(text=carregar_texto("titulo"))
-        label_sessao.config(
-            text=carregar_texto("sessao_de", nome=permissoes.sessao().utilizador)
+        notebook.definir_produto(carregar_texto("titulo"))
+        notebook.definir_sessao(
+            carregar_texto("sessao_de", nome=permissoes.sessao().utilizador)
         )
+        notebook.atualizar_traducoes()
         label_descricao.config(text=carregar_texto("descricao_tarefa"))
         label_data.config(text=carregar_texto("data_vencimento"))
         botao_adicionar.config(text=carregar_texto("adicionar"))

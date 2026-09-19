@@ -333,5 +333,17 @@
   "aparencia_claro": "light",
   "aparencia_escuro": "dark",
   "aparencia_alternar": "Switch to {modo} mode",
-  "aparencia_ao_reabrir": "The application will use {modo} mode next time you open it."
+  "aparencia_ao_reabrir": "The application will use {modo} mode next time you open it.",
+  "comandos_titulo": "Commands",
+  "comandos_sem_resultado": "Nothing by that name.",
+  "comando_ir_para": "Go to {destino}",
+  "comandos_geral": "General",
+  "comandos_navegar": "Navigate",
+  "comandos_sistema": "System",
+  "grupo_principal": "Main",
+  "grupo_operacoes": "Operations",
+  "grupo_inteligencia": "Intelligence",
+  "grupo_sistema": "System",
+  "atalho_pesquisa": "Ctrl+F",
+  "atalho_comandos": "Ctrl+K"
 }

@@ -69,6 +69,22 @@ plugins (ver `docs/architecture/`).
 
 ### Adicionado
 
+- **Concha de navegação** (`src/navegacao/`, ADR-0009): barra lateral com
+  grupos em vez de uma fila de abas, barra de topo com o nome da secção, e
+  **paleta de comandos** em `Ctrl+K`. A concha implementa a interface do
+  `ttk.Notebook` de propósito — **nenhum plugin instalado precisa de mudar
+  uma linha** para passar a aparecer na barra lateral.
+- Uma secção declara-se (`navegacao.registar`) com o grupo, a ordem, a
+  permissão e a funcionalidade de que depende, em vez de ser acrescentada à
+  mão à janela principal. É o mesmo padrão dos indicadores e da pesquisa.
+- A barra lateral recolhe para ícones; o conteúdo é uma pilha, por isso mudar
+  de secção e voltar não perde o que estava escolhido.
+- `docs/PLATAFORMA.md`: auditoria do plano de evolução contra o que existe,
+  com o que está **implementado**, **em parte**, **não implementado** e **não
+  validado**.
+
+### Adicionado
+
 - **Aparência** (`src/aparencia/`, ADR-0008): cores, espaços e tipos de letra
   num sítio só, aplicados ao ttk uma vez no arranque. O programa deixa de usar
   o tema de origem do sistema — relevo nenhum, uma escala de espaçamento, e

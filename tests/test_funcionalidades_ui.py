@@ -157,12 +157,24 @@ def test_quem_nao_administra_nao_mexe(raiz):
 # ======================================= O EFEITO REAL NA JANELA PRINCIPAL
 
 
-def abas(janela) -> list:
-    from tkinter import ttk
+def _contentor_principal(raiz):
+    """O contentor principal, encontrado pela interface e não pelo tipo.
 
-    notebook = next(
-        f for f in janela.winfo_children() if isinstance(f, ttk.Notebook)
-    )
+    A concha de navegação substituiu o ``ttk.Notebook`` e implementa os
+    mesmos métodos, de propósito. Um teste que exija a classe passa a testar
+    a arrumação interna em vez do comportamento.
+    """
+    por_ver = [raiz]
+    while por_ver:
+        widget = por_ver.pop(0)
+        if all(hasattr(widget, n) for n in ("add", "forget", "tab", "tabs", "index")):
+            return widget
+        por_ver.extend(widget.winfo_children())
+    raise AssertionError("não há contentor principal")
+
+
+def abas(janela) -> list:
+    notebook = _contentor_principal(janela)
     return [notebook.tab(aba, "text") for aba in notebook.tabs()]
 
 

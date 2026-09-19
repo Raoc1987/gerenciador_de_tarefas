@@ -112,8 +112,17 @@ def listbox(widget):
 
 
 def notebook_de(janela):
-    """O Notebook principal da janela."""
-    return next(w for w in descendentes(janela) if isinstance(w, ttk.Notebook))
+    """O contentor principal da janela — hoje a concha de navegação.
+
+    Procura pela **interface** e não pelo tipo: a concha substituiu o
+    ``ttk.Notebook`` e implementa os mesmos métodos, de propósito, para que o
+    contrato dos plugins não mudasse. Um teste que exigisse a classe passava
+    a testar a arrumação interna em vez do comportamento.
+    """
+    for widget in descendentes(janela):
+        if all(hasattr(widget, nome) for nome in ("add", "forget", "tab", "tabs", "index")):
+            return widget
+    raise AssertionError("a janela não tem contentor principal")
 
 
 def titulos_das_abas(janela):

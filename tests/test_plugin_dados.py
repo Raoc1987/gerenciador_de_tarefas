@@ -230,3 +230,130 @@ def test_remover_um_plugin_nao_toca_nas_tarefas(gerenciador, criar_plugin):
     gerenciador.remover("estoque", remover_dados=True)
 
     assert [t[1] for t in banco_de_dados.buscar_tarefas()] == ["Continua aqui"]
+
+
+# ============================================ reconstruir uma tabela com filhos
+
+
+def esquema_com_chave(dados) -> None:
+    """Uma tabela pai com um ``UNIQUE``, e uma filha a apontar-lhe."""
+    dados.migrar(
+        1,
+        """
+        CREATE TABLE itens (
+            id     INTEGER PRIMARY KEY AUTOINCREMENT,
+            codigo TEXT    NOT NULL UNIQUE COLLATE NOCASE,
+            nome   TEXT    NOT NULL
+        )
+        """,
+        """
+        CREATE TABLE movimentos (
+            id      INTEGER PRIMARY KEY AUTOINCREMENT,
+            item_id INTEGER NOT NULL REFERENCES itens(id),
+            q       INTEGER NOT NULL
+        )
+        """,
+    )
+    dados.executar("INSERT INTO itens (codigo, nome) VALUES ('CX-01', 'Caixa')")
+    dados.executar("INSERT INTO movimentos (item_id, q) VALUES (1, 5)")
+
+
+PASSOS_DA_RECONSTRUCAO = (
+    """
+    CREATE TABLE itens_novo (
+        id      INTEGER PRIMARY KEY AUTOINCREMENT,
+        empresa INTEGER,
+        codigo  TEXT    NOT NULL COLLATE NOCASE,
+        nome    TEXT    NOT NULL,
+        UNIQUE (empresa, codigo)
+    )
+    """,
+    "INSERT INTO itens_novo (id, empresa, codigo, nome) "
+    "SELECT id, NULL, codigo, nome FROM itens",
+    "DROP TABLE itens",
+    "ALTER TABLE itens_novo RENAME TO itens",
+)
+
+
+def test_sem_o_modo_proprio_a_reconstrucao_e_impossivel(dados):
+    """A limitação é do SQLite, e foi medida antes de se lhe dar resposta.
+
+    Apagar uma tabela que tem filhos falha com as chaves ligadas, e
+    ``PRAGMA foreign_keys = OFF`` é ignorado **em silêncio** dentro de uma
+    transação — que é onde uma migração corre. Sem o modo próprio, um plugin
+    com uma chave estrangeira nunca poderia mudar a tabela pai.
+    """
+    import sqlite3
+
+    esquema_com_chave(dados)
+    with pytest.raises(sqlite3.IntegrityError):
+        dados.migrar(2, *PASSOS_DA_RECONSTRUCAO)
+
+    assert dados.versao() == 1, "a versão não podia ter avançado"
+
+
+def test_com_o_modo_proprio_a_tabela_e_reconstruida(dados):
+    esquema_com_chave(dados)
+    assert dados.migrar(2, *PASSOS_DA_RECONSTRUCAO, reconstroi_tabelas=True)
+    assert dados.versao() == 2
+
+
+def test_a_reconstrucao_nao_perde_nada(dados):
+    """Nem as linhas do pai, nem as do filho, nem a referência entre eles."""
+    esquema_com_chave(dados)
+    dados.migrar(2, *PASSOS_DA_RECONSTRUCAO, reconstroi_tabelas=True)
+
+    assert dados.consultar("SELECT id, empresa, codigo FROM itens") == [
+        (1, None, "CX-01")
+    ]
+    assert dados.consultar("SELECT id, item_id, q FROM movimentos") == [(1, 1, 5)]
+    esquema = dados.consultar_um(
+        "SELECT sql FROM sqlite_master WHERE name = 'movimentos'"
+    )[0]
+    assert "REFERENCES itens" in esquema, "o filho deixou de apontar para o pai"
+
+
+def test_a_restricao_nova_passa_a_valer(dados):
+    esquema_com_chave(dados)
+    dados.migrar(2, *PASSOS_DA_RECONSTRUCAO, reconstroi_tabelas=True)
+
+    # O mesmo código em empresas diferentes deixa de ser um conflito...
+    dados.executar("INSERT INTO itens (empresa, codigo, nome) VALUES (1,'CX-01','A')")
+    dados.executar("INSERT INTO itens (empresa, codigo, nome) VALUES (2,'CX-01','B')")
+
+    # ... e dentro da mesma continua a ser, sem distinguir maiúsculas.
+    import sqlite3
+
+    with pytest.raises(sqlite3.IntegrityError):
+        dados.executar(
+            "INSERT INTO itens (empresa, codigo, nome) VALUES (1,'cx-01','repetido')"
+        )
+
+
+def test_uma_reconstrucao_que_deixa_referencias_penduradas_nao_grava(dados):
+    """Um esquema partido é pior do que uma migração que não correu."""
+    from core.plugin_dados import EsquemaInconsistenteError
+
+    esquema_com_chave(dados)
+    with pytest.raises(EsquemaInconsistenteError):
+        dados.migrar(
+            2,
+            # Apaga o pai e não o repõe: os movimentos ficam a apontar para
+            # uma tabela que deixou de existir.
+            "DROP TABLE itens",
+            reconstroi_tabelas=True,
+        )
+
+    assert dados.versao() == 1, "a versão avançou com o esquema partido"
+    assert dados.consultar("SELECT codigo FROM itens") == [("CX-01",)]
+
+
+def test_as_chaves_voltam_a_ficar_ligadas_depois_da_reconstrucao(dados):
+    """O modo é para o passo, não para sempre."""
+    import sqlite3
+
+    esquema_com_chave(dados)
+    dados.migrar(2, *PASSOS_DA_RECONSTRUCAO, reconstroi_tabelas=True)
+
+    with pytest.raises(sqlite3.IntegrityError):
+        dados.executar("INSERT INTO movimentos (item_id, q) VALUES (999, 1)")

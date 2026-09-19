@@ -32,6 +32,12 @@ logger = obter_logger(__name__)
 NOME_FICHEIRO = "dados.sqlite3"
 
 
+class EsquemaInconsistenteError(Exception):
+    """Uma migração que reconstrói tabelas deixou referências penduradas."""
+
+    chave_mensagem = "plugin_esquema_inconsistente"
+
+
 class ArmazenamentoPlugin:
     """Banco privado de um plugin.
 
@@ -61,7 +67,7 @@ class ArmazenamentoPlugin:
         return self._caminho.exists()
 
     @contextmanager
-    def conectar(self) -> Iterator[sqlite3.Connection]:
+    def conectar(self, chaves: bool = True) -> Iterator[sqlite3.Connection]:
         """Ligação com commit automático e rollback em caso de erro.
 
         Para quando várias escritas têm de acontecer juntas ou nenhuma.
@@ -72,10 +78,15 @@ class ArmazenamentoPlugin:
         migração de plugin isso é grave — o esquema ficava meio aplicado com a
         versão para trás, e o passo voltava a correr, a falhar, para sempre.
         O SQLite suporta DDL transacional; é só preciso pedir-lho.
+
+        Args:
+            chaves: se as chaves estrangeiras ficam ligadas. Desligá-las só
+                faz sentido para reconstruir uma tabela — ver
+                :meth:`migrar`. O ``PRAGMA`` é dado **antes** do ``BEGIN``,
+                porque dentro de uma transação é ignorado sem se queixar.
         """
         conexao = sqlite3.connect(self._caminho, isolation_level=None)
-        # Fora da transação: dentro dela este PRAGMA é ignorado em silêncio.
-        conexao.execute("PRAGMA foreign_keys = ON")
+        conexao.execute(f"PRAGMA foreign_keys = {'ON' if chaves else 'OFF'}")
         conexao.execute("BEGIN")
         try:
             yield conexao
@@ -84,6 +95,14 @@ class ArmazenamentoPlugin:
             conexao.execute("ROLLBACK")
             raise
         finally:
+            if not chaves:
+                # A ligação vai fechar a seguir, mas deixá-la como se
+                # encontrou é o hábito que evita a surpresa no dia em que
+                # alguém a reutilizar.
+                try:
+                    conexao.execute("PRAGMA foreign_keys = ON")
+                except sqlite3.Error:  # pragma: no cover - ligação já morta
+                    pass
             conexao.close()
 
     # ------------------------------------------------------------- esquema
@@ -95,7 +114,9 @@ class ArmazenamentoPlugin:
         with self.conectar() as conexao:
             return int(conexao.execute("PRAGMA user_version").fetchone()[0])
 
-    def migrar(self, versao: int, *instrucoes: str) -> bool:
+    def migrar(
+        self, versao: int, *instrucoes: str, reconstroi_tabelas: bool = False
+    ) -> bool:
         """Aplica um passo de esquema, uma única vez.
 
         Chame-o em :meth:`~core.plugin_api.Plugin.inicializar`, uma vez por
@@ -108,24 +129,63 @@ class ArmazenamentoPlugin:
         Args:
             versao: número do passo, a partir de 1.
             instrucoes: os comandos SQL desse passo.
+            reconstroi_tabelas: ver abaixo. Só para quem **substitui** uma
+                tabela; um passo normal não precisa disto e não o deve pedir.
 
         Returns:
             ``True`` se o passo foi aplicado agora, ``False`` se já o estava.
 
         Raises:
             ValueError: se ``versao`` não for um inteiro positivo.
+            EsquemaInconsistenteError: se um passo com
+                ``reconstroi_tabelas`` deixar referências penduradas. Nesse
+                caso **nada é gravado**.
+
+        **Porque é que reconstruir precisa de um modo próprio.**
+
+        O SQLite não sabe tirar uma restrição de uma tabela: para mudar um
+        ``UNIQUE`` é preciso criar a tabela nova, copiar as linhas, apagar a
+        antiga e renomear. Com chaves estrangeiras ligadas, apagar uma tabela
+        que tem filhos falha — e ``PRAGMA foreign_keys = OFF`` **é ignorado
+        em silêncio dentro de uma transação**, que é onde uma migração corre.
+
+        Foi medido, não suposto: sem este modo, um plugin cujo esquema tenha
+        uma chave estrangeira **não consegue mudar uma tabela pai**. E não é
+        um caso raro — é o que acontece à primeira vez que um módulo precisa
+        de acrescentar uma coluna a uma chave única.
+
+        O que este modo faz é o procedimento que a documentação do SQLite
+        recomenda: desliga as chaves **antes** de abrir a transação, corre o
+        passo, e **verifica** com ``PRAGMA foreign_key_check`` antes de
+        gravar. Se ficou alguma referência pendurada, desfaz tudo — um
+        esquema partido é pior do que uma migração que não correu.
         """
         if not isinstance(versao, int) or versao < 1:
             raise ValueError("A versão do esquema começa em 1.")
 
-        with self.conectar() as conexao:
+        with self.conectar(chaves=not reconstroi_tabelas) as conexao:
             atual = int(conexao.execute("PRAGMA user_version").fetchone()[0])
             if atual >= versao:
                 return False
             for instrucao in instrucoes:
                 conexao.execute(instrucao)
+
+            if reconstroi_tabelas:
+                penduradas = conexao.execute("PRAGMA foreign_key_check").fetchall()
+                if penduradas:
+                    # O ``raise`` faz o ``conectar`` desfazer tudo.
+                    raise EsquemaInconsistenteError(
+                        f"O passo {versao} do plugin {self._plugin_id} deixou "
+                        f"{len(penduradas)} referência(s) pendurada(s); nada foi gravado."
+                    )
+
             conexao.execute(f"PRAGMA user_version = {int(versao)}")
-        logger.info("Plugin %s: esquema na versão %d", self._plugin_id, versao)
+        logger.info(
+            "Plugin %s: esquema na versão %d%s",
+            self._plugin_id,
+            versao,
+            " (tabelas reconstruídas)" if reconstroi_tabelas else "",
+        )
         return True
 
     # -------------------------------------------------------------- acesso

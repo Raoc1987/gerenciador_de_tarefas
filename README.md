@@ -819,6 +819,15 @@ class Estoque(Plugin):
   pode ficar no código para sempre. Um passo corre inteiro ou não corre —
   incluindo `CREATE`/`ALTER`, para uma migração falhada a meio não deixar o
   esquema num estado de que nunca mais sai;
+- `migrar(..., reconstroi_tabelas=True)` para o passo que **substitui** uma
+  tabela. É preciso porque o SQLite não sabe tirar uma restrição: mudar um
+  `UNIQUE` obriga a criar a tabela nova, copiar, apagar a antiga e renomear —
+  e apagar uma tabela que tem filhos falha com as chaves estrangeiras
+  ligadas, sendo que `PRAGMA foreign_keys = OFF` **é ignorado em silêncio
+  dentro de uma transação**, que é onde uma migração corre. Este modo faz o
+  procedimento que a documentação do SQLite recomenda e **verifica** com
+  `PRAGMA foreign_key_check` antes de gravar: se ficou uma referência
+  pendurada, desfaz tudo;
 - `executar`, `executar_muitos`, `consultar`, `consultar_um` para o dia a dia,
   e `conectar()` quando várias escritas têm de acontecer juntas ou nenhuma;
 - o ficheiro só nasce na primeira escrita: um plugin que nada guarda não

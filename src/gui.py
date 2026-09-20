@@ -542,6 +542,21 @@ def criar_janela(raiz: tk.Tk | None = None) -> tk.Tk:
 
     notebook.ligar_empresas(escolher_empresa)
     mostrar_empresas()
+
+    def por_a_seccao_no_titulo(seccao: str) -> None:
+        """"Tarefas - Gerenciador de Tarefas", como um navegador faz.
+
+        O titulo da janela e o unico sitio desta aplicacao que um leitor de
+        ecra consegue anunciar (ADR-0016), e e o que aparece no alt-tab e na
+        barra de tarefas. Sem seccao, fica so o nome do produto.
+        """
+        nome = carregar_texto("titulo")
+        try:
+            app.title(f"{seccao} — {nome}" if seccao else nome)
+        except tk.TclError:  # pragma: no cover - janela ja destruida
+            pass
+
+    notebook.ligar_seccao(por_a_seccao_no_titulo)
     inscricao_do_sino = eventos.subscrever(
         eventos.ANALISE_ALERTA, lambda _: atualizar_sino(), dono="gui"
     )
@@ -574,7 +589,7 @@ def criar_janela(raiz: tk.Tk | None = None) -> tk.Tk:
 
     def atualizar_textos():
         """Reaplica todos os textos visíveis conforme o idioma atual."""
-        app.title(carregar_texto("titulo"))
+        por_a_seccao_no_titulo(notebook.tab(notebook.select(), "text") or "")
         notebook.definir_produto(carregar_texto("titulo"))
         notebook.definir_sessao(
             carregar_texto("sessao_de", nome=permissoes.sessao().utilizador)

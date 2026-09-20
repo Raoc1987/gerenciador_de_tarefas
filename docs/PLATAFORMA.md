@@ -46,7 +46,7 @@ a regra 37 do próprio plano avisa.
 | 44 | **Multiempresa, fechado**: tarefas ([ADR-0011](architecture/ADR-0011-isolamento-entre-empresas.md)), dados de módulo ([ADR-0012](architecture/ADR-0012-dados-de-modulo-por-empresa.md)), seletor de empresa ([ADR-0014](architecture/ADR-0014-seletor-de-empresa.md)) e **contas e trilha de auditoria** ([ADR-0015](architecture/ADR-0015-contas-e-trilha-por-empresa.md)) |
 | 84–85 | Instalador; dados fora de `Program Files` | Inno Setup; `core/paths.py` |
 | 86 | Testes | 1438, mais o autoteste do binário congelado |
-| 101 | ADR para decisões relevantes | 15 ADRs |
+| 101 | ADR para decisões relevantes | 16 ADRs |
 | 6–7, 10, 12 | Sidebar com grupos, barra de topo, **Command Palette** (`Ctrl+K`) | `src/navegacao/`, ADR-0009 |
 | 44 | **Isolamento entre empresas** — para as tarefas | `tarefas_servico.py`, ADR-0011 |
 
@@ -58,7 +58,7 @@ a regra 37 do próprio plano avisa.
 | 25 | **Visualization Engine**: há linhas, barras e KPI. Faltam os restantes tipos |
 | 56–58 | **Estados**: há vazio e erro em vários sítios, mas não é sistemático |
 | 59 | **Trabalho fora da linha da interface**: não existe. Com 20 000 tarefas, atualizar o painel demora 229 ms e bloqueia a janela — medido. Abaixo de 5 000 não se nota |
-| 60 | **Acessibilidade**: contraste medido e garantido por teste, navegação por teclado e visibilidade do foco **medidas** ([MEDICOES.md](MEDICOES.md)). Falta a passagem com leitor de ecrã |
+| 60 | **Acessibilidade**: contraste, navegação por teclado e visibilidade do foco **medidos e a valer**. **Leitor de ecrã: não suportado** — o Tk 8.6 não expõe os widgets à árvore de acessibilidade, e está medido ([ADR-0016](architecture/ADR-0016-leitor-de-ecra.md)) |
 | 36 | **ERP modular**: a infraestrutura está feita e provada por um módulo (Estoque). Faltam os outros |
 
 ## Não implementado
@@ -93,8 +93,6 @@ si própria e o seletor de idioma desaparecia sem aviso.
 
 ## Continua por validar
 
-- **leitor de ecrã**: os controlos alcançam-se e o foco vê-se, mas ninguém
-  verificou o que é **anunciado**;
 - **escalas acima de 150%** e dois monitores com escalas diferentes;
 - **desempenho do executável congelado sob carga** — só o arranque foi medido
   congelado.

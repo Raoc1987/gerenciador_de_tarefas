@@ -159,7 +159,12 @@ def tarefas(janela):
 
 def test_janela_abre_com_dashboard_e_tarefas(janela):
     assert titulos_das_abas(janela) == ["Dashboard", "Tarefas"]
-    assert janela.title() == "Gerenciador de Tarefas"
+    # "Dashboard — Gerenciador de Tarefas", como um navegador faz: a secção
+    # primeiro, que é o que distingue duas janelas no alt-tab, e o produto a
+    # seguir. É também a única coisa que um leitor de ecrã consegue anunciar
+    # nesta aplicação — ver ADR-0016.
+    assert janela.title().endswith("Gerenciador de Tarefas")
+    assert janela.title().startswith("Dashboard")
 
 
 def test_menu_de_configuracoes_tem_plugins(janela):
@@ -223,7 +228,7 @@ def test_troca_de_idioma_atualiza_a_interface(janela):
     janela.update()
 
     assert lm.idioma_atual() == "en"
-    assert janela.title() == "Task Manager"
+    assert janela.title().endswith("Task Manager"), "o produto não traduziu"
     assert titulos_das_abas(janela) == ["Dashboard", "Tasks"]
     assert "Add" in botoes(tarefas(janela))
     barra = janela.nametowidget(janela.cget("menu"))
@@ -847,3 +852,23 @@ def test_o_ouvinte_do_sino_sai_com_a_janela():
     app.gerenciador_de_plugins.desativar_todos()
     app.destroy()
     assert len(ouvintes_do_sino()) == antes, "o ouvinte ficou no barramento"
+
+
+def test_o_titulo_da_janela_diz_em_que_seccao_se_esta(janela):
+    """O único sítio desta aplicação que um leitor de ecrã anuncia.
+
+    Não é um remendo de acessibilidade a fingir: o Tk 8.6 não expõe os seus
+    widgets à árvore que os leitores leem (ADR-0016), e nada aqui muda isso.
+    O que o título faz é dizer, a quem ouve a janela e a quem olha para o
+    alt-tab, onde é que está.
+    """
+    from navegacao.concha import Concha
+
+    concha = next(w for w in descendentes(janela) if isinstance(w, Concha))
+    for painel, titulo in list(concha._titulos.items()):
+        concha.select(painel)
+        janela.update_idletasks()
+        assert janela.title().startswith(titulo), (
+            f"a janela diz {janela.title()!r} com a secção {titulo!r} à frente"
+        )
+        assert "Gerenciador de Tarefas" in janela.title()

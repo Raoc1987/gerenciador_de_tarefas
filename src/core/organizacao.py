@@ -26,7 +26,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
-from typing import List, Optional
+from typing import List, Optional, Sequence
 
 from core import eventos
 from core.log import obter_logger
@@ -234,6 +234,58 @@ def empresa_de(unidade_id: int) -> Optional[Unidade]:
         return unidade
     cadeia = ancestrais(unidade_id)
     return cadeia[0] if cadeia else None
+
+
+def empresa_da_sessao() -> Optional[int]:
+    """A empresa de quem está em sessão — ``None`` quando não há isolamento.
+
+    **O único sítio onde se decide se o isolamento entre empresas se aplica.**
+    Estava dentro do serviço de tarefas, e mudou-se para aqui quando os
+    plugins passaram a precisar da mesma resposta: duas implementações da
+    mesma decisão divergem, e a que divergisse seria uma fuga de dados.
+
+    Devolve ``None`` — ou seja, **sem isolamento** — em três casos, e os três
+    protegem uma instalação que hoje funciona:
+
+    * **há uma empresa ou nenhuma.** Filtrar não mudava o que se vê, e
+      mudaria o que acontece. O isolamento começa a valer no dia em que a
+      segunda empresa é criada;
+    * **quem está em sessão não tem unidade.** Não pertence a empresa
+      nenhuma: limitá-lo à "sua" deixava-o sem nada. É o caso de quem
+      instala e administra sem se pôr no organigrama;
+    * **a estrutura não responde.** Um erro a ler a organização não pode
+      esconder dados — deixa tudo como estava e fica no registo.
+    """
+    try:
+        if len(raizes()) < 2:
+            return None
+        from core import utilizadores, permissoes
+
+        conta = utilizadores.obter(permissoes.sessao().utilizador)
+        if conta is None or conta.unidade_id is None:
+            return None
+        empresa = empresa_de(conta.unidade_id)
+        return empresa.id if empresa is not None else None
+    except Exception:  # pragma: no cover - defensivo
+        logger.exception("Falha a determinar a empresa da sessão.")
+        return None
+
+
+def unidades_da_empresa_da_sessao() -> Sequence[int]:
+    """As unidades da empresa em sessão — vazio quando não há isolamento.
+
+    Devolve um tuplo vazio, e não uma lista, no caso de não haver isolamento:
+    é o mesmo valor que o âmbito das tarefas já usava como omissão, e manter
+    o tipo faz deste refactor uma mudança que nenhum teste tem de acompanhar.
+    """
+    empresa = empresa_da_sessao()
+    if empresa is None:
+        return ()
+    try:
+        return [u.id for u in descendentes(empresa)]
+    except Exception:  # pragma: no cover - defensivo
+        logger.exception("Falha a listar as unidades da empresa da sessão.")
+        return ()
 
 
 def esta_sob(unidade_id: int, ancestral_id: int) -> bool:

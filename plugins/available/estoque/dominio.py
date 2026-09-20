@@ -51,6 +51,46 @@ MIGRACOES = (
     ),
 )
 
+#: Passos que **substituem** uma tabela, e por isso correm em modo próprio.
+#:
+#: O ``UNIQUE (codigo)`` da v1 impedia duas empresas de terem um item com o
+#: mesmo código — e num inventário isso é comum, porque os códigos vêm dos
+#: fornecedores. Passa a ``UNIQUE (empresa, codigo)``.
+#:
+#: O SQLite não sabe tirar uma restrição: é preciso criar a tabela nova,
+#: copiar, apagar a antiga e renomear. Com uma chave estrangeira a apontar
+#: para ``itens``, isso só é possível com ``reconstroi_tabelas=True`` — ver
+#: :meth:`core.plugin_dados.ArmazenamentoPlugin.migrar`.
+#:
+#: As linhas que já existiam ficam com ``empresa = NULL``: são anteriores à
+#: estrutura e não pertencem a empresa nenhuma, por isso continuam visíveis a
+#: toda a gente. É a mesma regra que as tarefas seguem.
+RECONSTRUCOES = (
+    (
+        2,
+        """
+        CREATE TABLE itens_novo (
+            id        INTEGER PRIMARY KEY AUTOINCREMENT,
+            empresa   INTEGER,
+            codigo    TEXT    NOT NULL COLLATE NOCASE,
+            nome      TEXT    NOT NULL,
+            unidade   TEXT    NOT NULL DEFAULT 'un',
+            minimo    INTEGER NOT NULL DEFAULT 0,
+            ativo     INTEGER NOT NULL DEFAULT 1,
+            criado_em TEXT    NOT NULL,
+            UNIQUE (empresa, codigo)
+        )
+        """,
+        """
+        INSERT INTO itens_novo
+            (id, empresa, codigo, nome, unidade, minimo, ativo, criado_em)
+        SELECT id, NULL, codigo, nome, unidade, minimo, ativo, criado_em FROM itens
+        """,
+        "DROP TABLE itens",
+        "ALTER TABLE itens_novo RENAME TO itens",
+    ),
+)
+
 
 class EstoqueError(Exception):
     """Erro de negócio do inventário."""
@@ -126,13 +166,45 @@ class Movimento:
 class Inventario:
     """O inventário, sobre um armazenamento que o módulo recebe."""
 
-    def __init__(self, dados) -> None:
+    def __init__(self, dados, empresa=None) -> None:
+        """
+        Args:
+            empresa: função sem argumentos que devolve o id da empresa em
+                sessão, ou ``None`` quando não há isolamento — normalmente
+                ``contexto.empresa``. É uma função e não um valor porque a
+                sessão muda enquanto o módulo está carregado, e um valor
+                lido no arranque ficaria preso à primeira pessoa que entrou.
+
+                Sem ela, o inventário comporta-se como sempre se comportou:
+                vê tudo. É o que mantém os testes do módulo e qualquer uso
+                fora da aplicação a funcionar como antes.
+        """
         self._dados = dados
+        self._empresa = empresa or (lambda: None)
 
     def preparar(self) -> None:
         """Cria o esquema deste módulo, uma vez."""
         for versao, *instrucoes in MIGRACOES:
             self._dados.migrar(versao, *instrucoes)
+        for versao, *instrucoes in RECONSTRUCOES:
+            self._dados.migrar(versao, *instrucoes, reconstroi_tabelas=True)
+
+    # --------------------------------------------------------------- âmbito
+
+    def _ambito(self, prefixo: str = "i.") -> tuple:
+        """Condição e parâmetros que limitam o que se vê à empresa em sessão.
+
+        Sem empresa, não há condição — e é assim que uma instalação com uma
+        empresa só continua exatamente como estava.
+
+        Os itens **sem empresa** ficam sempre dentro: são anteriores à
+        estrutura e não pertencem a nenhuma. Escondê-los faria desaparecer o
+        inventário inteiro no dia em que a segunda empresa fosse criada.
+        """
+        empresa = self._empresa()
+        if empresa is None:
+            return "", []
+        return f"({prefixo}empresa = ? OR {prefixo}empresa IS NULL)", [empresa]
 
     # ------------------------------------------------------------- leitura
 
@@ -156,17 +228,36 @@ class Inventario:
 
     def listar(self, incluir_inativos: bool = False) -> List[Item]:
         """Os itens, com a quantidade calculada a partir dos movimentos."""
-        consulta = f"SELECT {self._COLUNAS}, {self._SALDO} FROM itens i"
+        condicoes, parametros = [], []
         if not incluir_inativos:
-            consulta += " WHERE i.ativo = 1"
+            condicoes.append("i.ativo = 1")
+        ambito, valores = self._ambito()
+        if ambito:
+            condicoes.append(ambito)
+            parametros.extend(valores)
+
+        consulta = f"SELECT {self._COLUNAS}, {self._SALDO} FROM itens i"
+        if condicoes:
+            consulta += " WHERE " + " AND ".join(condicoes)
         consulta += " ORDER BY i.nome COLLATE NOCASE"
-        return [self._para_item(linha) for linha in self._dados.consultar(consulta)]
+        return [
+            self._para_item(linha)
+            for linha in self._dados.consultar(consulta, parametros)
+        ]
 
     def obter(self, item_id: int) -> Optional[Item]:
-        linha = self._dados.consultar_um(
-            f"SELECT {self._COLUNAS}, {self._SALDO} FROM itens i WHERE i.id = ?",
-            (item_id,),
-        )
+        """Um item, se a sessão o puder ver.
+
+        O âmbito aplica-se aqui de propósito: ``exigir`` passa por cá, e
+        ``exigir`` é o que guarda a escrita. Sem isto, um id conhecido dava
+        acesso ao item de outra empresa mesmo que ele não aparecesse na
+        lista — que é a forma clássica de um isolamento ter buracos.
+        """
+        ambito, parametros = self._ambito()
+        consulta = f"SELECT {self._COLUNAS}, {self._SALDO} FROM itens i WHERE i.id = ?"
+        if ambito:
+            consulta += f" AND {ambito}"
+        linha = self._dados.consultar_um(consulta, [item_id, *parametros])
         return self._para_item(linha) if linha else None
 
     def exigir(self, item_id: int) -> Item:
@@ -176,11 +267,20 @@ class Inventario:
         return item
 
     def por_codigo(self, codigo: str) -> Optional[Item]:
-        linha = self._dados.consultar_um(
+        """O item com este código, dentro do âmbito.
+
+        É o que faz duas empresas poderem ter "CX-01": a procura é a que
+        decide se um código está livre, e ela deixou de olhar para a
+        instalação inteira.
+        """
+        ambito, parametros = self._ambito()
+        consulta = (
             f"SELECT {self._COLUNAS}, {self._SALDO} FROM itens i "
-            "WHERE i.codigo = ? COLLATE NOCASE",
-            ((codigo or "").strip(),),
+            "WHERE i.codigo = ? COLLATE NOCASE"
         )
+        if ambito:
+            consulta += f" AND {ambito}"
+        linha = self._dados.consultar_um(consulta, [(codigo or "").strip(), *parametros])
         return self._para_item(linha) if linha else None
 
     def em_falta(self) -> List[Item]:
@@ -192,10 +292,21 @@ class Inventario:
         consulta = (
             "SELECT id, item_id, tipo, quantidade, motivo, quem, momento FROM movimentos"
         )
-        parametros: List = []
+        condicoes, parametros = [], []
         if item_id is not None:
-            consulta += " WHERE item_id = ?"
+            condicoes.append("item_id = ?")
             parametros.append(item_id)
+        # Um movimento pertence ao item, e o item à empresa. Sem esta
+        # restrição, o histórico mostrava linhas de itens que a lista não
+        # mostra — e dava a ver códigos e quantidades de outra empresa.
+        ambito, valores = self._ambito(prefixo="")
+        if ambito:
+            condicoes.append(
+                f"item_id IN (SELECT id FROM itens WHERE {ambito})"
+            )
+            parametros.extend(valores)
+        if condicoes:
+            consulta += " WHERE " + " AND ".join(condicoes)
         consulta += " ORDER BY id DESC LIMIT ?"
         parametros.append(int(limite))
 
@@ -236,9 +347,10 @@ class Inventario:
             raise CodigoDuplicadoError(f"Já existe um item com o código {codigo!r}.")
 
         novo = self._dados.executar(
-            "INSERT INTO itens (codigo, nome, unidade, minimo, ativo, criado_em) "
-            "VALUES (?, ?, ?, ?, 1, ?)",
+            "INSERT INTO itens (empresa, codigo, nome, unidade, minimo, ativo, criado_em) "
+            "VALUES (?, ?, ?, ?, ?, 1, ?)",
             (
+                self._empresa(),
                 codigo,
                 nome,
                 (unidade or "un").strip() or "un",

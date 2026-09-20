@@ -263,7 +263,10 @@ class EstoquePlugin(Plugin):
 
     def inicializar(self) -> None:
         """Prepara o esquema próprio. Nada na aplicação é tocado."""
-        self.inventario = Inventario(self.contexto.dados)
+        # A empresa vai como função: a sessão muda enquanto o módulo está
+        # carregado, e um valor lido aqui ficava preso à primeira pessoa
+        # que entrou.
+        self.inventario = Inventario(self.contexto.dados, self.contexto.empresa)
         self.inventario.preparar()
         self.servico = ServicoEstoque(self.inventario, self.contexto)
         self._declarar_indicadores()

@@ -780,6 +780,35 @@ class ContextoPlugin:
             dono=self.manifesto.id,
         )
 
+    def empresa(self) -> Optional[int]:
+        """A empresa de quem está em sessão, ou ``None`` se não há isolamento.
+
+        **Um módulo que guarde dados por empresa tem de carregar esta coluna
+        ele próprio**, na sua tabela e na sua migração. Não é preguiça da
+        plataforma: é que ela não sabe quais das tabelas de um módulo são por
+        empresa e quais são da instalação inteira — as definições do módulo,
+        uma tabela de referência, um catálogo partilhado. Separar ficheiros
+        por empresa tomaria essa decisão por si, e tomá-la-ia mal.
+
+        Quem é dono do esquema decide. A plataforma responde a quem pergunta.
+
+        ``None`` quer dizer **sem isolamento**, e acontece em três casos que
+        valem a pena conhecer: há uma empresa ou nenhuma, quem está em sessão
+        não está na estrutura, ou a estrutura não respondeu. Guarde ``None``
+        na coluna nesses casos — é o que torna os dados anteriores à
+        estrutura visíveis a toda a gente, tal como acontece com as tarefas.
+
+        Example:
+            >>> empresa = self.contexto.empresa()
+            >>> self.contexto.dados.executar(
+            ...     "INSERT INTO itens (empresa, codigo) VALUES (?, ?)",
+            ...     (empresa, "CX-01"),
+            ... )
+        """
+        from core import organizacao
+
+        return organizacao.empresa_da_sessao()
+
     def utilizador(self) -> str:
         """Quem está em sessão, para o módulo registar quem fez o quê."""
         from core import permissoes as _permissoes

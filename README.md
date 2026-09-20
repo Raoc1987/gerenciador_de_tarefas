@@ -828,6 +828,14 @@ class Estoque(Plugin):
   procedimento que a documentação do SQLite recomenda e **verifica** com
   `PRAGMA foreign_key_check` antes de gravar: se ficou uma referência
   pendurada, desfaz tudo;
+- **dados por empresa são responsabilidade do módulo.** `contexto.empresa()`
+  dá o id da empresa em sessão (ou `None` quando não há isolamento), e o
+  módulo carrega essa coluna na sua tabela. A plataforma não a acrescenta
+  sozinha porque **não sabe quais das suas tabelas são por empresa** — as
+  definições do módulo e uma tabela de referência não são. Guarde `None`
+  quando `empresa()` devolver `None`: é o que mantém visíveis a toda a gente
+  os dados anteriores à estrutura. O plugin Estoque faz isto, e é o exemplo
+  a copiar (ver [ADR-0012](docs/architecture/ADR-0012-dados-de-modulo-por-empresa.md));
 - `executar`, `executar_muitos`, `consultar`, `consultar_um` para o dia a dia,
   e `conectar()` quando várias escritas têm de acontecer juntas ou nenhuma;
 - o ficheiro só nasce na primeira escrita: um plugin que nada guarda não

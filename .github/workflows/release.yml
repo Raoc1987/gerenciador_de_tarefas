@@ -1,0 +1,82 @@
+name: Release
+
+# Uma release sai quando alguém marca uma versão, e não a cada integração:
+# isto instala-se em máquinas de clientes, e cada versão publicada é uma
+# versão que alguém pode ter. `git tag v1.0.1 && git push origin v1.0.1`.
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write # necessário para criar a release e anexar o instalador
+
+jobs:
+  publicar:
+    name: Instalador Windows
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.13"
+
+      - name: Instalar dependências
+        run: python -m pip install -r requirements-dev.txt
+
+      # Primeiro de tudo, e antes de construir seja o que for: uma etiqueta
+      # que não bata certo com core/version.py publica um ficheiro chamado
+      # 1.0.1 que instala uma aplicação que se diz 1.0.0.
+      - name: A etiqueta diz o mesmo que o código
+        run: python tools/verificar_versao.py "${{ github.ref_name }}"
+
+      - name: Testes
+        run: python -m pytest -q
+
+      # tools/build.py só termina com sucesso depois de correr o .exe gerado
+      # com --version e --autoteste.
+      - name: Construir e validar o executável
+        run: python tools/build.py
+
+      # Os dois ensaios que protegem quem já tem a aplicação instalada. Correm
+      # semanalmente no outro workflow; aqui correm **sempre**, porque uma
+      # release é exatamente o momento em que eles importam.
+      - name: Atualização preserva os dados do utilizador
+        run: python tools/testar_atualizacao.py
+
+      - name: Instalar o Inno Setup
+        run: choco install innosetup --no-progress -y
+
+      - name: Construir o instalador
+        run: python tools/build_installer.py
+
+      - name: Instalador de ponta a ponta
+        run: python tools/testar_instalador.py
+
+      # O nome do ficheiro leva a versão; o do build não leva, e não se muda
+      # porque `testar_instalador.py` conta com ele. Quem tiver dois downloads
+      # na pasta precisa de os distinguir sem os abrir.
+      - name: Dar o nome da versão ao ficheiro
+        shell: pwsh
+        run: |
+          $versao = "${{ github.ref_name }}" -replace '^v', ''
+          Copy-Item installer/Output/GerenciadorDeTarefas-Setup.exe `
+                    "installer/Output/GerenciadorDeTarefas-Setup-$versao.exe"
+
+      - name: Publicar a release
+        uses: softprops/action-gh-release@e598afbe1493e6b1bafb1f389cabb956eab91231 # v3.0.3
+        with:
+          files: installer/Output/GerenciadorDeTarefas-Setup-*.exe
+          generate_release_notes: true
+          # Uma etiqueta com sufixo (v1.1.0-beta) sai marcada como
+          # pré-lançamento, para não aparecer como a versão a descarregar.
+          prerelease: ${{ contains(github.ref_name, '-') }}
+          body: |
+            Instalador para Windows. Descarregue o `.exe`, corra-o e siga o assistente.
+
+            Atualiza uma instalação existente por cima, **sem apagar os seus
+            dados** — tarefas, contas, plugins e configuração ficam onde estão.
+            Isso é verificado a cada release por `tools/testar_atualizacao.py`
+            e `tools/testar_instalador.py`, que correm antes deste ficheiro ser
+            publicado.

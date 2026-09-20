@@ -19,7 +19,7 @@ from core.paths import caminho_recurso, diretorio_plugins_embutidos
 from core.plugin_manager import PluginManager
 from core.plugin_registry import RegistroEstadoBanco
 import navegacao_incluida
-from aparencia import ESPACO, cores, fonte, guardar_modo
+from aparencia import ESPACO, cabe_no_ecra, cores, em_pixeis, fonte, guardar_modo
 from navegacao import Concha, PaletaDeComandos, comandos
 from notificacoes_ui import CentroDeNotificacoes
 from aparencia import modo as aparencia_modo
@@ -110,10 +110,21 @@ def criar_janela(raiz: tk.Tk | None = None) -> tk.Tk:
     app = raiz if raiz is not None else tk.Tk()
     app.deiconify()
     app.title(carregar_texto("titulo"))
-    # 800x600 era o tamanho de um ecrã de 2005. Com painel, gráficos e
+    # 800x600 era o tamanho de um ecra de 2005. Com painel, graficos e
     # tabelas, obriga a redimensionar antes de se poder trabalhar.
-    app.geometry("1180x740")
-    app.minsize(940, 620)
+    #
+    # Os numeros sao pensados a 100% e **escalam com o DPI**: sao medidas de
+    # conteudo -- cinco cartoes lado a lado, dois graficos -- e o conteudo
+    # cresce com a letra. Fixa-los em pixeis dava uma janela que a 150%
+    # deixava a barra de topo a sobrepor-se a si propria e fazia desaparecer
+    # o seletor de idioma sem aviso. Esta medido em docs/MEDICOES.md.
+    #
+    # E sao travados pelo ecra: um minimo maior do que o ecra e pior do que um
+    # minimo errado, porque tira a quem la esta a unica saida que tinha.
+    inicial = cabe_no_ecra(em_pixeis(1180, app), em_pixeis(740, app), app)
+    minimo = cabe_no_ecra(em_pixeis(940, app), em_pixeis(620, app), app)
+    app.geometry(f"{inicial[0]}x{inicial[1]}")
+    app.minsize(*minimo)
     _aplicar_icone(app)
 
     # ------------------------------------------------ concha de navegação

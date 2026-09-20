@@ -113,6 +113,64 @@ def familia(raiz: Optional[tk.Misc] = None) -> str:
     return _familia
 
 
+#: Pixeis por ponto a 96 DPI, que é o que o Windows chama 100%.
+#:
+#: O ``tk scaling`` não é uma percentagem: é esta razão multiplicada pela
+#: escala do sistema. Confundir as duas dá 133% onde se queria 100%.
+ESCALA_BASE = 96 / 72
+
+
+def escala(raiz: Optional[tk.Misc] = None) -> float:
+    """Quantas vezes maior está tudo por causa do DPI. ``1.0`` é 100%.
+
+    É a resposta à pergunta "quantos pixeis vale um ponto aqui" — a mesma
+    que decide o tamanho da letra. Quem trabalha em pixeis (um tamanho
+    mínimo de janela, uma largura de coluna) tem de a multiplicar, senão
+    fixa uma medida física que encolhe à medida que os ecrãs melhoram.
+
+    Sem raiz — ou sem ecrã — devolve ``1.0``, como :func:`familia` devolve a
+    primeira da lista: é o que permite a quem pergunta fora da interface
+    receber um número em vez de uma exceção.
+    """
+    if raiz is None:
+        return 1.0
+    try:
+        return float(raiz.tk.call("tk", "scaling")) / ESCALA_BASE
+    except (tk.TclError, ValueError, AttributeError):  # pragma: no cover
+        return 1.0
+
+
+def em_pixeis(valor: int, raiz: Optional[tk.Misc] = None) -> int:
+    """Um tamanho pensado a 100%, convertido para a escala em vigor."""
+    return int(round(valor * escala(raiz)))
+
+
+def cabe_no_ecra(largura: int, altura: int, raiz: tk.Misc) -> tuple:
+    """O par pedido, encolhido até caber no ecrã desta janela.
+
+    Um mínimo que não cabe no ecrã é pior do que um mínimo errado: a janela
+    deixa de se poder encolher até ao que existe, e a pessoa fica com partes
+    de fora sem nada que possa fazer. Escalar um mínimo com o DPI sem esta
+    trava dá exatamente isso — 940×620 a 150% pede 1410×930, e um portátil
+    de 1366×768 não tem lá isso.
+
+    Deixa uma margem para a barra de tarefas e para a moldura da janela, que
+    o Tk não desconta de ``winfo_screenheight``.
+    """
+    try:
+        do_ecra = (raiz.winfo_screenwidth(), raiz.winfo_screenheight())
+    except tk.TclError:  # pragma: no cover - sem ecrã
+        return largura, altura
+    margem = em_pixeis(MARGEM_DO_SISTEMA, raiz)
+    return (min(largura, do_ecra[0]), min(altura, do_ecra[1] - margem))
+
+
+#: Quanto se desconta à altura do ecrã para a barra de tarefas e a moldura,
+#: a 100%. Medido numa instalação normal do Windows 11: 48 da barra e uns
+#: 32 da moldura e do título.
+MARGEM_DO_SISTEMA = 80
+
+
 def fonte(tamanho: str = "corpo", negrito: bool = False, raiz: Optional[tk.Misc] = None) -> tuple:
     """Uma fonte da escala: ``fonte("titulo", negrito=True)``.
 

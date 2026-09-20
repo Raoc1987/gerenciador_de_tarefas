@@ -19,7 +19,7 @@ from core import eventos, permissoes
 from core.log import obter_logger
 import painel_incluido
 from core.permissoes import Permissao
-from painel import Grelha
+from painel import Grelha, Rolo
 from painel.contexto import Contexto
 from aparencia import ESPACO, cores, fonte
 from language_manager import carregar_texto
@@ -133,7 +133,13 @@ class PainelDashboard(ttk.Frame):
         # O corpo é a grelha: os blocos são widgets registados, e um módulo
         # pode pôr o seu ao lado deles. Ver ADR-0010.
         painel_incluido.registar_incluidos()
-        self._grelha = Grelha(self, padding=(ESPACO["largo"], 0, ESPACO["largo"], ESPACO["largo"]))
+        # A grelha vive dentro de um rolo. A 940x620 -- o minimo que a
+        # aplicacao declarava -- a caixa "Analise" ficava abaixo da dobra e
+        # nao havia como la chegar: calculada, desenhada, e inalcancavel.
+        self._rolo = Rolo(self)
+        self._rolo.pack(fill=tk.BOTH, expand=True)
+        self._grelha = Grelha(self._rolo.interior,
+                              padding=(ESPACO["largo"], 0, ESPACO["largo"], ESPACO["largo"]))
         self._grelha.pack(fill=tk.BOTH, expand=True)
         self._grelha.montar()
 
@@ -289,6 +295,7 @@ class PainelDashboard(ttk.Frame):
         """Dá o panorama aos widgets. Nenhum deles vai buscar dados."""
         self._dizer("")
         self._grelha.atualizar_widgets(Contexto(dias=self._dias, panorama=visao))
+        self._rolo.sincronizar()
 
     def _mostrar_mensagem(self, mensagem: str) -> None:
         """Estado degradado: sem dados, sem permissão ou com erro.
@@ -300,13 +307,18 @@ class PainelDashboard(ttk.Frame):
         self._grelha.atualizar_widgets(
             Contexto(dias=self._dias, panorama=None, mensagem=mensagem)
         )
+        self._rolo.sincronizar()
         self._dizer(mensagem)
 
     def _dizer(self, mensagem: str = "") -> None:
         """Mostra (ou esconde) a razão de o painel não ter o que mostrar."""
         if mensagem:
             self._aviso.configure(text=mensagem)
-            self._aviso.pack(anchor=tk.W, before=self._grelha)
+            # `before` tem de nomear um irmao. A grelha deixou de o ser
+            # quando passou para dentro do rolo, e o `pack` com um
+            # `before` de outro pai **nao faz nada nem levanta**: a
+            # mensagem desaparecia do ecra em silencio.
+            self._aviso.pack(anchor=tk.W, before=self._rolo)
         else:
             self._aviso.pack_forget()
 

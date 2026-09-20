@@ -345,5 +345,11 @@
   "grupo_inteligencia": "Inteligência",
   "grupo_sistema": "Sistema",
   "atalho_pesquisa": "Ctrl+F",
-  "atalho_comandos": "Ctrl+K"
+  "atalho_comandos": "Ctrl+K",
+  "notificacoes_titulo": "Notificações",
+  "notificacoes_vazio": "Nada por ler.",
+  "notificacoes_marcar_lida": "Lida",
+  "notificacoes_marcar_todas": "Marcar todas como lidas",
+  "notificacoes_limpar_lidas": "Limpar as lidas",
+  "acao_notificar": "Notificar quem está a usar a aplicação"
 }

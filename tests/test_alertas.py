@@ -250,3 +250,61 @@ def test_um_alerta_fica_na_auditoria():
 
     registos = [r for r in auditoria.consultar() if r.evento == eventos.ANALISE_ALERTA]
     assert registos
+
+
+# ================================================== A MEMÓRIA É DE QUEM FOI AVISADO
+
+
+def como(utilizador: str) -> None:
+    permissoes.definir_sessao(utilizador, "administrador", persistir=False)
+
+
+def test_a_memoria_de_uma_pessoa_nao_e_a_de_outra():
+    """Duas pessoas com âmbitos diferentes são avisadas em separado.
+
+    Com uma memória só para a instalação, quem entrasse a seguir encontrava a
+    chave da outra pessoa em falta no seu próprio âmbito: anunciava
+    ``analise.resolvido`` por um problema que continuava por resolver, e
+    apagava o aviso do primeiro. Está medido — era assim antes da v13.
+    """
+    como("ana")
+    alertas.avaliar(com_atrasos(), hoje=HOJE)
+    assert "insight_atrasadas" in alertas.vistos()
+
+    recebidos = []
+    eventos.subscrever(eventos.ANALISE_RESOLVIDO, recebidos.append)
+
+    # Bruno não tem atrasos nenhuns no que ele vê.
+    como("bruno")
+    mudanca = alertas.avaliar([], hoje=HOJE)
+    assert mudanca.resolvidos == (), "resolveu um alerta que não era dele"
+    assert recebidos == []
+
+    como("ana")
+    assert "insight_atrasadas" in alertas.vistos(), "perdeu a memória da Ana"
+
+
+def test_a_mesma_conclusao_e_anunciada_uma_vez_a_cada_pessoa():
+    """Calar-se para a Ana não é calar-se para o Bruno: ele ainda não sabe."""
+    como("ana")
+    assert alertas.avaliar(com_atrasos(), hoje=HOJE).novos
+
+    como("bruno")
+    assert alertas.avaliar(com_atrasos(), hoje=HOJE).novos, "o Bruno não foi avisado"
+
+    como("ana")
+    assert not alertas.avaliar(com_atrasos(), hoje=HOJE).novos, "repetiu à Ana"
+
+
+def test_esquecer_tudo_apaga_a_de_toda_a_gente():
+    """É uma reposição, e uma reposição a meio não é uma reposição."""
+    como("ana")
+    alertas.avaliar(com_atrasos(), hoje=HOJE)
+    como("bruno")
+    alertas.avaliar(com_atrasos(), hoje=HOJE)
+
+    alertas.esquecer_tudo()
+
+    for pessoa in ("ana", "bruno"):
+        como(pessoa)
+        assert alertas.vistos() == {}

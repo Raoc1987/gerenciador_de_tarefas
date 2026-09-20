@@ -6,6 +6,7 @@ from tkinter import messagebox, ttk
 from auditoria_ui import JanelaAuditoria
 import alertas
 import automacoes
+import notificacoes
 import importacoes_incluidas
 import indicadores_incluidos
 import pesquisas_incluidas
@@ -20,6 +21,7 @@ from core.plugin_registry import RegistroEstadoBanco
 import navegacao_incluida
 from aparencia import ESPACO, cores, fonte, guardar_modo
 from navegacao import Concha, PaletaDeComandos, comandos
+from notificacoes_ui import CentroDeNotificacoes
 from aparencia import modo as aparencia_modo
 from core.permissoes import Permissao, PermissaoNegadaError, PoliticaNegouError
 from core.plugin_sources import FontePastasLocais
@@ -98,6 +100,11 @@ def criar_janela(raiz: tk.Tk | None = None) -> tk.Tk:
     # A vigilancia depois do motor: assim o que ela anuncia ja encontra as
     # regras a ouvir.
     alertas.ativar()
+    # A caixa a seguir a ela, e pela mesma razao: subscreve-se depois, por isso
+    # recebe o alerta depois de as regras o terem visto. Um aviso guardado que
+    # a regra ainda nao tivesse tratado seria um aviso a dizer o que ainda nao
+    # tinha acontecido.
+    notificacoes.ativar()
     eventos.publicar(eventos.APP_INICIADA, origem="gui")
 
     app = raiz if raiz is not None else tk.Tk()
@@ -471,6 +478,47 @@ def criar_janela(raiz: tk.Tk | None = None) -> tk.Tk:
         PaletaDeComandos(app)
 
     notebook.ligar_comandos(abrir_comandos)
+
+    # ------------------------------------------------------- notificacoes
+    #
+    # O sino e o unico controlo da barra de topo que muda sozinho. Atualiza-se
+    # quando a vigilancia anuncia alguma coisa e quando o centro e mexido --
+    # nao ha sondagem periodica, porque nao ha nada que mude sem passar por um
+    # destes dois sitios.
+    def atualizar_sino():
+        try:
+            notebook.definir_por_ler(notificacoes.por_ler())
+        except tk.TclError:  # pragma: no cover - janela ja destruida
+            pass
+
+    def abrir_notificacoes(_evento=None):
+        CentroDeNotificacoes(app, ao_mudar=atualizar_sino)
+
+    notebook.ligar_notificacoes(abrir_notificacoes)
+    inscricao_do_sino = eventos.subscrever(
+        eventos.ANALISE_ALERTA, lambda _: atualizar_sino(), dono="gui"
+    )
+    def ao_destruir_a_concha(evento):
+        """Tira o ouvinte do barramento quando a concha se vai embora.
+
+        Sem isto, cada janela criada deixava no barramento um ouvinte a mexer
+        num sino ja destruido -- invisivel numa aplicacao que abre uma janela
+        so, e a somar-se a cada teste de interface que abre outra.
+
+        A comparacao com ``notebook`` guarda contra cancelar cedo demais: neste
+        Tk, um ``<Destroy>`` ligado a um Frame so chega por causa do proprio
+        Frame (medido), mas a barra lateral destroi e reconstroi os filhos a
+        cada redesenho, e um dia em que isso mudasse o sino deixava de se
+        atualizar **sem erro nenhum** -- a pior maneira de uma coisa deixar de
+        funcionar. O teste que protege isto nao e este ``if``, e o de
+        ``test_gui.py`` que redesenha a barra e volta a contar.
+        """
+        if evento.widget is not notebook:
+            return
+        eventos.cancelar(inscricao_do_sino)
+
+    notebook.bind("<Destroy>", ao_destruir_a_concha, add="+")
+    atualizar_sino()
 
     app.bind_all("<Control-f>", abrir_pesquisa)
     app.bind_all("<Control-F>", abrir_pesquisa)

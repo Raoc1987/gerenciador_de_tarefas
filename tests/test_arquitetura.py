@@ -40,6 +40,7 @@ INTERFACE = {
     "aparencia",
     "navegacao",
     "painel",
+    "notificacoes_ui",
 }
 
 

@@ -51,6 +51,8 @@
     "navegacao": "A concha: barra lateral, barra de topo e área de conteúdo.",
     "navegacao_incluida": "Onde as secções que vêm com a aplicação vivem na barra lateral.",
     "painel": "Motor do painel: widgets declarados, grelha que se reparte, e o contexto dos filtros.",
-    "painel_incluido": "Os widgets de painel que vêm com a aplicação."
+    "painel_incluido": "Os widgets de painel que vêm com a aplicação.",
+    "notificacoes": "Caixa de entrada: o que foi anunciado a cada pessoa, e o que ja foi lido.",
+    "notificacoes_ui": "Sino na barra de topo e o centro onde se leem."
   }
 }

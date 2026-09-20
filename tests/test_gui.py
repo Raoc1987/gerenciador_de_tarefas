@@ -775,3 +775,75 @@ def test_auditoria_nao_apaga_nada(janela):
     assert auditoria.contar() == antes, "abrir a tela não pode mexer na trilha"
     assert "tarefa.criada" in [r.evento for r in tela.registos()]
     tela.destroy()
+
+
+# ===================================================== o sino da barra de topo
+
+
+def sino_da(app):
+    """O botão do sino dentro da concha da janela."""
+    from navegacao.concha import Concha
+
+    for widget in descendentes(app):
+        if isinstance(widget, Concha):
+            return widget._botao_sino
+    raise AssertionError("a janela não tem concha")
+
+
+def test_o_sino_conta_o_que_a_vigilancia_anuncia(janela):
+    from core import eventos, permissoes
+
+    permissoes.definir_sessao("local", "administrador", persistir=False)
+    eventos.publicar(eventos.ANALISE_ALERTA, origem="alertas",
+                     id="insight_atrasadas", nivel="critico")
+    janela.update_idletasks()
+
+    assert "1" in sino_da(janela).cget("text")
+
+
+def test_o_sino_continua_a_contar_depois_de_a_barra_ser_redesenhada(janela):
+    """Mudar de idioma destrói e reconstrói a barra lateral inteira.
+
+    O sino tem de sobreviver a isso — tanto ao número que mostra como à
+    subscrição que o alimenta. É a diferença entre um sino e um sino que
+    funcionou uma vez.
+    """
+    from navegacao.concha import Concha
+
+    from core import eventos, permissoes
+
+    permissoes.definir_sessao("local", "administrador", persistir=False)
+    for widget in descendentes(janela):
+        if isinstance(widget, Concha):
+            widget.atualizar_traducoes()
+            break
+    janela.update_idletasks()
+
+    eventos.publicar(eventos.ANALISE_ALERTA, origem="alertas",
+                     id="insight_atrasadas", nivel="critico")
+    janela.update_idletasks()
+
+    assert "1" in sino_da(janela).cget("text"), "o sino deixou de se atualizar"
+
+
+def test_o_ouvinte_do_sino_sai_com_a_janela():
+    """Senão cada janela deixava no barramento um ouvinte de uma já destruída.
+
+    Numa aplicação que abre uma janela só isto não se vê — vê-se na suite de
+    testes, que abre dezenas, e num dia em que a aplicação passe a reabrir a
+    janela depois de trocar de sessão.
+    """
+    import gui
+    from core import eventos
+
+    def ouvintes_do_sino():
+        return [i for i in eventos.barramento().inscricoes() if i.dono == "gui"]
+
+    antes = len(ouvintes_do_sino())
+    app = criar_janela_com_retentativa(gui.criar_janela)
+    app.update_idletasks()
+    assert len(ouvintes_do_sino()) == antes + 1
+
+    app.gerenciador_de_plugins.desativar_todos()
+    app.destroy()
+    assert len(ouvintes_do_sino()) == antes, "o ouvinte ficou no barramento"

@@ -345,5 +345,11 @@
   "grupo_inteligencia": "Intelligence",
   "grupo_sistema": "System",
   "atalho_pesquisa": "Ctrl+F",
-  "atalho_comandos": "Ctrl+K"
+  "atalho_comandos": "Ctrl+K",
+  "notificacoes_titulo": "Notifications",
+  "notificacoes_vazio": "Nothing unread.",
+  "notificacoes_marcar_lida": "Read",
+  "notificacoes_marcar_todas": "Mark all as read",
+  "notificacoes_limpar_lidas": "Clear the read ones",
+  "acao_notificar": "Notify whoever is using the application"
 }

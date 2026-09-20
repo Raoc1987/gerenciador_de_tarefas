@@ -142,9 +142,9 @@ Suspeitei que a barra lateral não mostrasse o foco, por ter `borderwidth=0`.
 **A medição disse que não** — 3 090 píxeis mudam. A suspeita estava errada e o
 número desfê-la em vez de a confirmar.
 
-**§60: validado para o que se alcança e para o foco se ver.** Fica por fazer
-uma passagem com leitor de ecrã, que é outra pergunta e precisa de outro
-instrumento.
+**§60: validado para o que se alcança e para o foco se ver.** O leitor de ecrã
+é outra pergunta, precisa de outro instrumento, e a resposta está mais abaixo
+— não é boa.
 
 ---
 
@@ -184,10 +184,46 @@ código.
 
 ---
 
+## §60 (segunda metade) — Leitor de ecrã
+
+Não é possível ouvir o NVDA a partir daqui. O que se fez foi ler **a mesma
+árvore que ele lê**: a de acessibilidade do Windows (MSAA/`IAccessible`). É o
+dado de onde sai tudo o que um leitor anuncia.
+
+| | |
+|---|---|
+| Controlos acionáveis e visíveis | **15** |
+| Janelas nativas por baixo da principal | **78**, todas `TkChild` |
+| Dessas, **com nome** na árvore | **0** |
+| Papéis encontrados | `cliente` × 78 — nem um botão, nem um campo |
+| Janela principal | nome `Gerenciador de Tarefas`, papel `cliente`, 1 filho |
+
+**Veredicto: a aplicação não é utilizável com um leitor de ecrã.** Um leitor
+encontra uma janela com título e, por baixo, 78 caixas anónimas
+indistinguíveis. A causa não está neste repositório: o Tk desenha os seus
+widgets e, no **8.6.15** que aqui corre, não implementa `IAccessible` para
+eles. Ver [ADR-0016](architecture/ADR-0016-leitor-de-ecra.md), que também diz
+o que custaria mudar.
+
+Isto **não** invalida a primeira metade da §60: alcançar tudo com `Tab` e ver
+o foco continuam medidos e a valer. Servem quem não usa rato. Não servem quem
+não vê — são duas necessidades, e o produto responde a uma.
+
+### O instrumento foi conferido antes de se acreditar nele
+
+A primeira versão da sonda lia o papel de **todas** as janelas como vazio —
+incluindo o do ambiente de trabalho do Windows, que tem um. O índice na tabela
+de métodos do `IAccessible` estava em 12 (`get_accDescription`); o papel é o
+13. Como o nome (10) estava certo, os nomes saíam bem e o erro passava por
+resultado. A conclusão acabou por ser a mesma; o número que a apoiava não era.
+
+É a terceira armadilha desta série, e todas têm a mesma forma: **uma medição
+que responde com ar de resposta.**
+
+---
+
 ## O que continua por validar
 
-- **Leitor de ecrã** (NVDA, Narrator): os controlos alcançam-se e o foco vê-se,
-  mas ninguém verificou o que é **anunciado**.
 - **Ecrãs acima de 150%** e monitores com escalas diferentes ao mesmo tempo:
   o Windows muda o DPI de uma janela ao arrastá-la entre monitores, e o Tk
   não refaz as fontes sozinho.

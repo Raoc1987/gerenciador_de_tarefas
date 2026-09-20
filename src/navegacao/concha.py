@@ -64,6 +64,7 @@ class Concha(ttk.Frame):
         self._por_ler = 0
         self._ao_escolher_empresa: Optional[Callable[[Optional[int]], None]] = None
         self._empresas: List[tuple] = []
+        self._ao_mudar_seccao: Optional[Callable[[str], None]] = None
 
         self.columnconfigure(1, weight=1)
         self.rowconfigure(1, weight=1)
@@ -259,8 +260,10 @@ class Concha(ttk.Frame):
         except tk.TclError:  # pragma: no cover - painel já destruído
             logger.exception("Não foi possível mostrar o painel.")
             return None
-        self._titulo_pagina.configure(text=self._titulos.get(widget, ""))
+        titulo = self._titulos.get(widget, "")
+        self._titulo_pagina.configure(text=titulo)
         self._marcar_botao_ativo()
+        self._anunciar_seccao(titulo)
         return widget
 
     def tabs(self) -> tuple:
@@ -364,6 +367,29 @@ class Concha(ttk.Frame):
 
     def ligar_empresas(self, funcao: Callable[[Optional[int]], None]) -> None:
         self._ao_escolher_empresa = funcao
+
+    def ligar_seccao(self, funcao: Callable[[str], None]) -> None:
+        """Avisa quem quiser saber qual é a secção visível.
+
+        Serve para pôr o nome dela no título da janela. **Isto não torna a
+        aplicação utilizável com um leitor de ecrã** — ver ADR-0016: o Tk 8.6
+        não expõe os seus widgets à árvore de acessibilidade, e um leitor não
+        tem nada para anunciar. O que o título é, é o **único sítio onde há
+        alguma coisa**: os leitores anunciam-no ao mudar de janela. E melhora
+        o alt-tab para toda a gente, que é o motivo pelo qual isto não é um
+        remendo de acessibilidade a fingir.
+        """
+        self._ao_mudar_seccao = funcao
+        if self._atual is not None:
+            self._anunciar_seccao(self._titulos.get(self._atual, ""))
+
+    def _anunciar_seccao(self, titulo: str) -> None:
+        if self._ao_mudar_seccao is None:
+            return
+        try:
+            self._ao_mudar_seccao(titulo)
+        except Exception:  # pragma: no cover - defensivo
+            logger.exception("Falha a anunciar a secção.")
 
     def definir_empresas(
         self, empresas: List[tuple], escolhida: Optional[int] = None

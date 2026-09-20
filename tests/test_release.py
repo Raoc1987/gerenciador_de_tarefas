@@ -111,3 +111,43 @@ def test_o_ficheiro_publicado_leva_a_versao_no_nome(workflow):
 def test_o_workflow_pode_criar_a_release(workflow):
     """Sem `contents: write` a publicação falha no último passo de todos."""
     assert "contents: write" in workflow
+
+
+# ============================================ as notas vêm do que está no repo
+
+
+def test_as_notas_saem_do_changelog(workflow):
+    """Revistas como tudo o resto, e não escritas na caixa do GitHub.
+
+    ``body_path`` e não ``body``: o texto vem de um ficheiro que passou por
+    uma revisão, em vez de estar embutido no workflow onde ninguém o lê.
+    """
+    assert "notas_da_versao.py" in workflow
+    assert "body_path:" in workflow
+    assert "body: |" not in workflow, "voltou a haver notas presas ao workflow"
+
+
+def test_a_versao_a_publicar_tem_notas_escritas():
+    """Se falhar, alguém subiu a versão e esqueceu-se do changelog."""
+    from tools.notas_da_versao import extrair
+
+    changelog = (RAIZ / "CHANGELOG.md").read_text(encoding="utf-8")
+    notas = extrair(APP_VERSION, changelog)
+    assert notas, f"não há secção [{APP_VERSION}] no CHANGELOG.md"
+    assert len(notas.splitlines()) > 5, "a secção está praticamente vazia"
+
+
+def test_uma_versao_sem_seccao_nao_rebenta():
+    """Sai só com a lista que o GitHub gera. É pouco, mas não é errado."""
+    from tools.notas_da_versao import extrair
+
+    assert extrair("9.9.9", "# Changelog\n\n## [1.0.0]\nalgo\n") == ""
+
+
+def test_a_seccao_acaba_onde_comeca_a_versao_seguinte():
+    """Senão as notas de uma versão levavam a história toda atrás."""
+    from tools.notas_da_versao import extrair
+
+    texto = "## [2.0.0] - hoje\nnovo\n\n## [1.0.0] - ontem\nvelho\n"
+    assert extrair("v2.0.0", texto) == "novo"
+    assert "velho" not in extrair("2.0.0", texto)

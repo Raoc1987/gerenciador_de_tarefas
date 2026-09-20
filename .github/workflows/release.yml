@@ -64,6 +64,11 @@ jobs:
           Copy-Item installer/Output/GerenciadorDeTarefas-Setup.exe `
                     "installer/Output/GerenciadorDeTarefas-Setup-$versao.exe"
 
+      # As notas vivem no CHANGELOG.md e sao revistas como tudo o resto, em vez
+      # de escritas a pressa na caixa do GitHub no momento de publicar.
+      - name: Notas desta versao
+        run: python tools/notas_da_versao.py "${{ github.ref_name }}" --para notas.md
+
       - name: Publicar a release
         uses: softprops/action-gh-release@e598afbe1493e6b1bafb1f389cabb956eab91231 # v3.0.3
         with:
@@ -72,11 +77,4 @@ jobs:
           # Uma etiqueta com sufixo (v1.1.0-beta) sai marcada como
           # pré-lançamento, para não aparecer como a versão a descarregar.
           prerelease: ${{ contains(github.ref_name, '-') }}
-          body: |
-            Instalador para Windows. Descarregue o `.exe`, corra-o e siga o assistente.
-
-            Atualiza uma instalação existente por cima, **sem apagar os seus
-            dados** — tarefas, contas, plugins e configuração ficam onde estão.
-            Isso é verificado a cada release por `tools/testar_atualizacao.py`
-            e `tools/testar_instalador.py`, que correm antes deste ficheiro ser
-            publicado.
+          body_path: notas.md

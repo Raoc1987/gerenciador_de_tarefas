@@ -7,9 +7,94 @@ o projeto usa [versionamento semântico](https://semver.org/lang/pt-BR/).
 
 ## [Não lançado]
 
+Nada ainda.
+
+## [1.1.0] - 2026-09-20
+
+Primeira versão **publicada**: a 1.0.0 existiu em código mas nunca chegou a
+ter uma página de download.
+
 Primeiro passo da evolução para plataforma modular de gestão. O gestor de
 tarefas continua a ser o núcleo; os módulos empresariais entrarão como
 plugins (ver `docs/architecture/`).
+
+### Segurança
+
+- **Atualize se tiver mais do que uma empresa configurada.** Num sistema com
+  duas ou mais empresas, quem administrava **dentro de uma** conseguia mexer
+  nas contas da outra: via os nomes e os papéis do pessoal, podia mudá-los de
+  empresa, desativá-los, **apagar-lhes a conta** e repor-lhes a palavra-passe
+  — que é entrar na conta de alguém. As contas e a trilha de auditoria passam
+  a ter o mesmo âmbito que as tarefas já tinham: a empresa de quem está em
+  sessão, seja qual for o papel (ADR-0015). Quem administra a instalação
+  inteira, e não está no organigrama, continua a ver tudo.
+- **Não afeta** quem tem uma empresa ou nenhuma configurada: aí não há nada a
+  isolar e nada muda.
+- Migração de banco v14: a auditoria passa a guardar de que empresa foi cada
+  ação, **no momento em que aconteceu**. As linhas anteriores ficam sem
+  empresa e passam a ser lidas só por quem administra a instalação.
+
+### Adicionado
+
+- **Centro de notificações** (ADR-0013): os avisos da análise — tarefas
+  atrasadas, ritmo a cair, um dia fora do padrão — passam a ter onde ser
+  lidos. Um sino na barra de topo com o que está por ler, e **cada pessoa vê
+  os seus**. Migração de banco v13.
+- **Seletor de empresa** na barra de topo (ADR-0014), para quem administra
+  mais do que uma: mostra uma de cada vez em vez de todas misturadas. Só
+  aparece quando há mais do que uma para escolher, e **estreita a vista sem
+  nunca a alargar** — não é forma de ver o que não se podia ver.
+- **As automações passam a poder notificar**: uma regra pode pôr um aviso na
+  caixa, além de criar tarefas e escrever no registo.
+- **Um módulo pode avisar quem o está a usar** (`contexto.notificar`), com o
+  texto nas suas próprias palavras e no idioma de quem lê.
+- **Página de download**: marcar uma versão passa a publicar o instalador
+  sozinho, depois de verificar que atualizar não apaga os dados de ninguém.
+
+### Corrigido
+
+- **O painel desloca-se.** Numa janela baixa, a caixa "Análise" ficava abaixo
+  da dobra e **não havia como lá chegar** — estava calculada, desenhada, e era
+  inalcançável. Acontecia já ao tamanho mínimo que a própria aplicação
+  declarava.
+- **A janela acompanha a letra do sistema.** Com a escala do Windows a 150%, a
+  aplicação permitia um tamanho em que a barra de topo se sobrepunha a si
+  própria: o botão de pesquisa ficava cortado e o seletor de idioma
+  desaparecia sem aviso.
+- **Os avisos de análise deixam de se perder entre pessoas.** Com duas
+  empresas, entrar na aplicação apagava os avisos de quem tinha entrado antes
+  e anunciava como resolvido um problema que continuava por resolver.
+- **As cores deixam de ser a única diferença** entre um aviso e um alerta
+  crítico: passam a ter formas diferentes, para quem não distingue vermelho de
+  âmbar.
+- O título da janela passa a dizer a secção ("Tarefas — Gerenciador de
+  Tarefas"), o que se vê no alt-tab e na barra de tarefas.
+
+### Medido, e o que a medição encontrou
+
+- **Desempenho, 1366×768 e escala do sistema**: arranque em 1,7 s, 53 MB de
+  memória, o painel a atualizar em 66 ms com 5 000 tarefas. Não há nada para
+  otimizar — e agora há um número a dizê-lo, em vez de uma suposição
+  (`docs/MEDICOES.md`).
+- **Navegação só por teclado**: todos os controlos visíveis se alcançam com
+  `Tab`, e o foco vê-se.
+
+### Não suportado, e está dito
+
+- **Leitor de ecrã** (NVDA, Narrator): **não funciona** (ADR-0016). Medido: a
+  árvore de acessibilidade do Windows não tem um único nome nem um único papel
+  para os 15 controlos do ecrã. A causa não está nesta aplicação — a
+  biblioteca gráfica desenha os seus próprios controlos e não os expõe. O ADR
+  diz o que custaria mudar.
+- **O instalador não é assinado**: o Windows mostra o aviso do SmartScreen na
+  primeira execução.
+
+### Para quem atualiza
+
+Instalar por cima **não apaga nada** — tarefas, contas, plugins e configuração
+ficam onde estão, e isso é verificado automaticamente antes de cada versão ser
+publicada. A base de dados é atualizada na primeira abertura; **depois disso,
+uma versão anterior deixa de a conseguir abrir**, por desenho.
 
 ### Adicionado
 

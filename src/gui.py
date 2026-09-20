@@ -30,6 +30,7 @@ import tarefas_servico
 from backup_ui import JanelaBackup
 from funcionalidades_ui import JanelaFuncionalidades
 from regras_ui import JanelaAutomacoes
+from core import organizacao
 from organizacao_ui import JanelaOrganizacao
 from language_manager import (
     IDIOMAS_SUPORTADOS,
@@ -506,6 +507,41 @@ def criar_janela(raiz: tk.Tk | None = None) -> tk.Tk:
         CentroDeNotificacoes(app, ao_mudar=atualizar_sino)
 
     notebook.ligar_notificacoes(abrir_notificacoes)
+
+    # ---------------------------------------------------- seletor de empresa
+    #
+    # Fecha a outra metade da §44: o isolamento ja existia, mas quem nao
+    # pertence a empresa nenhuma via todas ao mesmo tempo, misturadas.
+    #
+    # Quem escolhe e a organizacao, nao a interface -- e ela **recusa** uma
+    # empresa fora do alcance. A interface so oferece o que ela disser que
+    # ha, e por isso a lista e sempre relida em vez de guardada.
+    def mostrar_empresas():
+        try:
+            alcance = [(u.id, u.nome) for u in organizacao.empresas_ao_alcance()]
+            notebook.definir_empresas(alcance, organizacao.empresa_escolhida())
+        except tk.TclError:  # pragma: no cover - janela ja destruida
+            pass
+        except Exception:  # pragma: no cover - defensivo
+            logger.exception("Falha a mostrar as empresas ao alcance.")
+
+    def escolher_empresa(empresa_id):
+        """Estreita a vista, e volta a desenhar o que ja estava no ecra."""
+        try:
+            organizacao.escolher_empresa(empresa_id)
+        except organizacao.EmpresaForaDoAlcanceError:
+            # Nao devia acontecer -- a lista so oferece o que esta ao alcance
+            # --, mas se acontecer a interface tem de voltar ao que a
+            # organizacao diz, e nao ficar a mostrar um nome que nao vale.
+            logger.warning("Empresa fora do alcance recusada pelo seletor.")
+            mostrar_empresas()
+            return
+        recarregar_lista()
+        if painel_dashboard is not None:
+            painel_dashboard.atualizar()
+
+    notebook.ligar_empresas(escolher_empresa)
+    mostrar_empresas()
     inscricao_do_sino = eventos.subscrever(
         eventos.ANALISE_ALERTA, lambda _: atualizar_sino(), dono="gui"
     )
@@ -544,6 +580,7 @@ def criar_janela(raiz: tk.Tk | None = None) -> tk.Tk:
             carregar_texto("sessao_de", nome=permissoes.sessao().utilizador)
         )
         notebook.atualizar_traducoes()
+        mostrar_empresas()
         label_descricao.config(text=carregar_texto("descricao_tarefa"))
         label_data.config(text=carregar_texto("data_vencimento"))
         botao_adicionar.config(text=carregar_texto("adicionar"))

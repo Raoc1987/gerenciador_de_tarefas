@@ -351,5 +351,6 @@
   "notificacoes_marcar_lida": "Read",
   "notificacoes_marcar_todas": "Mark all as read",
   "notificacoes_limpar_lidas": "Clear the read ones",
-  "acao_notificar": "Notify whoever is using the application"
+  "acao_notificar": "Notify whoever is using the application",
+  "empresas_todas": "All companies"
 }

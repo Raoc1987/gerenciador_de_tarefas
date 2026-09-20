@@ -62,6 +62,8 @@ class Concha(ttk.Frame):
         self._ao_comandos: Optional[Callable[[], None]] = None
         self._ao_notificacoes: Optional[Callable[[], None]] = None
         self._por_ler = 0
+        self._ao_escolher_empresa: Optional[Callable[[Optional[int]], None]] = None
+        self._empresas: List[tuple] = []
 
         self.columnconfigure(1, weight=1)
         self.rowconfigure(1, weight=1)
@@ -121,6 +123,17 @@ class Concha(ttk.Frame):
             font=fonte("subtitulo", negrito=True),
         )
         self._titulo_pagina.pack(side=tk.LEFT)
+
+        # O seletor de empresa fica **à esquerda, ao pé do título da secção**,
+        # e não no canto com os atalhos. Não é gosto: isto não é uma ação, é o
+        # contexto em que tudo o resto se lê. Um número de vendas ao lado de um
+        # seletor escondido no canto é um número que se lê mal. É onde o Azure
+        # põe a subscrição e o SAP o mandante, pela mesma razão.
+        self._empresa_var = tk.StringVar()
+        self._seletor_empresa = ttk.Combobox(
+            self._topo, textvariable=self._empresa_var, state="readonly", width=22
+        )
+        self._seletor_empresa.bind("<<ComboboxSelected>>", self._ao_mudar_empresa)
 
         self._sessao = ttk.Label(
             self._topo, style="Suave.TLabel", background=c["superficie_alta"]
@@ -349,6 +362,43 @@ class Concha(ttk.Frame):
     def ligar_notificacoes(self, funcao: Callable[[], None]) -> None:
         self._ao_notificacoes = funcao
 
+    def ligar_empresas(self, funcao: Callable[[Optional[int]], None]) -> None:
+        self._ao_escolher_empresa = funcao
+
+    def definir_empresas(
+        self, empresas: List[tuple], escolhida: Optional[int] = None
+    ) -> None:
+        """Põe o seletor de empresa na barra. ``empresas`` é ``[(id, nome)]``.
+
+        **Com menos de duas, o seletor não aparece.** Quem pertence a uma
+        empresa já só vê a sua, e um seletor de uma entrada é um controlo que
+        promete uma escolha que não existe.
+        """
+        self._empresas = list(empresas)
+        if len(self._empresas) < 2:
+            self._seletor_empresa.pack_forget()
+            return
+
+        rotulos = [self._rotulo_todas()] + [nome for _, nome in self._empresas]
+        self._seletor_empresa.configure(values=rotulos)
+        atual = next((n for i, n in self._empresas if i == escolhida), None)
+        self._empresa_var.set(atual or self._rotulo_todas())
+        if not self._seletor_empresa.winfo_ismapped():
+            self._seletor_empresa.pack(side=tk.LEFT, padx=(ESPACO["seccao"], 0))
+
+    def empresa_escolhida(self) -> Optional[int]:
+        """O id que o seletor está a mostrar, ou ``None`` para "todas"."""
+        escolhido = self._empresa_var.get()
+        return next((i for i, n in self._empresas if n == escolhido), None)
+
+    def _rotulo_todas(self) -> str:
+        return carregar_texto("empresas_todas", "Todas as empresas")
+
+    def _ao_mudar_empresa(self, _evento=None) -> None:
+        if self._ao_escolher_empresa is None:
+            return
+        self._ao_escolher_empresa(self.empresa_escolhida())
+
     def definir_por_ler(self, quantas: int) -> None:
         """Põe o número por ler no sino. Zero mostra só o sino.
 
@@ -386,6 +436,7 @@ class Concha(ttk.Frame):
         self._botao_pesquisa.configure(text=f"🔎  {carregar_texto('atalho_pesquisa', 'Ctrl+F')}")
         self._botao_comandos.configure(text=f"⌘  {carregar_texto('atalho_comandos', 'Ctrl+K')}")
         self.definir_por_ler(self._por_ler)
+        self.definir_empresas(self._empresas, self.empresa_escolhida())
         self._redesenhar_lateral()
         if self._atual is not None:
             self._titulo_pagina.configure(text=self._titulos.get(self._atual, ""))

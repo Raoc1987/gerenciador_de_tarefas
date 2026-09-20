@@ -116,35 +116,12 @@ class Ambito:
 def unidades_da_minha_empresa() -> Sequence[int]:
     """As unidades da empresa de quem está em sessão — vazio se não se aplica.
 
-    "Ver todas" queria dizer *todas as tarefas da instalação*, incluindo as de
-    outras empresas. Numa instalação com uma empresa só isso é a mesma coisa;
-    com duas, é uma fuga de dados entre clientes.
-
-    Devolve vazio — ou seja, **sem isolamento** — em três casos, e os três são
-    deliberados:
-
-    * **há uma empresa ou nenhuma.** Filtrar não mudava o que se vê, e
-      mudaria o que acontece a uma instalação que hoje funciona. O isolamento
-      só começa a valer quando a segunda empresa é criada;
-    * **quem está em sessão não tem unidade.** Não pertence a empresa
-      nenhuma: limitá-lo à "sua" empresa deixava-o sem nada. É o caso de
-      quem administra sem estar na estrutura;
-    * **a estrutura não responde.** Um erro a ler a organização não pode
-      esconder tarefas — deixa tudo como estava e fica no registo.
+    A decisão de **se** há isolamento vive em :func:`core.organizacao
+    .empresa_da_sessao`, e não aqui: os plugins passaram a precisar da mesma
+    resposta, e duas implementações da mesma decisão divergem. A que
+    divergisse seria uma fuga de dados.
     """
-    try:
-        if len(organizacao.raizes()) < 2:
-            return ()
-        minha = unidade_atual()
-        if minha is None:
-            return ()
-        empresa = organizacao.empresa_de(minha)
-        if empresa is None:
-            return ()
-        return [u.id for u in organizacao.descendentes(empresa.id)]
-    except Exception:  # pragma: no cover - defensivo
-        logger.exception("Falha a determinar a empresa da sessão.")
-        return ()
+    return organizacao.unidades_da_empresa_da_sessao()
 
 
 def ambito() -> Ambito:

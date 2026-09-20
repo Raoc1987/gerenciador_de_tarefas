@@ -83,6 +83,21 @@ plugins (ver `docs/architecture/`).
 
 ### Adicionado
 
+- **Um módulo pode isolar os seus dados por empresa** (`contexto.empresa()`,
+  ADR-0012). A plataforma responde de que empresa é a sessão; o módulo, que é
+  dono do seu esquema, carrega a coluna. Não é preguiça: a plataforma **não
+  sabe** quais das tabelas de um módulo são por empresa — as definições dele
+  e uma tabela de referência não são —, e separar ficheiros tomaria essa
+  decisão por ele.
+- **Estoque 1.1.0**: migrado para ser multiempresa, como exemplo a sério. O
+  `UNIQUE (codigo)` passou a `UNIQUE (empresa, codigo)` — os códigos vêm dos
+  fornecedores e duas empresas repetem-nos. O que já lá estava fica sem
+  empresa e visível a toda a gente, tal como as tarefas.
+- A decisão de **se** há isolamento passou para `core.organizacao`: serve as
+  tarefas e os módulos, e duas implementações da mesma decisão divergiriam.
+
+### Adicionado
+
 - **Um plugin passa a poder substituir uma tabela**
   (`dados.migrar(..., reconstroi_tabelas=True)`). Não era possível: o SQLite
   não sabe tirar uma restrição, e apagar uma tabela que tem filhos falha com

@@ -54,7 +54,7 @@ a regra 37 do próprio plano avisa.
 | 10 | **Top bar** com nome da secção, pesquisa, Command Palette e sessão. Faltam **notificações** e o seletor de contexto |
 | 19 | **Dashboard Builder** (escolher e guardar arranjos por pessoa) não existe |
 | 25 | **Visualization Engine**: há linhas, barras e KPI. Faltam os restantes tipos |
-| 44 | **Multiempresa**: as **tarefas** já estão isoladas por empresa ([ADR-0011](architecture/ADR-0011-isolamento-entre-empresas.md)). **Os dados dos plugins não** — `core/plugin_dados.py` dá um ficheiro por plugin, sem noção de empresa. Não há seletor de empresa na interface |
+| 44 | **Multiempresa**: tarefas isoladas ([ADR-0011](architecture/ADR-0011-isolamento-entre-empresas.md)) e **dados de módulo também** ([ADR-0012](architecture/ADR-0012-dados-de-modulo-por-empresa.md)), com o Estoque migrado como exemplo. Falta: **seletor de empresa** na interface, e auditoria/contas/configuração continuam por isolar |
 | 56–58 | **Estados**: há vazio e erro em vários sítios, mas não é sistemático |
 | 60 | **Acessibilidade**: contraste medido e garantido por teste. Navegação por teclado **não verificada** |
 | 36 | **ERP modular**: a infraestrutura está feita e provada por um módulo (Estoque). Faltam os outros |

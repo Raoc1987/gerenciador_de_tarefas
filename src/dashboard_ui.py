@@ -57,9 +57,15 @@ TOKEN_POR_NIVEL = {
     Nivel.INFORMACAO: "texto_suave",
 }
 
+#: A marca de cada gravidade. **Nenhuma se distingue de outra só pela cor.**
+#:
+#: Crítico e atenção partilhavam o "!" e separavam-se por vermelho contra
+#: âmbar — que é a mesma marca para quem não distingue as duas cores, e são
+#: cerca de 8% dos homens. O contraste do texto já era medido contra a WCAG;
+#: isto é a outra metade da mesma regra.
 MARCAS_POR_NIVEL = {
     Nivel.CRITICO: "!",
-    Nivel.ATENCAO: "!",
+    Nivel.ATENCAO: "▲",
     Nivel.POSITIVO: "+",
     Nivel.INFORMACAO: "•",
 }

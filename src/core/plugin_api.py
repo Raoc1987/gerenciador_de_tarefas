@@ -809,6 +809,69 @@ class ContextoPlugin:
 
         return organizacao.empresa_da_sessao()
 
+    def notificar(
+        self,
+        chave: str,
+        nivel: str = "informacao",
+        assunto: str = "",
+        **parametros: Any,
+    ) -> Optional[int]:
+        """Põe um aviso na caixa de quem está em sessão.
+
+        A chave é procurada primeiro nos textos **deste plugin** e só depois
+        nos da aplicação, como em :meth:`traduzir` — e é guardada, não
+        resolvida: a frase é montada quando for para mostrar, no idioma de
+        então. Guardá-la já feita congelava-a no idioma do dia em que o aviso
+        aconteceu.
+
+        O ``assunto`` é prefixado com o id do plugin, como nos indicadores e
+        nos destinos: dois módulos que escolham "stock_baixo" deixavam de se
+        poder distinguir, e :meth:`ja_anunciado` passava a responder sobre o
+        aviso do outro.
+
+        Não levanta por falha de escrita, e o aviso **vai para quem está em
+        sessão** — não há forma de notificar outra pessoa. Um módulo corre com
+        o âmbito de quem o está a usar, e um aviso pode falar de dados que só
+        essa pessoa pode ver.
+
+        Returns:
+            O ``id`` do aviso, ou ``None`` se não foi possível guardá-lo.
+
+        Example:
+            >>> if not self.contexto.ja_anunciado("stock_baixo"):
+            ...     self.contexto.notificar(
+            ...         "estoque_stock_baixo", nivel="atencao",
+            ...         assunto="stock_baixo", quantidade=3,
+            ...     )
+        """
+        import notificacoes
+
+        return notificacoes.criar(
+            chave,
+            nivel=nivel,
+            origem=self.manifesto.id,
+            assunto=self._assunto(assunto),
+            **parametros,
+        )
+
+    def ja_anunciado(self, assunto: str) -> bool:
+        """Se este módulo já pôs na caixa desta pessoa um aviso sobre isto.
+
+        É o que evita repetir o mesmo aviso a cada arranque. O assunto é
+        prefixado com o id do plugin, tal como em :meth:`notificar`.
+        """
+        import notificacoes
+
+        return notificacoes.ja_anunciado(self._assunto(assunto))
+
+    def _assunto(self, assunto: str) -> str:
+        """Prefixa o assunto com o id do plugin. Vazio continua vazio."""
+        assunto = str(assunto or "").strip()
+        if not assunto:
+            return ""
+        prefixo = f"{self.manifesto.id}."
+        return assunto if assunto.startswith(prefixo) else prefixo + assunto
+
     def utilizador(self) -> str:
         """Quem está em sessão, para o módulo registar quem fez o quê."""
         from core import permissoes as _permissoes

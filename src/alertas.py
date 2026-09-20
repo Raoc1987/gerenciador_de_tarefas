@@ -23,6 +23,15 @@ alerta que se deixa de ler. Por isso a vigilância **lembra-se do que já disse*
 O estado é guardado, não fica em memória: senão cada arranque recomeçava do
 zero e voltava a anunciar tudo.
 
+**E a memória é de quem foi avisado**, não da instalação. A avaliação corre
+com o âmbito de quem a desencadeou — "a vigilância não vê mais do que quem a
+desencadeou" — por isso duas pessoas com âmbitos diferentes chegam a
+conclusões diferentes, e têm de ser avisadas em separado. Com uma memória só
+para todos, quem entrasse a seguir não encontrava a chave da outra pessoa
+dentro do seu próprio âmbito, anunciava ``analise.resolvido`` por um problema
+que continuava por resolver, e apagava o aviso do primeiro. Está medido em
+``test_alertas.py``.
+
 É um **Service** (ADR-0004): não tem interface, não tem domínio próprio, e
 existe para ligar duas peças que não se conhecem.
 """
@@ -79,10 +88,24 @@ def _conectar():
     return banco_de_dados.conectar()
 
 
+def avisado() -> str:
+    """Quem está a ser avisado: o utilizador da sessão.
+
+    É o mesmo de quem desencadeou a avaliação, e por isso o mesmo cujo âmbito
+    decidiu o que a análise viu.
+    """
+    from core import permissoes
+
+    return str(permissoes.sessao().utilizador)
+
+
 def vistos() -> Dict[str, Nivel]:
-    """O que a vigilância já anunciou, e com que gravidade."""
+    """O que a vigilância já anunciou **a esta sessão**, e com que gravidade."""
     with _conectar() as conexao:
-        linhas = conexao.execute("SELECT chave, nivel FROM alertas_vistos").fetchall()
+        linhas = conexao.execute(
+            "SELECT chave, nivel FROM alertas_vistos WHERE destinatario = ?",
+            (avisado(),),
+        ).fetchall()
 
     conhecidos = {}
     for chave, nivel in linhas:
@@ -96,20 +119,30 @@ def vistos() -> Dict[str, Nivel]:
 def _marcar(chave: str, nivel: Nivel) -> None:
     with _conectar() as conexao:
         conexao.execute(
-            "INSERT INTO alertas_vistos (chave, nivel, visto_em) VALUES (?, ?, ?) "
-            "ON CONFLICT(chave) DO UPDATE SET nivel = excluded.nivel, "
+            "INSERT INTO alertas_vistos (destinatario, chave, nivel, visto_em) "
+            "VALUES (?, ?, ?, ?) "
+            "ON CONFLICT(destinatario, chave) DO UPDATE SET nivel = excluded.nivel, "
             "visto_em = excluded.visto_em",
-            (chave, nivel.value, datetime.now().isoformat(timespec="seconds")),
+            (avisado(), chave, nivel.value,
+             datetime.now().isoformat(timespec="seconds")),
         )
 
 
 def _esquecer(chave: str) -> None:
     with _conectar() as conexao:
-        conexao.execute("DELETE FROM alertas_vistos WHERE chave = ?", (chave,))
+        conexao.execute(
+            "DELETE FROM alertas_vistos WHERE destinatario = ? AND chave = ?",
+            (avisado(), chave),
+        )
 
 
 def esquecer_tudo() -> None:
-    """Apaga a memória da vigilância — tudo voltará a ser anunciado uma vez."""
+    """Apaga a memória da vigilância — tudo voltará a ser anunciado uma vez.
+
+    Apaga a de **toda a gente**, e não só a desta sessão: é usada para repor a
+    vigilância do zero, e uma reposição que deixasse metade da memória por
+    apagar não seria uma reposição.
+    """
     with _conectar() as conexao:
         conexao.execute("DELETE FROM alertas_vistos")
 

@@ -34,6 +34,11 @@ logger = obter_logger(__name__)
 LARGA = 224
 ESTREITA = 56
 
+#: O sino. Um caractere e não um ficheiro, pela mesma razão das marcas da
+#: barra lateral: um ícone em ficheiro é uma dependência e um problema de
+#: nitidez em cada resolução.
+SINO = "🔔"
+
 
 class Concha(ttk.Frame):
     """Barra lateral + barra de topo + área de conteúdo.
@@ -55,6 +60,8 @@ class Concha(ttk.Frame):
         self._aberta = True
         self._ao_pesquisar: Optional[Callable[[], None]] = None
         self._ao_comandos: Optional[Callable[[], None]] = None
+        self._ao_notificacoes: Optional[Callable[[], None]] = None
+        self._por_ler = 0
 
         self.columnconfigure(1, weight=1)
         self.rowconfigure(1, weight=1)
@@ -119,6 +126,16 @@ class Concha(ttk.Frame):
             self._topo, style="Suave.TLabel", background=c["superficie_alta"]
         )
         self._sessao.pack(side=tk.RIGHT, padx=(ESPACO["confortavel"], 0))
+
+        # Encostado à sessão, e não junto aos atalhos: é onde toda a gente já
+        # aprendeu a procurar um sino — ao pé de quem está lá dentro, no canto
+        # da barra. Um controlo que muda sozinho não é sítio para originalidade.
+        # Empacotado antes dos atalhos porque a arrumação é da direita para a
+        # esquerda: quem entra primeiro fica mais à direita.
+        self._botao_sino = ttk.Button(
+            self._topo, text=SINO, width=4, command=self._abrir_notificacoes
+        )
+        self._botao_sino.pack(side=tk.RIGHT, padx=(ESPACO["normal"], 0))
 
         # Os dois atalhos ficam à vista: um atalho que ninguém descobre é um
         # atalho que não existe.
@@ -329,6 +346,29 @@ class Concha(ttk.Frame):
     def ligar_comandos(self, funcao: Callable[[], None]) -> None:
         self._ao_comandos = funcao
 
+    def ligar_notificacoes(self, funcao: Callable[[], None]) -> None:
+        self._ao_notificacoes = funcao
+
+    def definir_por_ler(self, quantas: int) -> None:
+        """Põe o número por ler no sino. Zero mostra só o sino.
+
+        Sem número quando não há nada: um "0" permanente é um contador que
+        se aprende a ignorar, e o dia em que passar a 1 não se dá por ele.
+        """
+        self._por_ler = max(0, int(quantas))
+        # Acima de noventa e nove o número deixa de informar e passa a
+        # desalinhar a barra. "99+" diz a mesma coisa em largura fixa.
+        contagem = "99+" if self._por_ler > 99 else str(self._por_ler)
+        texto = f"{SINO} {contagem}" if self._por_ler else SINO
+        try:
+            self._botao_sino.configure(text=texto, width=4 if not self._por_ler else 7)
+        except tk.TclError:  # pragma: no cover - janela já destruída
+            pass
+
+    def por_ler(self) -> int:
+        """O número que o sino está a mostrar."""
+        return self._por_ler
+
     def _abrir_pesquisa(self) -> None:
         if self._ao_pesquisar is not None:
             self._ao_pesquisar()
@@ -337,10 +377,15 @@ class Concha(ttk.Frame):
         if self._ao_comandos is not None:
             self._ao_comandos()
 
+    def _abrir_notificacoes(self) -> None:
+        if self._ao_notificacoes is not None:
+            self._ao_notificacoes()
+
     def atualizar_traducoes(self) -> None:
         """Reaplica os textos da concha no idioma atual."""
         self._botao_pesquisa.configure(text=f"🔎  {carregar_texto('atalho_pesquisa', 'Ctrl+F')}")
         self._botao_comandos.configure(text=f"⌘  {carregar_texto('atalho_comandos', 'Ctrl+K')}")
+        self.definir_por_ler(self._por_ler)
         self._redesenhar_lateral()
         if self._atual is not None:
             self._titulo_pagina.configure(text=self._titulos.get(self._atual, ""))

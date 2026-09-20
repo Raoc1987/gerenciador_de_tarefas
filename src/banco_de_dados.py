@@ -210,6 +210,51 @@ _MIGRACOES: List[Sequence[str]] = [
         "ALTER TABLE plugins ADD COLUMN proveniencia TEXT NOT NULL DEFAULT ''",
         "ALTER TABLE plugins ADD COLUMN impressao TEXT NOT NULL DEFAULT ''",
     ),
+    # v13 -- a caixa de notificacoes, e o destinatario do que a vigilancia ja
+    # anunciou (ver src/notificacoes.py e ADR-0013).
+    #
+    # `alertas_vistos` era global: uma chave, uma linha. Com duas empresas isso
+    # e um defeito medido, nao uma hipotese -- quem entrasse a seguir
+    # encontrava a chave de outra pessoa em falta no seu proprio ambito,
+    # anunciava `analise.resolvido` por um problema que continuava por
+    # resolver, e apagava a memoria do primeiro. A memoria passa a ser de quem
+    # foi avisado, que e o que ela sempre quis dizer.
+    #
+    # As linhas antigas ficam com destinatario '' -- nao se sabe a quem foram
+    # anunciadas, e inventar um dono seria escrever no banco uma coisa que
+    # nunca aconteceu. O efeito e o mesmo de `esquecer_tudo`, que ja esta
+    # documentado: cada pessoa volta a ser avisada uma vez do que ainda for
+    # verdade. Nao se apaga nada.
+    (
+        """
+        CREATE TABLE IF NOT EXISTS notificacoes (
+            id            INTEGER PRIMARY KEY AUTOINCREMENT,
+            destinatario  TEXT    NOT NULL,
+            chave         TEXT    NOT NULL,
+            parametros    TEXT    NOT NULL DEFAULT '{}',
+            nivel         TEXT    NOT NULL DEFAULT 'informacao',
+            origem        TEXT    NOT NULL DEFAULT '',
+            assunto       TEXT    NOT NULL DEFAULT '',
+            criada_em     TEXT    NOT NULL,
+            lida_em       TEXT
+        )
+        """,
+        "CREATE INDEX IF NOT EXISTS idx_notificacoes_caixa "
+        "ON notificacoes (destinatario, lida_em, id)",
+        """
+        CREATE TABLE IF NOT EXISTS alertas_vistos_v13 (
+            destinatario  TEXT NOT NULL DEFAULT '',
+            chave         TEXT NOT NULL,
+            nivel         TEXT NOT NULL,
+            visto_em      TEXT NOT NULL,
+            PRIMARY KEY (destinatario, chave)
+        )
+        """,
+        "INSERT INTO alertas_vistos_v13 (destinatario, chave, nivel, visto_em) "
+        "SELECT '', chave, nivel, visto_em FROM alertas_vistos",
+        "DROP TABLE alertas_vistos",
+        "ALTER TABLE alertas_vistos_v13 RENAME TO alertas_vistos",
+    ),
 ]
 
 #: Colunas devolvidas por :func:`buscar_tarefas` — contrato estável de que a

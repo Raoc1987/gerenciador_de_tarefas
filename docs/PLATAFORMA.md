@@ -41,9 +41,10 @@ a regra 37 do próprio plano avisa.
 | 15 | KPI Engine com KPIs declarativos | `src/indicadores.py` — um módulo declara o que sabe medir |
 | 27–28 | Tendência, média móvel, forecast, anomalias, insights | `analitica/series.py`, `analitica/insights.py`, `alertas.py` |
 | 79 | Sistema de alertas por regra | `src/alertas.py` |
+| 42 | **Notification Center** — caixa por pessoa, sino na barra de topo, centro onde se lê | `src/notificacoes.py`, `src/notificacoes_ui.py`, [ADR-0013](architecture/ADR-0013-caixa-de-notificacoes.md) |
 | 84–85 | Instalador; dados fora de `Program Files` | Inno Setup; `core/paths.py` |
-| 86 | Testes | 1305, mais o autoteste do binário congelado |
-| 101 | ADR para decisões relevantes | 10 ADRs |
+| 86 | Testes | 1377, mais o autoteste do binário congelado |
+| 101 | ADR para decisões relevantes | 13 ADRs |
 | 6–7, 10, 12 | Sidebar com grupos, barra de topo, **Command Palette** (`Ctrl+K`) | `src/navegacao/`, ADR-0009 |
 | 44 | **Isolamento entre empresas** — para as tarefas | `tarefas_servico.py`, ADR-0011 |
 
@@ -51,7 +52,7 @@ a regra 37 do próprio plano avisa.
 
 | § | Estado real |
 |---|---|
-| 10 | **Top bar** com nome da secção, pesquisa, Command Palette e sessão. Faltam **notificações** e o seletor de contexto |
+| 10 | **Top bar** com nome da secção, pesquisa, Command Palette, **notificações** e sessão. Falta o seletor de contexto |
 | 19 | **Dashboard Builder** (escolher e guardar arranjos por pessoa) não existe |
 | 25 | **Visualization Engine**: há linhas, barras e KPI. Faltam os restantes tipos |
 | 44 | **Multiempresa**: tarefas isoladas ([ADR-0011](architecture/ADR-0011-isolamento-entre-empresas.md)) e **dados de módulo também** ([ADR-0012](architecture/ADR-0012-dados-de-modulo-por-empresa.md)), com o Estoque migrado como exemplo. Falta: **seletor de empresa** na interface, e auditoria/contas/configuração continuam por isolar |
@@ -63,7 +64,7 @@ a regra 37 do próprio plano avisa.
 
 Por ordem do plano: dashboards por perfil (§16–18), drill-down e
 drill-through (§23–24), Data Science Lab (§29–32), BI Center e camada
-analítica separada (§33–34), Report Builder (§78), Notification Center (§42),
+analítica separada (§33–34), Report Builder (§78),
 gestão documental (§48), DataTable empresarial (§55), workers fora da UI
 (§59), atalhos além de `Ctrl+F` e `Ctrl+K` (§61), Copilot e agentes (§62–66),
 Licensing (§69), API (§71), Command Center (§80).
@@ -105,10 +106,12 @@ Essa parte está feita, e a ordem seguida foi esta:
 
 **A seguir**, por ordem de valor sobre custo:
 
-- **isolamento dos dados de plugin por empresa** — fecha a outra metade da
-  §44, e é o que falta para um módulo de negócio ser multiempresa;
-- **Notification Center** (§42) — os alertas já existem e já são publicados;
-  falta o sítio onde se leem;
+- ~~**isolamento dos dados de plugin por empresa**~~ — feito (ADR-0012);
+- ~~**Notification Center**~~ (§42) — feito (ADR-0013). Fechar a cadeia
+  obrigou a corrigir a montante um defeito **medido**: a memória da vigilância
+  era da instalação e não de quem foi avisado, e com duas empresas quem
+  entrasse a seguir anunciava `analise.resolvido` por um problema que
+  continuava por resolver;
 - **medir o que nunca foi medido** (§68, §81, §82) — desempenho, 1366×768,
   DPI a 125%, navegação por teclado. A regra 68 do plano diz "não otimizar sem
   medir"; a consequência simétrica é não afirmar que está bom sem medir.

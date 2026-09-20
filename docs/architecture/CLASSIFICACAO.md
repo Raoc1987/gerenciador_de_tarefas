@@ -33,8 +33,10 @@ interface) · **Module** (domínio de negócio, como plugin) · **Plugin**
 | **Indicadores declarados** | **Service** | `src/indicadores.py` |
 | **Importação de ficheiros** | **Service** | `src/importacao/` |
 | **Vigilância (análise -> alerta)** | **Service** | `src/alertas.py` |
+| **Caixa de notificações (alerta -> pessoa)** | **Service** | `src/notificacoes.py` |
 | Ações que a aplicação oferece às regras | Ligação | `src/automacoes.py` |
 | Tela das automações | UI | `src/regras_ui.py` |
+| Sino e centro de notificações | UI | `src/notificacoes_ui.py` |
 | Gráficos | Service (UI) | `src/componentes/` |
 | **Aparência (tokens e tema)** | **Service (UI)** | `src/aparencia/` |
 | **Concha de navegação (sidebar, topbar)** | **Service (UI)** | `src/navegacao/` |
@@ -91,6 +93,19 @@ o contrato só aceitava as permissões do núcleo. A resposta certa era melhorar
 o contrato, não abrir uma exceção (ADR-0004). Um módulo passa a poder
 declarar permissões **no seu próprio espaço de nomes** — o pior que consegue
 conceder é acesso aos seus próprios dados.
+
+### Porque é que a caixa de notificações é Service e não Core
+
+As quatro perguntas do ADR-0004, respondidas antes de escrever: nenhum módulo
+precisa dela para funcionar (não é Core); o produto funciona sem ela — os
+alertas continuavam a ser publicados e as regras a agir (não é Core); não
+decide nada, entrega (não é Agent); e não tem domínio de negócio nem dados de
+ninguém, só o que outros anunciaram (não é Module).
+
+Fica ao lado da vigilância, dos indicadores e da pesquisa: um registo
+transversal, sem interface, que liga duas peças que não se conhecem. O núcleo
+não cresceu para isto existir, que é a mesma resposta que a pesquisa global já
+tinha dado quando a classificação dela estava errada.
 
 ### Porque é que a Calculadora é Plugin e não Module
 

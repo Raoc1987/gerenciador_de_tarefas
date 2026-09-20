@@ -19,6 +19,7 @@ interface) · **Module** (domínio de negócio, como plugin) · **Plugin**
 | Contas e autenticação | Core | `core/utilizadores.py`, `core/seguranca.py` |
 | Auditoria, com antes/depois | Core | `core/auditoria.py` |
 | Estrutura da organizacao | Core | `core/organizacao.py` |
+| **Seletor de empresa** (filtra dentro do alcance, nunca o alarga) | **Core** | `core/organizacao.py`, `src/navegacao/concha.py` |
 | Copia de seguranca e restauro | Core | `core/backup.py` |
 | Visibilidade por unidade | Service | `src/tarefas_servico.py` |
 | Plugin Engine | Core | `core/plugin_*.py` |

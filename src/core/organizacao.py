@@ -236,6 +236,113 @@ def empresa_de(unidade_id: int) -> Optional[Unidade]:
     return cadeia[0] if cadeia else None
 
 
+class EmpresaForaDoAlcanceError(OrganizacaoError):
+    """Tentou-se escolher uma empresa que esta sessão não pode ver."""
+
+    chave_mensagem = "empresa_fora_do_alcance"
+
+
+#: A empresa escolhida nesta sessão, e **por quem**.
+#:
+#: O nome vai junto de propósito. Sem ele, a escolha da Ana sobrevivia ao
+#: fim da sessão dela e passava a valer para quem entrasse a seguir — uma
+#: fuga silenciosa, e do tipo que só aparece na máquina de um cliente com
+#: duas pessoas a partilhar um computador.
+_escolha: Optional[tuple] = None
+
+
+def _empresa_da_conta() -> Optional[int]:
+    """A empresa a que a conta em sessão pertence, pela estrutura.
+
+    É o que **fixa** o alcance: quem está dentro de uma empresa não escolhe
+    nenhuma, porque já só pode ver a sua.
+    """
+    from core import permissoes, utilizadores
+
+    conta = utilizadores.obter(permissoes.sessao().utilizador)
+    if conta is None or conta.unidade_id is None:
+        return None
+    empresa = empresa_de(conta.unidade_id)
+    return empresa.id if empresa is not None else None
+
+
+def empresas_ao_alcance() -> List[Unidade]:
+    """As empresas que esta sessão pode ver — a lista do seletor.
+
+    Vazia quando não há nada para escolher: uma empresa ou nenhuma. Com uma
+    entrada só quando a conta pertence a uma empresa — e aí não há escolha
+    nenhuma a fazer, que é o que a interface usa para não mostrar o seletor.
+
+    **Esta lista é o limite.** :func:`escolher_empresa` não aceita nada que
+    não esteja aqui, e é essa a diferença entre um filtro e um buraco: um
+    seletor que alargasse o alcance seria uma forma de ver os dados de outro
+    cliente carregando num menu.
+    """
+    try:
+        todas = raizes()
+        if len(todas) < 2:
+            return []
+        fixa = _empresa_da_conta()
+        if fixa is not None:
+            return [u for u in todas if u.id == fixa]
+        return todas
+    except Exception:  # pragma: no cover - defensivo
+        logger.exception("Falha a listar as empresas ao alcance.")
+        return []
+
+
+def empresa_escolhida() -> Optional[int]:
+    """A empresa escolhida nesta sessão, ou ``None`` para "todas".
+
+    Revalida sempre, em vez de confiar no que foi guardado: a escolha pode
+    ter sido feita por outra pessoa, ou a empresa pode ter sido removida
+    entretanto. Uma escolha que deixou de ser válida vale o mesmo que nenhuma.
+    """
+    if _escolha is None:
+        return None
+    from core import permissoes
+
+    quem, empresa_id = _escolha
+    if quem != permissoes.sessao().utilizador:
+        return None
+    if not any(u.id == empresa_id for u in empresas_ao_alcance()):
+        return None
+    return empresa_id
+
+
+def escolher_empresa(empresa_id: Optional[int]) -> None:
+    """Estreita a vista a uma empresa. ``None`` volta a todas as que alcança.
+
+    Raises:
+        EmpresaForaDoAlcanceError: a empresa não está em
+            :func:`empresas_ao_alcance`. **Só estreita, nunca alarga** — e
+            recusa em vez de ignorar, porque ignorar deixava a interface a
+            mostrar um nome e os dados de outro.
+    """
+    global _escolha
+    from core import eventos, permissoes
+
+    if empresa_id is None:
+        _escolha = None
+    else:
+        empresa_id = int(empresa_id)
+        if not any(u.id == empresa_id for u in empresas_ao_alcance()):
+            raise EmpresaForaDoAlcanceError(
+                f"A empresa {empresa_id} não está ao alcance desta sessão."
+            )
+        _escolha = (permissoes.sessao().utilizador, empresa_id)
+
+    logger.info("Empresa escolhida: %s", empresa_id)
+    eventos.publicar(eventos.EMPRESA_ESCOLHIDA, origem="organizacao",
+                     empresa=empresa_id)
+
+
+def limpar_escolha() -> None:
+    """Esquece a escolha. Estado global: os testes têm de o repor."""
+    global _escolha
+    _escolha = None
+
+
 def empresa_da_sessao() -> Optional[int]:
     """A empresa de quem está em sessão — ``None`` quando não há isolamento.
 
@@ -259,13 +366,14 @@ def empresa_da_sessao() -> Optional[int]:
     try:
         if len(raizes()) < 2:
             return None
-        from core import utilizadores, permissoes
-
-        conta = utilizadores.obter(permissoes.sessao().utilizador)
-        if conta is None or conta.unidade_id is None:
-            return None
-        empresa = empresa_de(conta.unidade_id)
-        return empresa.id if empresa is not None else None
+        fixa = _empresa_da_conta()
+        if fixa is not None:
+            return fixa
+        # Quem não está na estrutura vê tudo — e pode estreitar a vista a uma
+        # empresa de cada vez. A escolha só entra por aqui: é o que faz as
+        # tarefas e os dados dos módulos seguirem-na sem saberem que ela
+        # existe.
+        return empresa_escolhida()
     except Exception:  # pragma: no cover - defensivo
         logger.exception("Falha a determinar a empresa da sessão.")
         return None

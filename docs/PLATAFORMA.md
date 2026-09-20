@@ -42,9 +42,10 @@ a regra 37 do próprio plano avisa.
 | 27–28 | Tendência, média móvel, forecast, anomalias, insights | `analitica/series.py`, `analitica/insights.py`, `alertas.py` |
 | 79 | Sistema de alertas por regra | `src/alertas.py` |
 | 42 | **Notification Center** — caixa por pessoa, sino na barra de topo, centro onde se lê | `src/notificacoes.py`, `src/notificacoes_ui.py`, [ADR-0013](architecture/ADR-0013-caixa-de-notificacoes.md) |
+| 10 | **Top bar** completa: nome da secção, **seletor de empresa**, pesquisa, Command Palette, notificações e sessão | `src/navegacao/concha.py` |
 | 84–85 | Instalador; dados fora de `Program Files` | Inno Setup; `core/paths.py` |
-| 86 | Testes | 1400, mais o autoteste do binário congelado |
-| 101 | ADR para decisões relevantes | 13 ADRs |
+| 86 | Testes | 1420, mais o autoteste do binário congelado |
+| 101 | ADR para decisões relevantes | 14 ADRs |
 | 6–7, 10, 12 | Sidebar com grupos, barra de topo, **Command Palette** (`Ctrl+K`) | `src/navegacao/`, ADR-0009 |
 | 44 | **Isolamento entre empresas** — para as tarefas | `tarefas_servico.py`, ADR-0011 |
 
@@ -52,10 +53,9 @@ a regra 37 do próprio plano avisa.
 
 | § | Estado real |
 |---|---|
-| 10 | **Top bar** com nome da secção, pesquisa, Command Palette, **notificações** e sessão. Falta o seletor de contexto |
 | 19 | **Dashboard Builder** (escolher e guardar arranjos por pessoa) não existe |
 | 25 | **Visualization Engine**: há linhas, barras e KPI. Faltam os restantes tipos |
-| 44 | **Multiempresa**: tarefas isoladas ([ADR-0011](architecture/ADR-0011-isolamento-entre-empresas.md)) e **dados de módulo também** ([ADR-0012](architecture/ADR-0012-dados-de-modulo-por-empresa.md)), com o Estoque migrado como exemplo. Falta: **seletor de empresa** na interface, e auditoria/contas/configuração continuam por isolar |
+| 44 | **Multiempresa**: tarefas isoladas ([ADR-0011](architecture/ADR-0011-isolamento-entre-empresas.md)), **dados de módulo também** ([ADR-0012](architecture/ADR-0012-dados-de-modulo-por-empresa.md)) e **seletor de empresa** na barra de topo ([ADR-0014](architecture/ADR-0014-seletor-de-empresa.md)). Falta: auditoria, contas e configuração continuam por isolar |
 | 56–58 | **Estados**: há vazio e erro em vários sítios, mas não é sistemático |
 | 59 | **Trabalho fora da linha da interface**: não existe. Com 20 000 tarefas, atualizar o painel demora 229 ms e bloqueia a janela — medido. Abaixo de 5 000 não se nota |
 | 60 | **Acessibilidade**: contraste medido e garantido por teste, navegação por teclado e visibilidade do foco **medidas** ([MEDICOES.md](MEDICOES.md)). Falta a passagem com leitor de ecrã |

@@ -65,7 +65,9 @@ def _limpar_automacao() -> None:
     """O motor e o catálogo de ações são globais, como o barramento."""
     import alertas
     import indicadores
+    import notificacoes
     import pesquisa
+    from core import organizacao
     from importacao import motor as importacao_motor
     from regras import acoes, motor
 
@@ -75,6 +77,11 @@ def _limpar_automacao() -> None:
     indicadores.limpar()
     importacao_motor.limpar()
     alertas.desativar()
+    notificacoes.desativar()
+    # A empresa escolhida é estado de sessão, como o utilizador: um teste que
+    # a herdasse do anterior via as tarefas de outra empresa e não saberia
+    # porquê.
+    organizacao.limpar_escolha()
 
 
 @pytest.fixture

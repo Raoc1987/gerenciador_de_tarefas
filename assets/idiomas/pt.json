@@ -351,5 +351,6 @@
   "notificacoes_marcar_lida": "Lida",
   "notificacoes_marcar_todas": "Marcar todas como lidas",
   "notificacoes_limpar_lidas": "Limpar as lidas",
-  "acao_notificar": "Notificar quem está a usar a aplicação"
+  "acao_notificar": "Notificar quem está a usar a aplicação",
+  "empresas_todas": "Todas as empresas"
 }

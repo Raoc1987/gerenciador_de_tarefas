@@ -64,6 +64,14 @@ UTILIZADOR_CRIADO = "utilizador.criado"
 UTILIZADOR_ALTERADO = "utilizador.alterado"
 UTILIZADOR_REMOVIDO = "utilizador.removido"
 
+#: Alguém estreitou (ou alargou) a vista a uma empresa.
+#:
+#: Publicado por :func:`core.organizacao.escolher_empresa`. A interface ouve-o
+#: para voltar a desenhar o que mostra — o que está no ecrã foi lido com o
+#: âmbito anterior, e deixá-lo lá seria mostrar dados de uma empresa debaixo
+#: do nome de outra.
+EMPRESA_ESCOLHIDA = "empresa.escolhida"
+
 UNIDADE_CRIADA = "unidade.criada"
 UNIDADE_ALTERADA = "unidade.alterada"
 UNIDADE_REMOVIDA = "unidade.removida"
@@ -97,7 +105,8 @@ EVENTOS_DO_NUCLEO = (
     TAREFA_REMOVIDA, PLUGIN_INSTALADO, PLUGIN_ATIVADO, PLUGIN_DESATIVADO,
     PLUGIN_ATUALIZADO, PLUGIN_REMOVIDO, PLUGIN_ERRO, SESSAO_INICIADA,
     SESSAO_TERMINADA, SESSAO_FALHADA, UTILIZADOR_CRIADO, UTILIZADOR_ALTERADO,
-    UTILIZADOR_REMOVIDO, UNIDADE_CRIADA, UNIDADE_ALTERADA, UNIDADE_REMOVIDA,
+    UTILIZADOR_REMOVIDO, EMPRESA_ESCOLHIDA,
+    UNIDADE_CRIADA, UNIDADE_ALTERADA, UNIDADE_REMOVIDA,
     FUNCIONALIDADE_ALTERADA, POLITICA_RECUSOU,
     ANALISE_ALERTA, ANALISE_RESOLVIDO,
     WORKFLOW_EXECUTADA, WORKFLOW_LIMITE,

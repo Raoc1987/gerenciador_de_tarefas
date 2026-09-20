@@ -25,6 +25,16 @@ def como(utilizador: str, papel: str = "administrador") -> None:
     permissoes.definir_sessao(utilizador, papel, persistir=False)
 
 
+def como_a_instalacao() -> None:
+    """A sessão de quem administra a instalação: não está no organigrama.
+
+    Montar a estrutura de dentro de uma empresa deixou de ser possível, e de
+    propósito — quem está na Acme não põe ninguém na Rival. Quem monta é a
+    instalação, e este é o seu lugar: nenhum.
+    """
+    permissoes.definir_sessao("instalacao", "administrador", persistir=False)
+
+
 def descricoes() -> set:
     return {t[1] for t in servico.listar()}
 
@@ -37,10 +47,17 @@ def duas_empresas():
     rival = organizacao.criar("Rival", TipoUnidade.EMPRESA)
     rival_eng = organizacao.criar("Engenharia", TipoUnidade.DEPARTAMENTO, rival.id)
 
-    tarefas = {}
-    for nome, unidade in (("ana", acme_eng.id), ("bruno", rival_eng.id)):
+    # A estrutura monta-se **antes** de entrar em qualquer sessão de empresa.
+    # Quem está dentro da Acme já não pode pôr ninguém na Rival, e é isso que
+    # se quer: aqui é a instalação a ser configurada, e não a Ana a mexer no
+    # organigrama do cliente do lado.
+    lugares = (("ana", acme_eng.id), ("bruno", rival_eng.id))
+    for nome, unidade in lugares:
         utilizadores.criar(nome, "Uma-Senha-Longa-123", papel="administrador")
         utilizadores.definir_unidade(nome, unidade)
+
+    tarefas = {}
+    for nome, _ in lugares:
         como(nome)
         tarefas[nome] = servico.adicionar(f"Tarefa da {nome}", "2030-01-01")
 
@@ -139,6 +156,7 @@ def test_quem_administra_sem_estar_na_estrutura_continua_a_ver_tudo(duas_empresa
 
 def test_quem_ve_so_a_sua_unidade_nao_muda(duas_empresas):
     """O âmbito por unidade já era mais estreito do que a empresa."""
+    como_a_instalacao()
     utilizadores.criar("chefe", "Uma-Senha-Longa-123", papel="gestor_de_unidade")
     unidade = organizacao.filhos(duas_empresas["acme"].id)[0]
     utilizadores.definir_unidade("chefe", unidade.id)

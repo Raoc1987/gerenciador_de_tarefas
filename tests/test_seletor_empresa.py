@@ -26,6 +26,16 @@ def como(utilizador: str, papel: str = "administrador") -> None:
     permissoes.definir_sessao(utilizador, papel, persistir=False)
 
 
+def como_a_instalacao() -> None:
+    """A sessão de quem administra a instalação: não está no organigrama.
+
+    Montar a estrutura de dentro de uma empresa deixou de ser possível, e de
+    propósito — quem está na Acme não põe ninguém na Rival. Quem monta é a
+    instalação, e este é o seu lugar: nenhum.
+    """
+    permissoes.definir_sessao("instalacao", "administrador", persistir=False)
+
+
 def descricoes() -> set:
     return {t[1] for t in servico.listar()}
 
@@ -38,9 +48,13 @@ def duas_empresas():
     rival = organizacao.criar("Rival", TipoUnidade.EMPRESA)
     rival_eng = organizacao.criar("Engenharia", TipoUnidade.DEPARTAMENTO, rival.id)
 
-    for nome, unidade in (("ana", acme_eng.id), ("bruno", rival_eng.id)):
+    # A estrutura monta-se antes de entrar numa sessão de empresa: quem está
+    # dentro da Acme já não pode pôr ninguém na Rival.
+    lugares = (("ana", acme_eng.id), ("bruno", rival_eng.id))
+    for nome, unidade in lugares:
         utilizadores.criar(nome, "Uma-Senha-Longa-123", papel="administrador")
         utilizadores.definir_unidade(nome, unidade)
+    for nome, _ in lugares:
         como(nome)
         servico.adicionar(f"Tarefa da {nome}", "2030-01-01")
 
@@ -182,9 +196,13 @@ def test_uma_escolha_que_deixou_de_ser_valida_vale_o_mesmo_que_nenhuma(
     organizacao.escolher_empresa(duas_empresas["acme"].id)
     assert organizacao.empresa_escolhida() == duas_empresas["acme"].id
 
-    # O root passa a pertencer à Rival. A Acme sai-lhe do alcance.
+    # O root passa a pertencer à Rival. Quem o põe lá é a instalação: o
+    # próprio root, com a vista estreitada à Acme, já não podia fazê-lo --
+    # enquanto se está dentro de uma empresa, age-se **como** ela.
     rival_eng = organizacao.filhos(duas_empresas["rival"].id)[0]
+    como_a_instalacao()
     utilizadores.definir_unidade("root", rival_eng.id)
+    como("root")
 
     assert [u.id for u in organizacao.empresas_ao_alcance()] == [
         duas_empresas["rival"].id

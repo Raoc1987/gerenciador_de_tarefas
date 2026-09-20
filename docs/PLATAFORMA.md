@@ -30,11 +30,11 @@ a regra 37 do próprio plano avisa.
 | 41 | Automações (notificações, alertas, tarefas automáticas) | `automacoes.py` + `regras/acoes.py` |
 | 45 | RBAC | `core/permissoes.py`, 6 papéis |
 | 46 | ABAC — regras por atributo | ADR-0007: `Pedido(ação, objeto)`, políticas que **só recusam** |
-| 47 | Auditoria: quem, o quê, quando, valor anterior, novo valor | `core/auditoria.py`, persistida, com retenção |
+| 47 | Auditoria: quem, o quê, quando, valor anterior, novo valor, **e de que empresa** | `core/auditoria.py`, persistida, com retenção |
 | 49 | Backup, Restore, Integrity Check, Export | `core/backup.py` |
 | 50–54 | Design System, light/dark, cores semânticas, tipografia | `src/aparencia/`, ADR-0008. Contraste **medido** contra a WCAG 2.1 |
 | 70 | Feature flags | `core/funcionalidades.py`, com interruptor por instalação |
-| 75 | Migrações, índices, integridade | `banco_de_dados.py`, `PRAGMA user_version`, v12 |
+| 75 | Migrações, índices, integridade | `banco_de_dados.py`, `PRAGMA user_version`, v14 |
 | 76 | Import Wizard: ficheiro → deteção → mapeamento → validação → duplicados → preview → importação | `src/importacao/` — é exatamente este fluxo |
 | 77 | Export Engine PDF/XLSX/CSV | `src/relatorios/exportadores/`, escritos à mão (ADR-0002) |
 | 11 | Pesquisa global | `src/pesquisa.py` — registo de fontes, cada módulo declara a sua |
@@ -43,9 +43,10 @@ a regra 37 do próprio plano avisa.
 | 79 | Sistema de alertas por regra | `src/alertas.py` |
 | 42 | **Notification Center** — caixa por pessoa, sino na barra de topo, centro onde se lê | `src/notificacoes.py`, `src/notificacoes_ui.py`, [ADR-0013](architecture/ADR-0013-caixa-de-notificacoes.md) |
 | 10 | **Top bar** completa: nome da secção, **seletor de empresa**, pesquisa, Command Palette, notificações e sessão | `src/navegacao/concha.py` |
+| 44 | **Multiempresa, fechado**: tarefas ([ADR-0011](architecture/ADR-0011-isolamento-entre-empresas.md)), dados de módulo ([ADR-0012](architecture/ADR-0012-dados-de-modulo-por-empresa.md)), seletor de empresa ([ADR-0014](architecture/ADR-0014-seletor-de-empresa.md)) e **contas e trilha de auditoria** ([ADR-0015](architecture/ADR-0015-contas-e-trilha-por-empresa.md)) |
 | 84–85 | Instalador; dados fora de `Program Files` | Inno Setup; `core/paths.py` |
-| 86 | Testes | 1420, mais o autoteste do binário congelado |
-| 101 | ADR para decisões relevantes | 14 ADRs |
+| 86 | Testes | 1438, mais o autoteste do binário congelado |
+| 101 | ADR para decisões relevantes | 15 ADRs |
 | 6–7, 10, 12 | Sidebar com grupos, barra de topo, **Command Palette** (`Ctrl+K`) | `src/navegacao/`, ADR-0009 |
 | 44 | **Isolamento entre empresas** — para as tarefas | `tarefas_servico.py`, ADR-0011 |
 
@@ -55,7 +56,6 @@ a regra 37 do próprio plano avisa.
 |---|---|
 | 19 | **Dashboard Builder** (escolher e guardar arranjos por pessoa) não existe |
 | 25 | **Visualization Engine**: há linhas, barras e KPI. Faltam os restantes tipos |
-| 44 | **Multiempresa**: tarefas isoladas ([ADR-0011](architecture/ADR-0011-isolamento-entre-empresas.md)), **dados de módulo também** ([ADR-0012](architecture/ADR-0012-dados-de-modulo-por-empresa.md)) e **seletor de empresa** na barra de topo ([ADR-0014](architecture/ADR-0014-seletor-de-empresa.md)). Falta: auditoria, contas e configuração continuam por isolar |
 | 56–58 | **Estados**: há vazio e erro em vários sítios, mas não é sistemático |
 | 59 | **Trabalho fora da linha da interface**: não existe. Com 20 000 tarefas, atualizar o painel demora 229 ms e bloqueia a janela — medido. Abaixo de 5 000 não se nota |
 | 60 | **Acessibilidade**: contraste medido e garantido por teste, navegação por teclado e visibilidade do foco **medidas** ([MEDICOES.md](MEDICOES.md)). Falta a passagem com leitor de ecrã |

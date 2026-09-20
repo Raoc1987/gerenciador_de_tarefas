@@ -16,8 +16,8 @@ interface) · **Module** (domínio de negócio, como plugin) · **Plugin**
 | Barramento de eventos | Core | `core/eventos.py` |
 | Permissões (RBAC) | Core | `core/permissoes.py` |
 | Funcionalidades da instalacao | Core | `core/funcionalidades.py` |
-| Contas e autenticação | Core | `core/utilizadores.py`, `core/seguranca.py` |
-| Auditoria, com antes/depois | Core | `core/auditoria.py` |
+| Contas e autenticação, com âmbito por empresa | Core | `core/utilizadores.py`, `core/seguranca.py` |
+| Auditoria, com antes/depois e a empresa de quem agiu | Core | `core/auditoria.py` |
 | Estrutura da organizacao | Core | `core/organizacao.py` |
 | **Seletor de empresa** (filtra dentro do alcance, nunca o alarga) | **Core** | `core/organizacao.py`, `src/navegacao/concha.py` |
 | Copia de seguranca e restauro | Core | `core/backup.py` |

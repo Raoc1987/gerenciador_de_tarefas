@@ -213,6 +213,25 @@ def _detalhe_de(evento: Evento) -> str:
     return "; ".join(partes)[:LIMITE_DETALHE]
 
 
+def _empresa_atual() -> Optional[int]:
+    """A empresa de quem está a agir, ou ``None`` se não estiver na estrutura.
+
+    ``None`` quer dizer **da instalação, e não de uma empresa** — é o que uma
+    instalação com uma empresa só escreve sempre, e é o que quem administra a
+    instalação de fora do organigrama escreve quando age.
+
+    Nunca levanta: uma falha a determinar a empresa não pode impedir a trilha
+    de registar o que aconteceu. Fica ``None``, que é a verdade — não se sabe.
+    """
+    try:
+        from core import organizacao
+
+        return organizacao.empresa_da_sessao()
+    except Exception:  # pragma: no cover - defensivo
+        logger.exception("Falha a determinar a empresa para a auditoria.")
+        return None
+
+
 def registar(evento: Evento) -> bool:
     """Grava um evento na trilha. Devolve se chegou a gravar.
 
@@ -232,7 +251,8 @@ def registar(evento: Evento) -> bool:
         with banco_de_dados.conectar() as conexao:
             conexao.execute(
                 "INSERT INTO auditoria (momento, evento, utilizador, alvo, detalhe,"
-                " origem, antes, depois) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                " origem, empresa_id, antes, depois)"
+                " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 (
                     evento.momento or datetime.now().isoformat(timespec="seconds"),
                     evento.nome,
@@ -240,6 +260,7 @@ def registar(evento: Evento) -> bool:
                     alvo,
                     _detalhe_de(evento),
                     evento.origem,
+                    _empresa_atual(),
                     *(
                         json.dumps(lado, ensure_ascii=False, default=str)[:LIMITE_DETALHE]
                         for lado in _alteracoes_de(evento)
@@ -291,13 +312,25 @@ def consultar(
     utilizador: str = "",
     desde: Optional[datetime] = None,
 ) -> List[RegistoAuditoria]:
-    """Lê a trilha, do mais recente para o mais antigo.
+    """Lê a trilha da empresa de quem está em sessão, da mais recente para trás.
 
     Args:
         limite: número máximo de registos.
         evento: filtra por nome exato, ou por prefixo terminado em ``*``.
         utilizador: filtra por utilizador.
         desde: só registos a partir deste momento.
+
+    **O âmbito é a empresa da sessão**, como nas tarefas e nas contas. Quem
+    administra a instalação de fora do organigrama lê tudo; quem administra
+    dentro de uma empresa lê o que se passou nessa empresa.
+
+    E ao contrário das tarefas, **as linhas sem empresa não são vistas por
+    todos**. Uma tarefa sem unidade é histórico que ninguém pode perder de
+    vista; uma linha de auditoria sem empresa é uma ação da instalação, e o
+    seu ``alvo`` pode ser o nome de alguém de outra empresa. Entre deixar
+    escapar o nome de um empregado de outro cliente e esconder de um auditor
+    o que o dono da instalação fez, escolhe-se o segundo — e diz-se que se
+    escolheu. Ver ADR-0015.
     """
     import banco_de_dados
 
@@ -317,6 +350,14 @@ def consultar(
     if desde is not None:
         condicoes.append("momento >= ?")
         parametros.append(desde.isoformat(timespec="seconds"))
+
+    # O âmbito da empresa é a última condição, e é a única que não se pode
+    # desligar por argumento: as outras são filtros que quem lê escolhe, esta
+    # é o limite do que lhe diz respeito.
+    minha = _empresa_atual()
+    if minha is not None:
+        condicoes.append("empresa_id = ?")
+        parametros.append(minha)
 
     consulta = (
         "SELECT id, momento, evento, utilizador, alvo, detalhe, origem, antes, depois"

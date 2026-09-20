@@ -255,6 +255,22 @@ _MIGRACOES: List[Sequence[str]] = [
         "DROP TABLE alertas_vistos",
         "ALTER TABLE alertas_vistos_v13 RENAME TO alertas_vistos",
     ),
+    # v14 -- a empresa a que cada registo de auditoria pertence (ADR-0015).
+    #
+    # Guarda-se a empresa de **quem agiu, no momento em que agiu**, pela mesma
+    # razao que a tarefa guarda a unidade: se a pessoa mudar de empresa
+    # amanha, o que ela fez continua a pertencer a onde foi feito. Deduzi-lo
+    # hoje a partir da conta seria reescrever o passado a cada mudanca de
+    # organigrama.
+    #
+    # As linhas antigas ficam com NULL: sao anteriores a esta coluna e nao se
+    # sabe. NULL quer dizer "da instalacao, nao de uma empresa" -- e e o que
+    # uma instalacao com uma empresa so continua a escrever, por isso nada
+    # muda para quem nao usa multiempresa.
+    (
+        "ALTER TABLE auditoria ADD COLUMN empresa_id INTEGER",
+        "CREATE INDEX IF NOT EXISTS idx_auditoria_empresa ON auditoria (empresa_id)",
+    ),
 ]
 
 #: Colunas devolvidas por :func:`buscar_tarefas` — contrato estável de que a

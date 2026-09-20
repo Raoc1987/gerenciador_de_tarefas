@@ -62,6 +62,12 @@ class UltimoAdministradorError(UtilizadorError):
     chave_mensagem = "utilizador_ultimo_admin"
 
 
+class ContaDeOutraEmpresaError(UtilizadorError):
+    """Tentou-se administrar a conta de alguém de outra empresa."""
+
+    chave_mensagem = "utilizador_de_outra_empresa"
+
+
 class MotivoFalha(str, Enum):
     """Porque é que uma autenticação não passou."""
 
@@ -151,14 +157,66 @@ def _conectar():
     return banco_de_dados.conectar()
 
 
+def empresa_de(utilizador: "Utilizador") -> Optional[int]:
+    """A empresa a que uma conta pertence, ou ``None`` se não estiver na estrutura."""
+    if utilizador.unidade_id is None:
+        return None
+    from core import organizacao
+
+    empresa = organizacao.empresa_de(utilizador.unidade_id)
+    return empresa.id if empresa is not None else None
+
+
+def administravel(utilizador: "Utilizador") -> bool:
+    """Se esta sessão pode mexer nesta conta.
+
+    A regra é a mesma que já vale para as tarefas, aplicada a pessoas:
+    **o âmbito é a empresa de quem está em sessão, seja qual for o papel.**
+    Um administrador colocado dentro da Acme administra a Acme; quem
+    administra a instalação inteira não está na estrutura, e continua a ver
+    tudo.
+
+    Uma conta **sem lugar na estrutura** passa. São duas coisas:
+    :func:`criar` não recebe unidade, por isso toda a conta nasce sem lugar e
+    alguém tem de lho poder dar; e é o caso de quem instalou e administra sem
+    se pôr no organigrama.
+    """
+    from core import organizacao
+
+    minha = organizacao.empresa_da_sessao()
+    if minha is None:
+        return True
+    dele = empresa_de(utilizador)
+    return dele is None or dele == minha
+
+
+def exigir_administravel(utilizador: "Utilizador") -> None:
+    """Recusa administrar a conta de alguém de outra empresa.
+
+    Raises:
+        ContaDeOutraEmpresaError: e **recusa em vez de não fazer nada**. Um
+            ``return False`` silencioso deixava quem administra a pensar que
+            a alteração tinha resultado.
+    """
+    if not administravel(utilizador):
+        raise ContaDeOutraEmpresaError(
+            f"A conta {utilizador.nome_utilizador!r} é de outra empresa."
+        )
+
+
 def listar(incluir_inativos: bool = True) -> List[Utilizador]:
-    """Todas as contas, por nome de utilizador."""
+    """As contas que esta sessão pode ver, por nome de utilizador.
+
+    Filtradas pela empresa da sessão — ver :func:`administravel`. Numa
+    instalação com uma empresa ou nenhuma, são todas, como sempre foram.
+    """
     consulta = f"SELECT {_COLUNAS} FROM utilizadores"
     if not incluir_inativos:
         consulta += " WHERE ativo = 1"
     consulta += " ORDER BY nome_utilizador"
     with _conectar() as conexao:
-        return [_linha_para_utilizador(linha) for linha in conexao.execute(consulta)]
+        contas = [_linha_para_utilizador(linha) for linha in conexao.execute(consulta)]
+    return [c for c in contas if administravel(c)]
 
 
 def obter(nome_utilizador: str) -> Optional[Utilizador]:
@@ -254,10 +312,16 @@ def criar(
 
 
 def alterar_senha(nome_utilizador: str, nova_senha: str) -> bool:
-    """Define uma nova palavra-passe e limpa bloqueios."""
+    """Define uma nova palavra-passe e limpa bloqueios.
+
+    Também é administração: repor a senha de alguém é entrar na conta dessa
+    pessoa. Quem muda a **própria** não é abrangido — está sempre na sua
+    empresa, seja ela qual for.
+    """
     utilizador = obter(nome_utilizador)
     if utilizador is None:
         return False
+    exigir_administravel(utilizador)
     seguranca.validar_senha(nova_senha, utilizador.nome_utilizador)
 
     with _conectar() as conexao:
@@ -297,6 +361,7 @@ def definir_papel(nome_utilizador: str, papel: str) -> bool:
     utilizador = obter(nome_utilizador)
     if utilizador is None:
         return False
+    exigir_administravel(utilizador)
     if papel not in PAPEIS:
         raise UtilizadorError(f"Papel desconhecido: {papel!r}")
 
@@ -334,10 +399,22 @@ def definir_unidade(nome_utilizador: str, unidade_id: Optional[int]) -> bool:
     utilizador = obter(nome_utilizador)
     if utilizador is None:
         return False
+    exigir_administravel(utilizador)
     if unidade_id is not None:
         from core import organizacao
 
         organizacao.exigir(unidade_id)
+        # E o **destino** também. Sem isto, faltava metade: quem administra a
+        # Acme não podia mexer em quem é da Rival, mas podia mandar alguém da
+        # Acme para lá -- exportar uma pessoa para a empresa do lado é a mesma
+        # fuga vista do outro lado.
+        minha = organizacao.empresa_da_sessao()
+        if minha is not None:
+            destino = organizacao.empresa_de(unidade_id)
+            if destino is None or destino.id != minha:
+                raise ContaDeOutraEmpresaError(
+                    f"A unidade {unidade_id} é de outra empresa."
+                )
 
     with _conectar() as conexao:
         conexao.execute(
@@ -361,6 +438,7 @@ def definir_ativo(nome_utilizador: str, ativo: bool) -> bool:
     utilizador = obter(nome_utilizador)
     if utilizador is None:
         return False
+    exigir_administravel(utilizador)
     if not ativo:
         _garantir_que_sobra_administrador(utilizador)
 
@@ -389,6 +467,7 @@ def remover(nome_utilizador: str) -> bool:
     utilizador = obter(nome_utilizador)
     if utilizador is None:
         return False
+    exigir_administravel(utilizador)
     _garantir_que_sobra_administrador(utilizador)
 
     with _conectar() as conexao:

@@ -17,7 +17,10 @@ que tinha antes. Ver ADR-0008.
 from aparencia.paleta import ALTURA_LINHA, ESPACO, TAMANHO
 from aparencia.tema import (
     aplicar,
+    cabe_no_ecra,
     cores,
+    em_pixeis,
+    escala,
     familia,
     fonte,
     guardar_modo,
@@ -31,7 +34,10 @@ __all__ = [
     "ESPACO",
     "TAMANHO",
     "aplicar",
+    "cabe_no_ecra",
     "cores",
+    "em_pixeis",
+    "escala",
     "familia",
     "fonte",
     "guardar_modo",

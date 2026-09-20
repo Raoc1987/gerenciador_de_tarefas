@@ -7,12 +7,14 @@ Ver ADR-0010.
 
 from painel.contexto import Contexto
 from painel.grelha import Grelha, colunas_para
+from painel.rolo import Rolo
 from painel.registo import COLUNAS, Widget, disponiveis, esquecer_por_dono, limpar, obter, registar
 
 __all__ = [
     "COLUNAS",
     "Contexto",
     "Grelha",
+    "Rolo",
     "Widget",
     "colunas_para",
     "disponiveis",

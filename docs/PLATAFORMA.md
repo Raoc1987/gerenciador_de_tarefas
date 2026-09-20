@@ -43,7 +43,7 @@ a regra 37 do próprio plano avisa.
 | 79 | Sistema de alertas por regra | `src/alertas.py` |
 | 42 | **Notification Center** — caixa por pessoa, sino na barra de topo, centro onde se lê | `src/notificacoes.py`, `src/notificacoes_ui.py`, [ADR-0013](architecture/ADR-0013-caixa-de-notificacoes.md) |
 | 84–85 | Instalador; dados fora de `Program Files` | Inno Setup; `core/paths.py` |
-| 86 | Testes | 1377, mais o autoteste do binário congelado |
+| 86 | Testes | 1400, mais o autoteste do binário congelado |
 | 101 | ADR para decisões relevantes | 13 ADRs |
 | 6–7, 10, 12 | Sidebar com grupos, barra de topo, **Command Palette** (`Ctrl+K`) | `src/navegacao/`, ADR-0009 |
 | 44 | **Isolamento entre empresas** — para as tarefas | `tarefas_servico.py`, ADR-0011 |
@@ -57,7 +57,8 @@ a regra 37 do próprio plano avisa.
 | 25 | **Visualization Engine**: há linhas, barras e KPI. Faltam os restantes tipos |
 | 44 | **Multiempresa**: tarefas isoladas ([ADR-0011](architecture/ADR-0011-isolamento-entre-empresas.md)) e **dados de módulo também** ([ADR-0012](architecture/ADR-0012-dados-de-modulo-por-empresa.md)), com o Estoque migrado como exemplo. Falta: **seletor de empresa** na interface, e auditoria/contas/configuração continuam por isolar |
 | 56–58 | **Estados**: há vazio e erro em vários sítios, mas não é sistemático |
-| 60 | **Acessibilidade**: contraste medido e garantido por teste. Navegação por teclado **não verificada** |
+| 59 | **Trabalho fora da linha da interface**: não existe. Com 20 000 tarefas, atualizar o painel demora 229 ms e bloqueia a janela — medido. Abaixo de 5 000 não se nota |
+| 60 | **Acessibilidade**: contraste medido e garantido por teste, navegação por teclado e visibilidade do foco **medidas** ([MEDICOES.md](MEDICOES.md)). Falta a passagem com leitor de ecrã |
 | 36 | **ERP modular**: a infraestrutura está feita e provada por um módulo (Estoque). Faltam os outros |
 
 ## Não implementado
@@ -69,18 +70,34 @@ gestão documental (§48), DataTable empresarial (§55), workers fora da UI
 (§59), atalhos além de `Ctrl+F` e `Ctrl+K` (§61), Copilot e agentes (§62–66),
 Licensing (§69), API (§71), Command Center (§80).
 
-## Não validado
+## Medido — ver [MEDICOES.md](MEDICOES.md)
 
-Coisas que existem mas nunca foram medidas — e que por isso **não devem ser
-declaradas prontas**:
+O que estava aqui como "não validado" foi medido a 2026-09-20. Os números,
+o método e as duas armadilhas que quase estragaram as medições estão no
+documento; o resumo é este:
 
-- **comportamento em 1366×768** (§81). A janela abre a 1180×740 com mínimo de
-  940×620; ninguém verificou o que acontece abaixo disso;
-- **DPI scaling** (§82) em ecrãs a 125% e 150%;
-- **navegação só por teclado** (§60) em qualquer ecrã;
-- **desempenho** (§68) — não há medição de arranque, memória, ou tempo de
-  desenho do painel. A regra 68 do próprio plano diz "não otimizar sem medir";
-  a consequência simétrica é não afirmar que está rápido sem medir.
+- **1366×768 (§81) e DPI a 125% e 150% (§82)**: a aplicação mostra tudo nas
+  três escalas. Validado;
+- **navegação por teclado (§60)**: todos os controlos visíveis se alcançam
+  com Tab (10 no painel, 15 nas tarefas), e o foco vê-se — medido a contar
+  píxeis, não a olhar;
+- **desempenho (§68)**: arranque do executável em 1,7 s; 53 MB de memória;
+  o painel atualiza em 66 ms com 5 000 tarefas. **Não há nada para otimizar**,
+  e agora há um número para o dizer.
+
+**A medição encontrou dois defeitos, ambos corrigidos**, e nenhum deles dava
+erro: o painel não tinha deslocamento vertical — a 940×620, que era o mínimo
+que a aplicação declarava, a caixa "Análise" era **inalcançável** — e o
+tamanho mínimo era em píxeis, pelo que a 150% a barra de topo se sobrepunha a
+si própria e o seletor de idioma desaparecia sem aviso.
+
+## Continua por validar
+
+- **leitor de ecrã**: os controlos alcançam-se e o foco vê-se, mas ninguém
+  verificou o que é **anunciado**;
+- **escalas acima de 150%** e dois monitores com escalas diferentes;
+- **desempenho do executável congelado sob carga** — só o arranque foi medido
+  congelado.
 
 ---
 
@@ -112,7 +129,12 @@ Essa parte está feita, e a ordem seguida foi esta:
   era da instalação e não de quem foi avisado, e com duas empresas quem
   entrasse a seguir anunciava `analise.resolvido` por um problema que
   continuava por resolver;
-- **medir o que nunca foi medido** (§68, §81, §82) — desempenho, 1366×768,
+- ~~**medir o que nunca foi medido**~~ — feito ([MEDICOES.md](MEDICOES.md)).
+  O que se segue está em aberto de propósito: o que resta da lista de baixo
+  tem, cada item, uma condição escrita para valer a pena. Quando nenhuma
+  está cumprida, a resposta certa é consolidar, não abrir outra frente.
+
+  **medir o que nunca foi medido** (§68, §81, §82) — desempenho, 1366×768,
   DPI a 125%, navegação por teclado. A regra 68 do plano diz "não otimizar sem
   medir"; a consequência simétrica é não afirmar que está bom sem medir.
 

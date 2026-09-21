@@ -113,6 +113,36 @@ def test_o_workflow_pode_criar_a_release(workflow):
     assert "contents: write" in workflow
 
 
+
+# ================================================ o ensaio corre tudo menos publicar
+
+
+def test_a_release_pode_ser_ensaiada(workflow):
+    """Sem ensaio, a próxima etiqueta é a primeira vez que o caminho é corrido.
+
+    Não é hipotético: entre a 1.1.0 e a etiqueta seguinte, o SHA fixado do
+    `action-gh-release` deixou de existir do lado de lá. O runner descarrega
+    as Actions do job antes do primeiro passo, por isso um ensaio apanha isso
+    sem publicar nada.
+    """
+    assert "workflow_dispatch" in workflow
+
+
+def test_um_ensaio_nao_publica(workflow):
+    """A guarda no passo de publicar é o que separa um ensaio de uma release.
+
+    Sem ela, carregar em "Run workflow" numa branch criaria uma release com o
+    nome da branch por etiqueta — pública, e a apontar para código que ninguém
+    marcou.
+    """
+    inicio = workflow.index("- name: Publicar a release")
+    passo = workflow[inicio:inicio + 400]
+    assert "if: github.ref_type == 'tag'" in passo, (
+        "o passo de publicar tem de correr só em etiquetas; está assim: "
+        + passo[:200]
+    )
+
+
 # ============================================ as notas vêm do que está no repo
 
 

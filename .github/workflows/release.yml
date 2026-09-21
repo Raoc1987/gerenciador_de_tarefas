@@ -7,6 +7,12 @@ on:
   push:
     tags:
       - "v*"
+  # Ensaio: corre a release inteira **menos publicar**. Existe para a próxima
+  # etiqueta não ser a primeira vez que este caminho é percorrido — e porque o
+  # runner descarrega todas as Actions do job antes de correr o primeiro passo,
+  # um ensaio apanha um SHA que deixou de existir, que foi exatamente o que
+  # aconteceu ao `action-gh-release` entre a 1.1.0 e hoje.
+  workflow_dispatch:
 
 permissions:
   contents: write # necessário para criar a release e anexar o instalador
@@ -25,11 +31,31 @@ jobs:
       - name: Instalar dependências
         run: python -m pip install -r requirements-dev.txt
 
+      # Numa etiqueta, a versão é a etiqueta. Num ensaio não há etiqueta
+      # nenhuma de onde a tirar, e usa-se a que o código declara.
+      - name: Versão desta execução
+        id: versao
+        shell: pwsh
+        run: |
+          if ("${{ github.ref_type }}" -eq "tag") {
+            $etiqueta = "${{ github.ref_name }}"
+          } else {
+            $declarada = python -c "import sys; sys.path.insert(0, 'src'); from core.version import APP_VERSION; print(APP_VERSION)"
+            $etiqueta = "v$declarada"
+          }
+          "etiqueta=$etiqueta" >> $env:GITHUB_OUTPUT
+          "versao=$($etiqueta -replace '^v', '')" >> $env:GITHUB_OUTPUT
+          Write-Host "Versão desta execução: $etiqueta"
+
       # Primeiro de tudo, e antes de construir seja o que for: uma etiqueta
       # que não bata certo com core/version.py publica um ficheiro chamado
       # 1.0.1 que instala uma aplicação que se diz 1.0.0.
+      #
+      # Num ensaio a comparação é trivialmente verdadeira — a etiqueta veio do
+      # próprio `core/version.py`. Corre à mesma: o que o ensaio prova aqui é
+      # que o script existe e responde, não que a versão está certa.
       - name: A etiqueta diz o mesmo que o código
-        run: python tools/verificar_versao.py "${{ github.ref_name }}"
+        run: python tools/verificar_versao.py "${{ steps.versao.outputs.etiqueta }}"
 
       - name: Testes
         run: python -m pytest -q
@@ -60,16 +86,22 @@ jobs:
       - name: Dar o nome da versão ao ficheiro
         shell: pwsh
         run: |
-          $versao = "${{ github.ref_name }}" -replace '^v', ''
+          $versao = "${{ steps.versao.outputs.versao }}"
           Copy-Item installer/Output/GerenciadorDeTarefas-Setup.exe `
                     "installer/Output/GerenciadorDeTarefas-Setup-$versao.exe"
 
       # As notas vivem no CHANGELOG.md e sao revistas como tudo o resto, em vez
       # de escritas a pressa na caixa do GitHub no momento de publicar.
+      # Num ensaio isto também corre, e é um dos passos que mais vale ensaiar:
+      # falha quando o CHANGELOG não tem secção para a versão que o código
+      # declara — ou seja, quando a release ainda não está pronta para sair.
       - name: Notas desta versao
-        run: python tools/notas_da_versao.py "${{ github.ref_name }}" --para notas.md
+        run: python tools/notas_da_versao.py "${{ steps.versao.outputs.etiqueta }}" --para notas.md
 
+      # O único passo que um ensaio não faz. Tudo acima já correu; o que fica
+      # por exercitar é a criação da release em si.
       - name: Publicar a release
+        if: github.ref_type == 'tag'
         uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
         with:
           files: installer/Output/GerenciadorDeTarefas-Setup-*.exe

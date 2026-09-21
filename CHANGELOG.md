@@ -14,6 +14,15 @@ o projeto usa [versionamento semântico](https://semver.org/lang/pt-BR/).
   violadas, como sai uma versão, e o que uma boa issue traz. O README
   prometia um guia em inglês que nunca existiu no repositório.
 
+### Adicionado
+
+- **A release pode ser ensaiada** sem publicar nada: o `release.yml` ganha
+  `workflow_dispatch` e corre tudo — verificação da versão, testes, executável,
+  instalador e os dois ensaios que protegem quem já instalou — parando antes
+  do único passo que publica. Existe porque o SHA fixado da Action que publica
+  deixou de existir do lado de lá entre a 1.1.0 e hoje, e só se saberia disso
+  ao tentar publicar a versão seguinte.
+
 ### Corrigido
 
 - `docs/MANUTENCAO.md` dizia coisas que deixaram de ser verdade: a versão de

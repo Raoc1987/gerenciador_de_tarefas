@@ -1,0 +1,55 @@
+"""Camada pública de persistência da aplicação.
+
+Importar as funções deste módulo mantém compatibilidade com a versão anterior,
+que expunha tudo a partir de ``database.py``.
+"""
+
+from .database import (
+    DB_PATH,
+    adicionar_tarefa,
+    adiar_lembrete,
+    atualizar_status,
+    atualizar_tarefa,
+    buscar_tarefa_por_id,
+    buscar_tarefas,
+    calcular_metricas,
+    conectar,
+    criar_tabela,
+    criar_categoria,
+    criar_projeto,
+    dispensar_lembrete,
+    excluir_tarefa,
+    excluir_categoria,
+    excluir_projeto,
+    atualizar_projeto,
+    listar_categorias,
+    listar_projetos,
+    produtividade_semanal,
+    listar_lembretes_devidos,
+    tarefas_por_categoria,
+)
+
+__all__ = [
+    "DB_PATH",
+    "adicionar_tarefa",
+    "adiar_lembrete",
+    "atualizar_status",
+    "atualizar_tarefa",
+    "buscar_tarefa_por_id",
+    "buscar_tarefas",
+    "calcular_metricas",
+    "conectar",
+    "criar_tabela",
+    "criar_categoria",
+    "criar_projeto",
+    "dispensar_lembrete",
+    "excluir_tarefa",
+    "excluir_categoria",
+    "excluir_projeto",
+    "atualizar_projeto",
+    "listar_categorias",
+    "listar_projetos",
+    "produtividade_semanal",
+    "listar_lembretes_devidos",
+    "tarefas_por_categoria",
+]

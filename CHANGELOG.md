@@ -25,6 +25,16 @@ o projeto usa [versionamento semântico](https://semver.org/lang/pt-BR/).
 - `.gitignore`: ficheiros de editor e `.env`, que não dizem respeito a mais
   ninguém.
 
+### Documentação
+
+- **A limitação de acessibilidade passa a estar onde se lê.** O
+  [ADR-0016](docs/architecture/ADR-0016-leitor-de-ecra.md) decidiu declarar
+  que a aplicação não é utilizável com leitor de ecrã, e porquê — mas a
+  declaração não tinha chegado a nenhum dos READMEs, que são o único sítio
+  onde um utilizador a iria procurar. Ambos passam a dizê-lo, com o que está
+  verificado ao lado do que não está.
+- O README em inglês passa a ligar ao guia de contribuições.
+
 ## [1.1.0] - 2026-09-20
 
 Primeira versão **publicada**: a 1.0.0 existiu em código mas nunca chegou a

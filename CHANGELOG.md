@@ -7,7 +7,23 @@ o projeto usa [versionamento semântico](https://semver.org/lang/pt-BR/).
 
 ## [Não lançado]
 
-Nada ainda.
+### Adicionado
+
+- **Guia de contribuições** (`CONTRIBUTING.md`): o que classificar antes de
+  escrever código (ADR-0004), as regras que falham um teste quando são
+  violadas, como sai uma versão, e o que uma boa issue traz. O README
+  prometia um guia em inglês que nunca existiu no repositório.
+
+### Corrigido
+
+- `docs/MANUTENCAO.md` dizia coisas que deixaram de ser verdade: a versão de
+  referência (1.0.0, com uma etiqueta que já não existe), o log a rodar em
+  três cópias quando passou a cinco, os ensaios como passo manual antes da
+  release quando o `release.yml` os corre sempre, e o CI "sem permissões de
+  escrita" quando o `release.yml` precisa delas para publicar. Passa também a
+  cobrir a release por etiqueta e as etiquetas que ficam sem release.
+- `.gitignore`: ficheiros de editor e `.env`, que não dizem respeito a mais
+  ninguém.
 
 ## [1.1.0] - 2026-09-20
 
@@ -97,11 +113,6 @@ publicada. A base de dados é atualizada na primeira abertura; **depois disso,
 uma versão anterior deixa de a conseguir abrir**, por desenho.
 
 ### Adicionado
-
-- **Guia de contribuições** (`CONTRIBUTING.md`): o que classificar antes de
-  escrever código (ADR-0004), as regras que falham um teste quando são
-  violadas, o que tem de acompanhar cada mudança e o que uma boa issue traz.
-  O README prometia um guia em inglês que nunca existiu no repositório.
 
 - **Framework de manutenção** (`docs/MANUTENCAO.md`): o que se antecipa
   (preditiva), o que se faz por rotina (preventiva) e como se responde a uma

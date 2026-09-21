@@ -45,6 +45,8 @@ violada. Uma regra que não falha um teste é uma sugestão ([ADR-0004](docs/arc
 | **Um módulo novo em `src/core/` precisa de justificação escrita** em `core-inventory.json` | Sem atrito, tudo acaba no núcleo | `test_tudo_no_core_esta_inventariado` |
 | **Nomes de topo em português e declarados** em `nomes-de-topo.json` | `src/` está no `sys.path`: um nome genérico colide com um pacote do PyPI, e foi assim que um build parou com os testes todos verdes ([ADR-0005](docs/architecture/ADR-0005-nomes-de-topo.md)) | `test_todo_o_nome_de_topo_esta_declarado` |
 | **Um plugin só toca na aplicação pelo `ContextoPlugin`** — nada de `banco_de_dados`, `gui` ou `PluginManager` | É o que permite mudar o interior sem partir plugins de terceiros | `test_nenhum_plugin_fura_o_contrato` |
+| **Nenhum ecrã escolhe a sua própria cor ou letra** — use os tokens da paleta | Onze valores copiados por doze ficheiros davam 3,67 de contraste, abaixo do mínimo da norma; a olho não se vê a diferença para 4,5 ([ADR-0008](docs/architecture/ADR-0008-aparencia.md)) | `test_nenhum_ecra_escolhe_a_sua_propria_cor`, `test_nenhum_ecra_escolhe_a_sua_propria_letra` |
+| **Mexer num plugin embutido obriga a subir a `version`** do manifesto | É o número que decide se a correção chega a quem já tem o plugin instalado ([ADR-0006](docs/architecture/ADR-0006-posse-dos-plugins.md)) | `test_mexer_num_plugin_embutido_obriga_a_subir_a_versao` |
 
 E duas que nascem do produto, não da arquitetura:
 
@@ -90,6 +92,7 @@ Para ver onde a suíte não chega: `python -m pytest --cov=src --cov-report=term
 | acrescenta um módulo em `src/core/` | `core-inventory.json` |
 | acrescenta um nome de topo em `src/` | `nomes-de-topo.json` |
 | acrescenta uma funcionalidade | `docs/architecture/CLASSIFICACAO.md` |
+| mexe num plugin embutido | a `version` do manifesto e `plugins-embutidos.json` (`python tools/inventario_plugins.py`) |
 | muda uma rotina de manutenção | `docs/MANUTENCAO.md` |
 
 Um documento que fica a mentir é pior do que documento nenhum — e há testes que
@@ -119,9 +122,9 @@ Um PR bom:
   `--autoteste` e a construção do executável.
 
 O CI corre a cada *push* e a cada PR. Os ensaios do instalador e da atualização
-(`tools/testar_instalador.py`, `tools/testar_atualizacao.py`) são pesados e só
-correm no agendamento semanal ou a pedido, em **Actions → Run workflow**. Antes
-de uma release, corra-os.
+(`tools/testar_instalador.py`, `tools/testar_atualizacao.py`) são pesados: não
+correm em cada PR, mas correm no agendamento semanal, a pedido em
+**Actions → Run workflow**, e sempre que se marca uma versão.
 
 ---
 
@@ -134,6 +137,30 @@ python tools/build_installer.py # instalador (requer Inno Setup 6)
 
 `tools/build.py` só termina com sucesso depois de executar o executável que
 acabou de gerar. Um build que não abre a aplicação não é um build válido.
+
+---
+
+## Como sai uma versão
+
+A release sai de uma **etiqueta**, não de cada integração: isto instala-se em
+máquinas de outras pessoas, e cada versão publicada é uma versão que alguém
+pode ter.
+
+1. `core/version.py` sobe primeiro — é a fonte única da versão, lida pela
+   aplicação, pelo PyInstaller e pelo Inno Setup.
+2. O `CHANGELOG.md` fecha a secção "Não lançado": as notas da release saem de
+   lá (`tools/notas_da_versao.py`), revistas como o resto, em vez de escritas à
+   pressa na caixa do GitHub.
+3. `git tag v1.2.3 && git push origin v1.2.3` dispara o `release.yml`, que
+   antes de construir seja o que for confirma que a etiqueta diz o mesmo que o
+   código (`tools/verificar_versao.py`), corre a suíte, constrói o executável e
+   o instalador, e corre **sempre** os dois ensaios — atualização e instalador
+   de ponta a ponta.
+
+A etiqueta não define a versão: **confirma-a**. Uma etiqueta que não bate certo
+com `core/version.py` faz o workflow parar antes de publicar seja o que for —
+fica a etiqueta, não fica a release, e essa etiqueta tem de ser apagada antes de
+se voltar a tentar.
 
 ---
 
@@ -152,23 +179,30 @@ Um plugin é uma pasta com `plugin.json` e um ponto de entrada:
 }
 ```
 
-`id`, `name`, `version`, `entry_point` e `min_app_version` são obrigatórios;
-`max_app_version` e `permissions` são opcionais. Uma permissão que não esteja
-declarada no manifesto é recusada em tempo de execução — declarar é a forma de
-o utilizador saber o que o plugin vai fazer antes de o ativar.
+`id`, `name`, `version`, `entry_point` e `min_app_version` são obrigatórios
+e `max_app_version` é opcional. O `permissions` é opcional para o carregador mas
+exigido aos plugins embutidos por um teste — e **ausente não é o mesmo que
+vazio**: vazio afirma "não acede a nada", ausente é um esquecimento. Uma
+permissão não declarada é recusada em tempo de execução, o que faz o plugin
+instalar-se para falhar mais tarde.
 
 `python tools/empacotar_plugin.py <pasta>` produz o `.zip` instalável.
 
 Um plugin que funciona em desenvolvimento e falha no `.exe` costuma ter um
 módulo em falta nos `hiddenimports` do `.spec`.
 
-Se mexer num plugin **embutido**, leia primeiro o
-[ADR-0006](docs/architecture/ADR-0006-posse-dos-plugins.md): a aplicação só
-substitui a cópia instalada enquanto ela for dela e ninguém lhe tiver tocado —
-inclusive quando muda só o manifesto, sem subir a `version`. A partir do
-momento em que o utilizador instala um pacote seu por cima, o plugin passa a
-ser dele e a semeadura deixa de lhe tocar. Não conte com a semeadura para
-corrigir a cópia de quem já lhe mexeu.
+Se mexer num plugin **embutido**, suba a `version` do manifesto e
+regenere o inventário com `python tools/inventario_plugins.py` — há um teste que
+compara a impressão digital do conteúdo com a versão declarada e falha quando o
+conteúdo muda e o número fica na mesma. Não é burocracia: foi assim que o
+Calendar passou a declarar as permissões de que precisava e continuou a falhar a
+ativação, durante uma versão inteira, em todas as instalações que já existiam.
+
+O [ADR-0006](docs/architecture/ADR-0006-posse-dos-plugins.md) explica o resto:
+a aplicação só substitui a cópia instalada enquanto ela for dela e ninguém lhe
+tiver tocado. A partir do momento em que o utilizador instala um pacote seu por
+cima, o plugin passa a ser dele e a semeadura deixa de lhe tocar — não conte com
+ela para corrigir a cópia de quem já lhe mexeu.
 
 ---
 

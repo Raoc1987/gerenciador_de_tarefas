@@ -3,7 +3,7 @@
 
 pytest>=9.1.1
 pytest-cov>=7.1.0
-pyinstaller>=6.22.2
+pyinstaller>=6.22.3
 
 # Só para VALIDAR nos testes o XLSX e o PDF que escrevemos à mão.
 # Não entram no executável — ver docs/architecture/ADR-0002.

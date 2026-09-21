@@ -6,6 +6,7 @@ from tkinter import messagebox, ttk
 from auditoria_ui import JanelaAuditoria
 import alertas
 import automacoes
+import notificacoes
 import importacoes_incluidas
 import indicadores_incluidos
 import pesquisas_incluidas
@@ -17,13 +18,19 @@ from core.log import obter_logger
 from core.paths import caminho_recurso, diretorio_plugins_embutidos
 from core.plugin_manager import PluginManager
 from core.plugin_registry import RegistroEstadoBanco
-from core.permissoes import Permissao, PermissaoNegadaError
+import navegacao_incluida
+from aparencia import ESPACO, cabe_no_ecra, cores, em_pixeis, fonte, guardar_modo
+from navegacao import Concha, PaletaDeComandos, comandos
+from notificacoes_ui import CentroDeNotificacoes
+from aparencia import modo as aparencia_modo
+from core.permissoes import Permissao, PermissaoNegadaError, PoliticaNegouError
 from core.plugin_sources import FontePastasLocais
 from dashboard_ui import PainelDashboard
 import tarefas_servico
 from backup_ui import JanelaBackup
 from funcionalidades_ui import JanelaFuncionalidades
 from regras_ui import JanelaAutomacoes
+from core import organizacao
 from organizacao_ui import JanelaOrganizacao
 from language_manager import (
     IDIOMAS_SUPORTADOS,
@@ -94,40 +101,57 @@ def criar_janela(raiz: tk.Tk | None = None) -> tk.Tk:
     # A vigilancia depois do motor: assim o que ela anuncia ja encontra as
     # regras a ouvir.
     alertas.ativar()
+    # A caixa a seguir a ela, e pela mesma razao: subscreve-se depois, por isso
+    # recebe o alerta depois de as regras o terem visto. Um aviso guardado que
+    # a regra ainda nao tivesse tratado seria um aviso a dizer o que ainda nao
+    # tinha acontecido.
+    notificacoes.ativar()
     eventos.publicar(eventos.APP_INICIADA, origem="gui")
 
     app = raiz if raiz is not None else tk.Tk()
     app.deiconify()
     app.title(carregar_texto("titulo"))
-    app.geometry("800x600")
+    # 800x600 era o tamanho de um ecra de 2005. Com painel, graficos e
+    # tabelas, obriga a redimensionar antes de se poder trabalhar.
+    #
+    # Os numeros sao pensados a 100% e **escalam com o DPI**: sao medidas de
+    # conteudo -- cinco cartoes lado a lado, dois graficos -- e o conteudo
+    # cresce com a letra. Fixa-los em pixeis dava uma janela que a 150%
+    # deixava a barra de topo a sobrepor-se a si propria e fazia desaparecer
+    # o seletor de idioma sem aviso. Esta medido em docs/MEDICOES.md.
+    #
+    # E sao travados pelo ecra: um minimo maior do que o ecra e pior do que um
+    # minimo errado, porque tira a quem la esta a unica saida que tinha.
+    inicial = cabe_no_ecra(em_pixeis(1180, app), em_pixeis(740, app), app)
+    minimo = cabe_no_ecra(em_pixeis(940, app), em_pixeis(620, app), app)
+    app.geometry(f"{inicial[0]}x{inicial[1]}")
+    app.minsize(*minimo)
     _aplicar_icone(app)
 
-    # ------------------------------------------------------------ topo
-    frame_topo = ttk.Frame(app)
-    frame_topo.pack(pady=10)
+    # ------------------------------------------------ concha de navegação
+    #
+    # A concha substitui o ttk.Notebook e implementa os métodos que ele
+    # oferecia (add, forget, tab, select). É o que permite que nem a
+    # aplicação nem um único plugin instalado tenham de mudar para passarem
+    # a aparecer numa barra lateral.
+    navegacao_incluida.registar_incluidos()
 
-    # Variável de idioma (mostra o rótulo, guarda o código)
     rotulos_idioma = {rotulo: codigo for codigo, rotulo in IDIOMAS_SUPORTADOS.items()}
     idioma_var = tk.StringVar(value=IDIOMAS_SUPORTADOS[idioma_atual()])
 
-    label_titulo = ttk.Label(frame_topo, font=("Arial", 18))
-    label_titulo.pack()
-
-    label_sessao = ttk.Label(frame_topo, foreground="#7a8794", font=("Arial", 9))
-    label_sessao.pack()
+    # ------------------------------------------- abas (tarefas + plugins)
+    notebook = Concha(app)
+    notebook.pack(fill=tk.BOTH, expand=True)
 
     dropdown = ttk.OptionMenu(
-        frame_topo,
+        notebook.topo(),
         idioma_var,
         idioma_var.get(),
         *rotulos_idioma.keys(),
         command=lambda _=None: mudar_idioma(),
     )
-    dropdown.pack(pady=5)
-
-    # ------------------------------------------- abas (tarefas + plugins)
-    notebook = ttk.Notebook(app)
-    notebook.pack(fill=tk.BOTH, expand=True, padx=10)
+    dropdown.pack(side=tk.RIGHT, padx=(ESPACO["confortavel"], 0))
+    notebook.ligar_pesquisa(lambda: abrir_pesquisa())
 
     # A aba só é construída se a instalação tiver o painel: criá-la e escondê-la
     # seria pagar o custo de a desenhar para não a mostrar.
@@ -136,25 +160,29 @@ def criar_janela(raiz: tk.Tk | None = None) -> tk.Tk:
         painel_dashboard = PainelDashboard(notebook)
         notebook.add(painel_dashboard, text=carregar_texto("dashboard"))
 
-    aba_tarefas = ttk.Frame(notebook)
+    aba_tarefas = ttk.Frame(notebook, padding=ESPACO["seccao"])
     notebook.add(aba_tarefas, text=carregar_texto("tarefas"))
 
     # ------------------------------------------------- formulário de tarefa
     frame_form = ttk.Frame(aba_tarefas)
-    frame_form.pack(pady=5)
+    frame_form.pack(fill=tk.X, pady=(ESPACO["largo"], ESPACO["normal"]))
 
     label_descricao = ttk.Label(frame_form)
-    label_descricao.grid(row=0, column=0, padx=4, sticky=tk.W)
-    entrada_descricao = ttk.Entry(frame_form, width=45)
-    entrada_descricao.grid(row=1, column=0, padx=4)
+    label_descricao.grid(row=0, column=0, sticky=tk.W, pady=(0, ESPACO["minimo"]))
+    entrada_descricao = ttk.Entry(frame_form)
+    entrada_descricao.grid(row=1, column=0, sticky=tk.EW)
+    frame_form.columnconfigure(0, weight=1)
 
     label_data = ttk.Label(frame_form)
-    label_data.grid(row=0, column=1, padx=4, sticky=tk.W)
-    entrada_data = ttk.Entry(frame_form, width=16)
-    entrada_data.grid(row=1, column=1, padx=4)
+    label_data.grid(row=0, column=1, sticky=tk.W, padx=(ESPACO["confortavel"], 0),
+                    pady=(0, ESPACO["minimo"]))
+    entrada_data = ttk.Entry(frame_form, width=14)
+    entrada_data.grid(row=1, column=1, padx=(ESPACO["confortavel"], 0))
 
-    botao_adicionar = ttk.Button(frame_form, command=lambda: acao_adicionar())
-    botao_adicionar.grid(row=1, column=2, padx=4)
+    botao_adicionar = ttk.Button(
+        frame_form, style="Destaque.TButton", command=lambda: acao_adicionar()
+    )
+    botao_adicionar.grid(row=1, column=2, padx=(ESPACO["confortavel"], 0))
 
     # Só faz sentido escolher entre "as minhas" e "todas" a quem vê todas.
     apenas_minhas = tk.BooleanVar(value=False)
@@ -162,20 +190,33 @@ def criar_janela(raiz: tk.Tk | None = None) -> tk.Tk:
         frame_form, variable=apenas_minhas, command=lambda: recarregar_lista()
     )
     if tarefas_servico.ve_tudo():
-        caixa_minhas.grid(row=1, column=3, padx=(12, 0))
+        caixa_minhas.grid(row=1, column=3, padx=(ESPACO["largo"], 0))
 
     # -------------------------------------------------------- lista + ações
-    lista = tk.Listbox(aba_tarefas, width=80, height=15)
-    lista.pack(pady=10)
+    _c = cores()
+    lista = tk.Listbox(
+        aba_tarefas,
+        height=15,
+        borderwidth=1,
+        relief=tk.SOLID,
+        highlightthickness=0,
+        activestyle="none",
+        background=_c["superficie"],
+        foreground=_c["texto"],
+        selectbackground=_c["acento_suave"],
+        selectforeground=_c["texto"],
+        font=fonte("corpo"),
+    )
+    lista.pack(fill=tk.BOTH, expand=True, pady=(0, ESPACO["confortavel"]))
 
     frame_acoes = ttk.Frame(aba_tarefas)
-    frame_acoes.pack()
+    frame_acoes.pack(fill=tk.X, pady=(0, ESPACO["largo"]))
     botao_concluir = ttk.Button(frame_acoes, command=lambda: acao_concluir())
-    botao_concluir.grid(row=0, column=0, padx=4)
+    botao_concluir.grid(row=0, column=0)
     botao_remover = ttk.Button(frame_acoes, command=lambda: acao_remover())
-    botao_remover.grid(row=0, column=1, padx=4)
+    botao_remover.grid(row=0, column=1, padx=ESPACO["normal"])
     botao_atualizar = ttk.Button(frame_acoes, command=lambda: recarregar_lista())
-    botao_atualizar.grid(row=0, column=2, padx=4)
+    botao_atualizar.grid(row=0, column=2)
 
     # Ids das tarefas na mesma ordem da Listbox.
     ids_visiveis = []
@@ -222,6 +263,22 @@ def criar_janela(raiz: tk.Tk | None = None) -> tk.Tk:
         entrada_data.delete(0, tk.END)
         recarregar_lista()
 
+    def avisar_recusa(erro: PermissaoNegadaError) -> None:
+        """Mostra a razão certa para esta recusa.
+
+        Sem isto, uma tarefa recusada por uma política dizia "a tarefa é de
+        outra pessoa" — que é o contrário do que se passa, porque a
+        segregação de funções recusa precisamente as que **são** suas. Uma
+        mensagem errada é pior do que nenhuma: manda corrigir o que não está
+        mal.
+        """
+        motivo = (
+            erro.chave_mensagem
+            if isinstance(erro, PoliticaNegouError)
+            else "tarefa_de_outro"
+        )
+        messagebox.showwarning(carregar_texto("aviso"), carregar_texto(motivo))
+
     def acao_concluir():
         tarefa_id = tarefa_selecionada()
         if tarefa_id is None:
@@ -230,10 +287,8 @@ def criar_janela(raiz: tk.Tk | None = None) -> tk.Tk:
         if atual is not None:
             try:
                 tarefas_servico.concluir(tarefa_id, not atual[3])
-            except PermissaoNegadaError:
-                messagebox.showwarning(
-                    carregar_texto("aviso"), carregar_texto("tarefa_de_outro")
-                )
+            except PermissaoNegadaError as erro:
+                avisar_recusa(erro)
         recarregar_lista()
 
     def acao_remover():
@@ -247,10 +302,8 @@ def criar_janela(raiz: tk.Tk | None = None) -> tk.Tk:
         ):
             try:
                 tarefas_servico.remover(tarefa_id)
-            except PermissaoNegadaError:
-                messagebox.showwarning(
-                    carregar_texto("aviso"), carregar_texto("tarefa_de_outro")
-                )
+            except PermissaoNegadaError as erro:
+                avisar_recusa(erro)
             recarregar_lista()
 
     # ------------------------------------------------------------- plugins
@@ -304,9 +357,25 @@ def criar_janela(raiz: tk.Tk | None = None) -> tk.Tk:
             )
 
     # ------------------------------------------------------------- rodapé
-    rodape = ttk.Label(app, font=("Arial", 10))
-    rodape.pack(side=tk.BOTTOM, pady=5)
+    rodape = ttk.Label(app, style="Tenue.TLabel")
+    rodape.pack(side=tk.BOTTOM, pady=(0, ESPACO["normal"]))
     atualizar_relógio(rodape)
+
+    def alternar_aparencia():
+        """Troca entre claro e escuro, e guarda a escolha.
+
+        O efeito vê-se ao reabrir: os widgets já existentes foram construídos
+        com as cores em vigor, e reconstruir a janela inteira a meio do
+        trabalho de alguém é pior do que pedir que a feche. É o mesmo que as
+        funcionalidades já fazem, e a mensagem diz isso em vez de deixar a
+        pessoa a pensar que não funcionou.
+        """
+        novo = "escuro" if aparencia_modo() == "claro" else "claro"
+        guardar_modo(novo)
+        messagebox.showinfo(
+            carregar_texto("aparencia"),
+            carregar_texto("aparencia_ao_reabrir", modo=carregar_texto(f"aparencia_{novo}")),
+        )
 
     # ------------------------------------------------------------- idiomas
     def construir_menu():
@@ -318,6 +387,15 @@ def criar_janela(raiz: tk.Tk | None = None) -> tk.Tk:
         )
         configuracoes.add_command(
             label=carregar_texto("importar") + "...", command=abrir_importacao
+        )
+        configuracoes.add_command(
+            label=carregar_texto(
+                "aparencia_alternar",
+                modo=carregar_texto(
+                    "aparencia_escuro" if aparencia_modo() == "claro" else "aparencia_claro"
+                ),
+            ),
+            command=alternar_aparencia,
         )
         if permissoes.pode(Permissao.UTILIZADORES_GERIR):
             configuracoes.add_command(
@@ -357,16 +435,167 @@ def criar_janela(raiz: tk.Tk | None = None) -> tk.Tk:
         atualizar_textos()
     # Ctrl+F é como se usa uma pesquisa; um menu sem atalho é uma pesquisa
     # que ninguém usa.
+    # ------------------------------------------------ paleta de comandos
+    def registar_comandos():
+        """Põe na paleta o que a aplicação sabe fazer.
+
+        Cada secção da barra lateral entra como "Ir para X": quem já sabe o
+        nome chega lá sem procurar na lista. As ações entram com a permissão
+        que já exigiam — a paleta não abre portas, só encurta caminhos.
+        """
+        comandos.limpar()
+        for painel in notebook.tabs():
+            widget = app.nametowidget(painel)
+            titulo = notebook.tab(widget, "text")
+            comandos.registar(
+                f"ir.{titulo}",
+                chave_titulo=carregar_texto("comando_ir_para", destino=titulo),
+                executar=lambda w=widget: notebook.select(w),
+                chave_grupo="comandos_navegar",
+            )
+        comandos.registar("abrir.pesquisa", "pesquisar", abrir_pesquisa,
+                          chave_grupo="comandos_geral")
+        comandos.registar("abrir.plugins", "plugins", abrir_plugins,
+                          chave_grupo="comandos_sistema")
+        comandos.registar("abrir.importar", "importar", abrir_importacao,
+                          chave_grupo="comandos_geral")
+        comandos.registar("abrir.utilizadores", "utilizadores", abrir_utilizadores,
+                          chave_grupo="comandos_sistema",
+                          permissao=Permissao.UTILIZADORES_GERIR.value)
+        comandos.registar("abrir.auditoria", "auditoria", abrir_auditoria,
+                          chave_grupo="comandos_sistema",
+                          permissao=Permissao.SISTEMA_ADMIN.value)
+        comandos.registar("abrir.copia", "backup", abrir_backup,
+                          chave_grupo="comandos_sistema",
+                          permissao=Permissao.SISTEMA_ADMIN.value)
+        comandos.registar("abrir.funcionalidades", "funcionalidades", abrir_funcionalidades,
+                          chave_grupo="comandos_sistema",
+                          permissao=Permissao.SISTEMA_ADMIN.value)
+        comandos.registar("abrir.automacoes", "automacoes", abrir_automacoes,
+                          chave_grupo="comandos_sistema",
+                          permissao=Permissao.SISTEMA_ADMIN.value)
+        comandos.registar("aparencia.alternar",
+                          chave_titulo=carregar_texto(
+                              "aparencia_alternar",
+                              modo=carregar_texto(
+                                  "aparencia_escuro" if aparencia_modo() == "claro"
+                                  else "aparencia_claro"
+                              ),
+                          ),
+                          executar=alternar_aparencia,
+                          chave_grupo="comandos_sistema")
+
+    def abrir_comandos(_evento=None):
+        registar_comandos()
+        PaletaDeComandos(app)
+
+    notebook.ligar_comandos(abrir_comandos)
+
+    # ------------------------------------------------------- notificacoes
+    #
+    # O sino e o unico controlo da barra de topo que muda sozinho. Atualiza-se
+    # quando a vigilancia anuncia alguma coisa e quando o centro e mexido --
+    # nao ha sondagem periodica, porque nao ha nada que mude sem passar por um
+    # destes dois sitios.
+    def atualizar_sino():
+        try:
+            notebook.definir_por_ler(notificacoes.por_ler())
+        except tk.TclError:  # pragma: no cover - janela ja destruida
+            pass
+
+    def abrir_notificacoes(_evento=None):
+        CentroDeNotificacoes(app, ao_mudar=atualizar_sino)
+
+    notebook.ligar_notificacoes(abrir_notificacoes)
+
+    # ---------------------------------------------------- seletor de empresa
+    #
+    # Fecha a outra metade da §44: o isolamento ja existia, mas quem nao
+    # pertence a empresa nenhuma via todas ao mesmo tempo, misturadas.
+    #
+    # Quem escolhe e a organizacao, nao a interface -- e ela **recusa** uma
+    # empresa fora do alcance. A interface so oferece o que ela disser que
+    # ha, e por isso a lista e sempre relida em vez de guardada.
+    def mostrar_empresas():
+        try:
+            alcance = [(u.id, u.nome) for u in organizacao.empresas_ao_alcance()]
+            notebook.definir_empresas(alcance, organizacao.empresa_escolhida())
+        except tk.TclError:  # pragma: no cover - janela ja destruida
+            pass
+        except Exception:  # pragma: no cover - defensivo
+            logger.exception("Falha a mostrar as empresas ao alcance.")
+
+    def escolher_empresa(empresa_id):
+        """Estreita a vista, e volta a desenhar o que ja estava no ecra."""
+        try:
+            organizacao.escolher_empresa(empresa_id)
+        except organizacao.EmpresaForaDoAlcanceError:
+            # Nao devia acontecer -- a lista so oferece o que esta ao alcance
+            # --, mas se acontecer a interface tem de voltar ao que a
+            # organizacao diz, e nao ficar a mostrar um nome que nao vale.
+            logger.warning("Empresa fora do alcance recusada pelo seletor.")
+            mostrar_empresas()
+            return
+        recarregar_lista()
+        if painel_dashboard is not None:
+            painel_dashboard.atualizar()
+
+    notebook.ligar_empresas(escolher_empresa)
+    mostrar_empresas()
+
+    def por_a_seccao_no_titulo(seccao: str) -> None:
+        """"Tarefas - Gerenciador de Tarefas", como um navegador faz.
+
+        O titulo da janela e o unico sitio desta aplicacao que um leitor de
+        ecra consegue anunciar (ADR-0016), e e o que aparece no alt-tab e na
+        barra de tarefas. Sem seccao, fica so o nome do produto.
+        """
+        nome = carregar_texto("titulo")
+        try:
+            app.title(f"{seccao} — {nome}" if seccao else nome)
+        except tk.TclError:  # pragma: no cover - janela ja destruida
+            pass
+
+    notebook.ligar_seccao(por_a_seccao_no_titulo)
+    inscricao_do_sino = eventos.subscrever(
+        eventos.ANALISE_ALERTA, lambda _: atualizar_sino(), dono="gui"
+    )
+    def ao_destruir_a_concha(evento):
+        """Tira o ouvinte do barramento quando a concha se vai embora.
+
+        Sem isto, cada janela criada deixava no barramento um ouvinte a mexer
+        num sino ja destruido -- invisivel numa aplicacao que abre uma janela
+        so, e a somar-se a cada teste de interface que abre outra.
+
+        A comparacao com ``notebook`` guarda contra cancelar cedo demais: neste
+        Tk, um ``<Destroy>`` ligado a um Frame so chega por causa do proprio
+        Frame (medido), mas a barra lateral destroi e reconstroi os filhos a
+        cada redesenho, e um dia em que isso mudasse o sino deixava de se
+        atualizar **sem erro nenhum** -- a pior maneira de uma coisa deixar de
+        funcionar. O teste que protege isto nao e este ``if``, e o de
+        ``test_gui.py`` que redesenha a barra e volta a contar.
+        """
+        if evento.widget is not notebook:
+            return
+        eventos.cancelar(inscricao_do_sino)
+
+    notebook.bind("<Destroy>", ao_destruir_a_concha, add="+")
+    atualizar_sino()
+
     app.bind_all("<Control-f>", abrir_pesquisa)
     app.bind_all("<Control-F>", abrir_pesquisa)
+    app.bind_all("<Control-k>", abrir_comandos)
+    app.bind_all("<Control-K>", abrir_comandos)
 
     def atualizar_textos():
         """Reaplica todos os textos visíveis conforme o idioma atual."""
-        app.title(carregar_texto("titulo"))
-        label_titulo.config(text=carregar_texto("titulo"))
-        label_sessao.config(
-            text=carregar_texto("sessao_de", nome=permissoes.sessao().utilizador)
+        por_a_seccao_no_titulo(notebook.tab(notebook.select(), "text") or "")
+        notebook.definir_produto(carregar_texto("titulo"))
+        notebook.definir_sessao(
+            carregar_texto("sessao_de", nome=permissoes.sessao().utilizador)
         )
+        notebook.atualizar_traducoes()
+        mostrar_empresas()
         label_descricao.config(text=carregar_texto("descricao_tarefa"))
         label_data.config(text=carregar_texto("data_vencimento"))
         botao_adicionar.config(text=carregar_texto("adicionar"))

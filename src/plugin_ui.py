@@ -14,6 +14,7 @@ ficam disponíveis num campo à parte (e sempre no log).
 
 from __future__ import annotations
 
+from aparencia import fonte
 import tkinter as tk
 from pathlib import Path
 from tkinter import filedialog, messagebox, ttk
@@ -106,6 +107,18 @@ class AnfitriaoGUI:
 
     def remover_abas(self, plugin_id: str) -> None:
         """Remove todas as abas criadas por um plugin."""
+        # A barra lateral e a paleta são limpas aqui, e não no gerenciador:
+        # o núcleo não importa interface (ADR-0001), e este anfitrião é
+        # precisamente a peça da interface que o núcleo já avisa quando um
+        # plugin sai. Um destino de um plugin descarregado é um botão que
+        # abre um painel destruído.
+        from navegacao import comandos, registo
+        from painel import esquecer_por_dono as esquecer_widgets
+
+        registo.esquecer_por_dono(plugin_id)
+        comandos.esquecer_por_dono(plugin_id)
+        esquecer_widgets(plugin_id)
+
         for moldura in self._abas.pop(plugin_id, []):
             self._titulos.pop(moldura, None)
             try:
@@ -187,7 +200,7 @@ class JanelaPlugins(tk.Toplevel):
         cabecalho = ttk.Frame(self)
         cabecalho.pack(fill=tk.X, padx=12, pady=(12, 6))
         ttk.Label(
-            cabecalho, text=carregar_texto("plugins"), font=("Arial", 14, "bold")
+            cabecalho, text=carregar_texto("plugins"), font=fonte("subtitulo", negrito=True)
         ).pack(side=tk.LEFT)
         ttk.Button(
             cabecalho,

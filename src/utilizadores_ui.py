@@ -9,6 +9,7 @@ definir. Redefinir é escrever uma nova.
 
 from __future__ import annotations
 
+from aparencia import cores, fonte
 import tkinter as tk
 from tkinter import messagebox, simpledialog, ttk
 from typing import List, Optional
@@ -21,7 +22,7 @@ from language_manager import carregar_texto
 
 logger = obter_logger(__name__)
 
-COR_NEUTRA = "#7a8794"
+COR_NEUTRA = cores()["texto_suave"]
 
 
 def nome_do_papel(papel: str) -> str:
@@ -73,7 +74,7 @@ class DialogoConta(tk.Toplevel):
             justify=tk.LEFT,
         ).grid(row=4, column=0, columnspan=2, pady=(8, 0))
 
-        self.mensagem = ttk.Label(corpo, foreground="#c0392b", wraplength=300, justify=tk.LEFT)
+        self.mensagem = ttk.Label(corpo, foreground=cores()["mau"], wraplength=300, justify=tk.LEFT)
         self.mensagem.grid(row=5, column=0, columnspan=2, pady=(6, 0))
 
         acoes = ttk.Frame(corpo)
@@ -134,7 +135,7 @@ class JanelaUtilizadores(tk.Toplevel):
         cabecalho = ttk.Frame(self)
         cabecalho.pack(fill=tk.X, padx=12, pady=(12, 6))
         ttk.Label(
-            cabecalho, text=carregar_texto("utilizadores"), font=("Arial", 14, "bold")
+            cabecalho, text=carregar_texto("utilizadores"), font=fonte("subtitulo", negrito=True)
         ).pack(side=tk.LEFT)
         ttk.Button(
             cabecalho, text="+ " + carregar_texto("novo_utilizador"), command=self.nova_conta

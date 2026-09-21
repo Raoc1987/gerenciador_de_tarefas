@@ -71,6 +71,32 @@ def _registar_no_log(dados: Dict[str, Any], argumentos: Dict[str, Any]) -> None:
     logger.info("Automação: %s", preencher(argumentos.get("texto", "{id}"), dados))
 
 
+def _notificar(dados: Dict[str, Any], argumentos: Dict[str, Any]) -> None:
+    """Põe um aviso na caixa de quem está em sessão.
+
+    Argumentos da regra:
+        texto: a frase, com ``{campo}`` a ser trocado pelos dados do evento.
+        nivel: ``informacao``, ``positivo``, ``atencao`` ou ``critico``.
+
+    O texto é resolvido **aqui** e guardado já feito, ao contrário do que a
+    caixa faz com os alertas — que guardam a chave e traduzem ao mostrar. A
+    diferença não é descuido: uma frase que alguém escreveu na sua língua não
+    tem tradução para onde ir buscar, e fingir que tinha deixava a caixa a
+    mostrar a chave em vez do aviso.
+    """
+    import notificacoes
+
+    texto = preencher(argumentos.get("texto", ""), dados).strip()
+    if not texto:
+        raise ValueError("A ação 'notificar' precisa de um texto.")
+
+    notificacoes.criar(
+        texto,
+        nivel=str(argumentos.get("nivel") or notificacoes.NIVEL_PADRAO),
+        origem="regras",
+    )
+
+
 def registar_incluidas() -> None:
     """Põe no catálogo as ações que vêm com a aplicação.
 
@@ -81,4 +107,7 @@ def registar_incluidas() -> None:
     )
     acoes.registar(
         "registar", _registar_no_log, chave_descricao="acao_registar"
+    )
+    acoes.registar(
+        "notificar", _notificar, chave_descricao="acao_notificar"
     )

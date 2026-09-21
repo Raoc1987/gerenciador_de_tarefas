@@ -10,6 +10,7 @@ e não diz porquê — o pior tipo de avaria, porque parece que está tudo bem.
 
 from __future__ import annotations
 
+from aparencia import cores, fonte
 import tkinter as tk
 from tkinter import messagebox, ttk
 from typing import List, Optional
@@ -25,8 +26,8 @@ from regras.modelo import Acao, Condicao, Operador, Regra, RegraInvalidaError
 
 logger = obter_logger(__name__)
 
-COR_NEUTRA = "#7a8794"
-COR_ERRO = "#c0392b"
+COR_NEUTRA = cores()["texto_suave"]
+COR_ERRO = cores()["mau"]
 
 #: Eventos que não fazem sentido numa regra: os do próprio motor (seriam um
 #: ciclo) e o padrão que apanha tudo.
@@ -52,7 +53,7 @@ class JanelaAutomacoes(tk.Toplevel):
         cabecalho = ttk.Frame(self)
         cabecalho.pack(fill=tk.X, padx=12, pady=(12, 2))
         ttk.Label(
-            cabecalho, text=carregar_texto("automacoes"), font=("Arial", 14, "bold")
+            cabecalho, text=carregar_texto("automacoes"), font=fonte("subtitulo", negrito=True)
         ).pack(side=tk.LEFT)
         self.botao_nova = ttk.Button(
             cabecalho, text="+ " + carregar_texto("nova_regra"), command=self.nova_regra
@@ -160,7 +161,7 @@ class JanelaAutomacoes(tk.Toplevel):
             return None
         return next((r for r in self._regras if str(r.id) == selecao[0]), None)
 
-    def _dizer(self, texto: str, cor: str = "#2c7a3f") -> None:
+    def _dizer(self, texto: str, cor: str = cores()["bom"]) -> None:
         self.mensagem.configure(text=texto, foreground=cor)
 
     # ---------------------------------------------------------------- ações
@@ -218,7 +219,7 @@ class DialogoRegra(tk.Toplevel):
         self.entrada_nome.grid(row=0, column=1, pady=4, padx=(8, 0))
 
         # --- quando
-        ttk.Label(corpo, text=carregar_texto("quando"), font=("Arial", 10, "bold")).grid(
+        ttk.Label(corpo, text=carregar_texto("quando"), font=fonte("destaque", negrito=True)).grid(
             row=1, column=0, columnspan=2, sticky=tk.W, pady=(10, 2)
         )
         self.evento_var = tk.StringVar()
@@ -231,7 +232,7 @@ class DialogoRegra(tk.Toplevel):
             self.seletor_evento.current(0)
 
         # --- se (opcional)
-        ttk.Label(corpo, text=carregar_texto("se"), font=("Arial", 10, "bold")).grid(
+        ttk.Label(corpo, text=carregar_texto("se"), font=fonte("destaque", negrito=True)).grid(
             row=3, column=0, columnspan=2, sticky=tk.W, pady=(10, 2)
         )
         condicao = ttk.Frame(corpo)
@@ -251,7 +252,7 @@ class DialogoRegra(tk.Toplevel):
         ).grid(row=5, column=0, columnspan=2, sticky=tk.W)
 
         # --- então
-        ttk.Label(corpo, text=carregar_texto("entao"), font=("Arial", 10, "bold")).grid(
+        ttk.Label(corpo, text=carregar_texto("entao"), font=fonte("destaque", negrito=True)).grid(
             row=6, column=0, columnspan=2, sticky=tk.W, pady=(10, 2)
         )
         self.acao_var = tk.StringVar()

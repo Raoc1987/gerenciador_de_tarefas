@@ -112,8 +112,17 @@ def listbox(widget):
 
 
 def notebook_de(janela):
-    """O Notebook principal da janela."""
-    return next(w for w in descendentes(janela) if isinstance(w, ttk.Notebook))
+    """O contentor principal da janela — hoje a concha de navegação.
+
+    Procura pela **interface** e não pelo tipo: a concha substituiu o
+    ``ttk.Notebook`` e implementa os mesmos métodos, de propósito, para que o
+    contrato dos plugins não mudasse. Um teste que exigisse a classe passava
+    a testar a arrumação interna em vez do comportamento.
+    """
+    for widget in descendentes(janela):
+        if all(hasattr(widget, nome) for nome in ("add", "forget", "tab", "tabs", "index")):
+            return widget
+    raise AssertionError("a janela não tem contentor principal")
 
 
 def titulos_das_abas(janela):
@@ -150,7 +159,12 @@ def tarefas(janela):
 
 def test_janela_abre_com_dashboard_e_tarefas(janela):
     assert titulos_das_abas(janela) == ["Dashboard", "Tarefas"]
-    assert janela.title() == "Gerenciador de Tarefas"
+    # "Dashboard — Gerenciador de Tarefas", como um navegador faz: a secção
+    # primeiro, que é o que distingue duas janelas no alt-tab, e o produto a
+    # seguir. É também a única coisa que um leitor de ecrã consegue anunciar
+    # nesta aplicação — ver ADR-0016.
+    assert janela.title().endswith("Gerenciador de Tarefas")
+    assert janela.title().startswith("Dashboard")
 
 
 def test_menu_de_configuracoes_tem_plugins(janela):
@@ -214,7 +228,7 @@ def test_troca_de_idioma_atualiza_a_interface(janela):
     janela.update()
 
     assert lm.idioma_atual() == "en"
-    assert janela.title() == "Task Manager"
+    assert janela.title().endswith("Task Manager"), "o produto não traduziu"
     assert titulos_das_abas(janela) == ["Dashboard", "Tasks"]
     assert "Add" in botoes(tarefas(janela))
     barra = janela.nametowidget(janela.cget("menu"))
@@ -766,3 +780,95 @@ def test_auditoria_nao_apaga_nada(janela):
     assert auditoria.contar() == antes, "abrir a tela não pode mexer na trilha"
     assert "tarefa.criada" in [r.evento for r in tela.registos()]
     tela.destroy()
+
+
+# ===================================================== o sino da barra de topo
+
+
+def sino_da(app):
+    """O botão do sino dentro da concha da janela."""
+    from navegacao.concha import Concha
+
+    for widget in descendentes(app):
+        if isinstance(widget, Concha):
+            return widget._botao_sino
+    raise AssertionError("a janela não tem concha")
+
+
+def test_o_sino_conta_o_que_a_vigilancia_anuncia(janela):
+    from core import eventos, permissoes
+
+    permissoes.definir_sessao("local", "administrador", persistir=False)
+    eventos.publicar(eventos.ANALISE_ALERTA, origem="alertas",
+                     id="insight_atrasadas", nivel="critico")
+    janela.update_idletasks()
+
+    assert "1" in sino_da(janela).cget("text")
+
+
+def test_o_sino_continua_a_contar_depois_de_a_barra_ser_redesenhada(janela):
+    """Mudar de idioma destrói e reconstrói a barra lateral inteira.
+
+    O sino tem de sobreviver a isso — tanto ao número que mostra como à
+    subscrição que o alimenta. É a diferença entre um sino e um sino que
+    funcionou uma vez.
+    """
+    from navegacao.concha import Concha
+
+    from core import eventos, permissoes
+
+    permissoes.definir_sessao("local", "administrador", persistir=False)
+    for widget in descendentes(janela):
+        if isinstance(widget, Concha):
+            widget.atualizar_traducoes()
+            break
+    janela.update_idletasks()
+
+    eventos.publicar(eventos.ANALISE_ALERTA, origem="alertas",
+                     id="insight_atrasadas", nivel="critico")
+    janela.update_idletasks()
+
+    assert "1" in sino_da(janela).cget("text"), "o sino deixou de se atualizar"
+
+
+def test_o_ouvinte_do_sino_sai_com_a_janela():
+    """Senão cada janela deixava no barramento um ouvinte de uma já destruída.
+
+    Numa aplicação que abre uma janela só isto não se vê — vê-se na suite de
+    testes, que abre dezenas, e num dia em que a aplicação passe a reabrir a
+    janela depois de trocar de sessão.
+    """
+    import gui
+    from core import eventos
+
+    def ouvintes_do_sino():
+        return [i for i in eventos.barramento().inscricoes() if i.dono == "gui"]
+
+    antes = len(ouvintes_do_sino())
+    app = criar_janela_com_retentativa(gui.criar_janela)
+    app.update_idletasks()
+    assert len(ouvintes_do_sino()) == antes + 1
+
+    app.gerenciador_de_plugins.desativar_todos()
+    app.destroy()
+    assert len(ouvintes_do_sino()) == antes, "o ouvinte ficou no barramento"
+
+
+def test_o_titulo_da_janela_diz_em_que_seccao_se_esta(janela):
+    """O único sítio desta aplicação que um leitor de ecrã anuncia.
+
+    Não é um remendo de acessibilidade a fingir: o Tk 8.6 não expõe os seus
+    widgets à árvore que os leitores leem (ADR-0016), e nada aqui muda isso.
+    O que o título faz é dizer, a quem ouve a janela e a quem olha para o
+    alt-tab, onde é que está.
+    """
+    from navegacao.concha import Concha
+
+    concha = next(w for w in descendentes(janela) if isinstance(w, Concha))
+    for painel, titulo in list(concha._titulos.items()):
+        concha.select(painel)
+        janela.update_idletasks()
+        assert janela.title().startswith(titulo), (
+            f"a janela diz {janela.title()!r} com a secção {titulo!r} à frente"
+        )
+        assert "Gerenciador de Tarefas" in janela.title()

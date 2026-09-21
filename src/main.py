@@ -414,8 +414,10 @@ def abrir_aplicacao(ao_abrir_sessao=None, ao_abrir_principal=None) -> int:
     """
     import tkinter as tk
 
+    import aparencia
     import gui
     import login_ui
+    import painel
     from core import auditoria, utilizadores
 
     logger = obter_logger("main")
@@ -429,6 +431,17 @@ def abrir_aplicacao(ao_abrir_sessao=None, ao_abrir_principal=None) -> int:
 
     raiz = tk.Tk()
     raiz.withdraw()
+    # A aparência antes de existir o primeiro widget: aplicá-la depois faz o
+    # ecrã de início de sessão aparecer com um aspeto e mudar para outro à
+    # frente de quem está a olhar. Falhar aqui não impede a aplicação de
+    # abrir — fica com o aspeto de origem do Tk, que é o que tinha antes.
+    try:
+        aparencia.aplicar(raiz, aparencia.modo_guardado())
+        aparencia.instalar_no_contrato()
+        painel.instalar_no_contrato()
+    except Exception:  # pragma: no cover - defensivo
+        logger.exception("Não foi possível aplicar a aparência.")
+
     try:
         utilizador = login_ui.autenticar(raiz, ao_abrir=ao_abrir_sessao)
         if utilizador is None:

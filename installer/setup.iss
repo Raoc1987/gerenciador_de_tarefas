@@ -17,7 +17,7 @@
 ; atualizacao nem (sem confirmacao explicita) na desinstalacao.
 
 #ifndef AppVersion
-  #define AppVersion "1.0.0"
+  #define AppVersion "1.1.0"
 #endif
 #ifndef AppName
   #define AppName "Gerenciador de Tarefas"

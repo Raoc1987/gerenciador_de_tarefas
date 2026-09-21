@@ -7,9 +7,94 @@ o projeto usa [versionamento semântico](https://semver.org/lang/pt-BR/).
 
 ## [Não lançado]
 
+Nada ainda.
+
+## [1.1.0] - 2026-09-20
+
+Primeira versão **publicada**: a 1.0.0 existiu em código mas nunca chegou a
+ter uma página de download.
+
 Primeiro passo da evolução para plataforma modular de gestão. O gestor de
 tarefas continua a ser o núcleo; os módulos empresariais entrarão como
 plugins (ver `docs/architecture/`).
+
+### Segurança
+
+- **Atualize se tiver mais do que uma empresa configurada.** Num sistema com
+  duas ou mais empresas, quem administrava **dentro de uma** conseguia mexer
+  nas contas da outra: via os nomes e os papéis do pessoal, podia mudá-los de
+  empresa, desativá-los, **apagar-lhes a conta** e repor-lhes a palavra-passe
+  — que é entrar na conta de alguém. As contas e a trilha de auditoria passam
+  a ter o mesmo âmbito que as tarefas já tinham: a empresa de quem está em
+  sessão, seja qual for o papel (ADR-0015). Quem administra a instalação
+  inteira, e não está no organigrama, continua a ver tudo.
+- **Não afeta** quem tem uma empresa ou nenhuma configurada: aí não há nada a
+  isolar e nada muda.
+- Migração de banco v14: a auditoria passa a guardar de que empresa foi cada
+  ação, **no momento em que aconteceu**. As linhas anteriores ficam sem
+  empresa e passam a ser lidas só por quem administra a instalação.
+
+### Adicionado
+
+- **Centro de notificações** (ADR-0013): os avisos da análise — tarefas
+  atrasadas, ritmo a cair, um dia fora do padrão — passam a ter onde ser
+  lidos. Um sino na barra de topo com o que está por ler, e **cada pessoa vê
+  os seus**. Migração de banco v13.
+- **Seletor de empresa** na barra de topo (ADR-0014), para quem administra
+  mais do que uma: mostra uma de cada vez em vez de todas misturadas. Só
+  aparece quando há mais do que uma para escolher, e **estreita a vista sem
+  nunca a alargar** — não é forma de ver o que não se podia ver.
+- **As automações passam a poder notificar**: uma regra pode pôr um aviso na
+  caixa, além de criar tarefas e escrever no registo.
+- **Um módulo pode avisar quem o está a usar** (`contexto.notificar`), com o
+  texto nas suas próprias palavras e no idioma de quem lê.
+- **Página de download**: marcar uma versão passa a publicar o instalador
+  sozinho, depois de verificar que atualizar não apaga os dados de ninguém.
+
+### Corrigido
+
+- **O painel desloca-se.** Numa janela baixa, a caixa "Análise" ficava abaixo
+  da dobra e **não havia como lá chegar** — estava calculada, desenhada, e era
+  inalcançável. Acontecia já ao tamanho mínimo que a própria aplicação
+  declarava.
+- **A janela acompanha a letra do sistema.** Com a escala do Windows a 150%, a
+  aplicação permitia um tamanho em que a barra de topo se sobrepunha a si
+  própria: o botão de pesquisa ficava cortado e o seletor de idioma
+  desaparecia sem aviso.
+- **Os avisos de análise deixam de se perder entre pessoas.** Com duas
+  empresas, entrar na aplicação apagava os avisos de quem tinha entrado antes
+  e anunciava como resolvido um problema que continuava por resolver.
+- **As cores deixam de ser a única diferença** entre um aviso e um alerta
+  crítico: passam a ter formas diferentes, para quem não distingue vermelho de
+  âmbar.
+- O título da janela passa a dizer a secção ("Tarefas — Gerenciador de
+  Tarefas"), o que se vê no alt-tab e na barra de tarefas.
+
+### Medido, e o que a medição encontrou
+
+- **Desempenho, 1366×768 e escala do sistema**: arranque em 1,7 s, 53 MB de
+  memória, o painel a atualizar em 66 ms com 5 000 tarefas. Não há nada para
+  otimizar — e agora há um número a dizê-lo, em vez de uma suposição
+  (`docs/MEDICOES.md`).
+- **Navegação só por teclado**: todos os controlos visíveis se alcançam com
+  `Tab`, e o foco vê-se.
+
+### Não suportado, e está dito
+
+- **Leitor de ecrã** (NVDA, Narrator): **não funciona** (ADR-0016). Medido: a
+  árvore de acessibilidade do Windows não tem um único nome nem um único papel
+  para os 15 controlos do ecrã. A causa não está nesta aplicação — a
+  biblioteca gráfica desenha os seus próprios controlos e não os expõe. O ADR
+  diz o que custaria mudar.
+- **O instalador não é assinado**: o Windows mostra o aviso do SmartScreen na
+  primeira execução.
+
+### Para quem atualiza
+
+Instalar por cima **não apaga nada** — tarefas, contas, plugins e configuração
+ficam onde estão, e isso é verificado automaticamente antes de cada versão ser
+publicada. A base de dados é atualizada na primeira abertura; **depois disso,
+uma versão anterior deixa de a conseguir abrir**, por desenho.
 
 ### Adicionado
 
@@ -71,6 +156,116 @@ plugins (ver `docs/architecture/`).
 - Migração de banco v4: tabela `auditoria` com índices.
 - `textos.py`: tradução partilhada dos insights, para a mesma conclusão não
   ser escrita de duas maneiras no ecrã e no relatório.
+
+### Alterado
+
+- **"Ver todas" passa a querer dizer "as tarefas da minha empresa"**
+  (ADR-0011). Antes, quem tinha `tarefas.ver_todas` via as tarefas de **todas
+  as empresas** da instalação. Com uma empresa isso era a mesma coisa; com
+  duas, era uma fuga entre clientes.
+- Nada muda para quem tem **uma empresa só**, **nenhuma estrutura**, ou **não
+  está na estrutura**: o isolamento começa a valer no dia em que a segunda
+  empresa é criada. As tarefas anteriores à estrutura continuam visíveis para
+  toda a gente — não pertencem a empresa nenhuma, e escondê-las faria
+  desaparecer o histórico do ecrã.
+- A contagem por pessoa passou a respeitar o âmbito: somava as tarefas das
+  outras empresas.
+
+### Adicionado
+
+- **Um módulo pode isolar os seus dados por empresa** (`contexto.empresa()`,
+  ADR-0012). A plataforma responde de que empresa é a sessão; o módulo, que é
+  dono do seu esquema, carrega a coluna. Não é preguiça: a plataforma **não
+  sabe** quais das tabelas de um módulo são por empresa — as definições dele
+  e uma tabela de referência não são —, e separar ficheiros tomaria essa
+  decisão por ele.
+- **Estoque 1.1.0**: migrado para ser multiempresa, como exemplo a sério. O
+  `UNIQUE (codigo)` passou a `UNIQUE (empresa, codigo)` — os códigos vêm dos
+  fornecedores e duas empresas repetem-nos. O que já lá estava fica sem
+  empresa e visível a toda a gente, tal como as tarefas.
+- A decisão de **se** há isolamento passou para `core.organizacao`: serve as
+  tarefas e os módulos, e duas implementações da mesma decisão divergiriam.
+
+### Adicionado
+
+- **Um plugin passa a poder substituir uma tabela**
+  (`dados.migrar(..., reconstroi_tabelas=True)`). Não era possível: o SQLite
+  não sabe tirar uma restrição, e apagar uma tabela que tem filhos falha com
+  as chaves estrangeiras ligadas — sendo que `PRAGMA foreign_keys = OFF` é
+  **ignorado em silêncio dentro de uma transação**, que é onde uma migração
+  corre. Na prática, um módulo com uma chave estrangeira nunca podia mudar a
+  tabela pai. O modo novo faz o procedimento recomendado pelo SQLite e
+  **verifica** com `PRAGMA foreign_key_check` antes de gravar: se ficou uma
+  referência pendurada, desfaz tudo e a versão do esquema não avança.
+
+### Adicionado
+
+- **Motor do painel** (`src/painel/`, ADR-0010): o painel desenha o que estiver
+  **registado**, em vez de uma lista fixa escrita à mão. Um módulo passa a
+  poder pôr um **gráfico** no painel principal
+  (`contexto.registar_widget_de_painel`), e não só um número.
+- A grelha **reparte-se com a largura**: quatro colunas num ecrã largo, duas
+  num portátil a 1366×768, uma numa janela estreita.
+- Os dados vão ao widget, e não o contrário: o contexto leva o período e o
+  panorama já calculado, para dois cartões não darem números diferentes da
+  mesma coisa. É também a forma dos filtros globais.
+- Um widget sem permissão **não é construído**; um widget que rebente não
+  apaga os outros.
+
+### Adicionado
+
+- **Concha de navegação** (`src/navegacao/`, ADR-0009): barra lateral com
+  grupos em vez de uma fila de abas, barra de topo com o nome da secção, e
+  **paleta de comandos** em `Ctrl+K`. A concha implementa a interface do
+  `ttk.Notebook` de propósito — **nenhum plugin instalado precisa de mudar
+  uma linha** para passar a aparecer na barra lateral.
+- Uma secção declara-se (`navegacao.registar`) com o grupo, a ordem, a
+  permissão e a funcionalidade de que depende, em vez de ser acrescentada à
+  mão à janela principal. É o mesmo padrão dos indicadores e da pesquisa.
+- A barra lateral recolhe para ícones; o conteúdo é uma pilha, por isso mudar
+  de secção e voltar não perde o que estava escolhido.
+- `docs/PLATAFORMA.md`: auditoria do plano de evolução contra o que existe,
+  com o que está **implementado**, **em parte**, **não implementado** e **não
+  validado**.
+
+### Adicionado
+
+- **Aparência** (`src/aparencia/`, ADR-0008): cores, espaços e tipos de letra
+  num sítio só, aplicados ao ttk uma vez no arranque. O programa deixa de usar
+  o tema de origem do sistema — relevo nenhum, uma escala de espaçamento, e
+  uma cor de ênfase usada pouco. **Modo escuro**, escolhido em
+  `Configurações` e guardado entre arranques.
+- Cada par de cores que aparece no ecrã é **medido** contra os limiares da
+  WCAG 2.1, nos dois modos, por `tests/test_aparencia.py`. Foi a medição que
+  encontrou o que já lá estava: o cinzento do texto secundário dava 3,67 de
+  contraste sobre branco, abaixo do mínimo de 4,5.
+- Dois testes de arquitetura impedem a decadência: nenhum ecrã escreve uma cor
+  em hexadecimal nem escolhe a sua própria família de letra.
+- Um plugin acompanha o tema sem fazer nada (as classes de estilo são
+  globais); para desenhar num `Canvas`, o contexto dá `cor()`, `fonte()` e
+  `espaco()`.
+
+### Adicionado
+
+- **Políticas por atributo** (`core/permissoes.py`, ADR-0007): o papel responde
+  a "podes concluir tarefas?"; uma política responde a "podes concluir
+  **esta**?". Uma política recebe o par `(ação, objeto)` e **só pode recusar**
+  — nunca concede, corre depois do papel e, se rebentar, recusa. É o que torna
+  seguro um plugin registar uma: no pior caso tranca alguém de fora do seu
+  próprio módulo, e isso vê-se; se pudesse conceder, o pior caso era abrir uma
+  porta em silêncio.
+- **Segregação de funções** (funcionalidade, **nasce desligada**): com ela
+  ligada, quem cria uma tarefa não a dá por concluída — nem quem administra,
+  porque um controlo que o dono da instalação contorna não é um controlo.
+  Reabrir continua a ser possível, e as tarefas anteriores às contas não são
+  abrangidas. Ligue-a só onde exista outra pessoa para fechar o trabalho.
+- Uma tentativa recusada por uma política publica `politica.recusou` e fica na
+  trilha de auditoria. É o que separa um controlo de um obstáculo: um
+  obstáculo impede e cala-se. Perguntar (`pode`) não conta como tentativa —
+  senão a trilha enchia-se do que a interface pergunta para desenhar botões.
+- Um plugin pode registar políticas sobre os seus objetos
+  (`contexto.registar_politica`), no seu espaço de nomes, e elas saem quando
+  ele é descarregado.
 
 ### Alterado
 

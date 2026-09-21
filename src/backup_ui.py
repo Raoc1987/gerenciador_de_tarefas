@@ -8,6 +8,7 @@ consegue ver por dentro não é uma escolha informada.
 
 from __future__ import annotations
 
+from aparencia import cores, fonte
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 from typing import Optional
@@ -20,8 +21,8 @@ from language_manager import carregar_texto
 
 logger = obter_logger(__name__)
 
-COR_NEUTRA = "#7a8794"
-COR_AVISO = "#c0392b"
+COR_NEUTRA = cores()["texto_suave"]
+COR_AVISO = cores()["mau"]
 
 TIPOS = [("ZIP", "*.zip")]
 
@@ -52,7 +53,7 @@ class JanelaBackup(tk.Toplevel):
         corpo.pack(fill=tk.BOTH, expand=True)
 
         ttk.Label(
-            corpo, text=carregar_texto("backup"), font=("Arial", 14, "bold")
+            corpo, text=carregar_texto("backup"), font=fonte("subtitulo", negrito=True)
         ).pack(anchor=tk.W)
 
         ttk.Label(
@@ -105,7 +106,7 @@ class JanelaBackup(tk.Toplevel):
 
     # ------------------------------------------------------------- apoio
 
-    def _dizer(self, texto: str, cor: str = "#2c7a3f") -> None:
+    def _dizer(self, texto: str, cor: str = cores()["bom"]) -> None:
         self.mensagem.configure(text=texto, foreground=cor)
 
     # ------------------------------------------------------------- ações

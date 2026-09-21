@@ -339,8 +339,17 @@ def test_dashboard_respeita_permissoes(raiz, monkeypatch):
     raiz.update()
 
     textos = rotulos(widget)
-    assert any("permissão" in t.lower() for t in textos)
-    assert "—" in textos, "os cartões não mostram números"
+    assert any("permissão" in t.lower() for t in textos), "o painel tem de dizer porquê"
+
+    # Antes, os cartões apareciam com "—". Agora não aparecem de todo: um
+    # widget cuja permissão a sessão não tem não é sequer construído, que é a
+    # mesma regra dos destinos de navegação e dos destinos de importação.
+    #
+    # A asserção passou a ser mais exigente do que era, e não menos: em vez de
+    # "os cartões mostram travessões", exige que **nenhum número** apareça no
+    # painel inteiro.
+    numeros = [t for t in textos if any(c.isdigit() for c in t)]
+    assert not numeros, f"sem permissão, o painel mostrou números: {numeros}"
 
 
 def test_erro_no_calculo_nao_derruba_o_dashboard(raiz):

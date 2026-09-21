@@ -210,6 +210,67 @@ _MIGRACOES: List[Sequence[str]] = [
         "ALTER TABLE plugins ADD COLUMN proveniencia TEXT NOT NULL DEFAULT ''",
         "ALTER TABLE plugins ADD COLUMN impressao TEXT NOT NULL DEFAULT ''",
     ),
+    # v13 -- a caixa de notificacoes, e o destinatario do que a vigilancia ja
+    # anunciou (ver src/notificacoes.py e ADR-0013).
+    #
+    # `alertas_vistos` era global: uma chave, uma linha. Com duas empresas isso
+    # e um defeito medido, nao uma hipotese -- quem entrasse a seguir
+    # encontrava a chave de outra pessoa em falta no seu proprio ambito,
+    # anunciava `analise.resolvido` por um problema que continuava por
+    # resolver, e apagava a memoria do primeiro. A memoria passa a ser de quem
+    # foi avisado, que e o que ela sempre quis dizer.
+    #
+    # As linhas antigas ficam com destinatario '' -- nao se sabe a quem foram
+    # anunciadas, e inventar um dono seria escrever no banco uma coisa que
+    # nunca aconteceu. O efeito e o mesmo de `esquecer_tudo`, que ja esta
+    # documentado: cada pessoa volta a ser avisada uma vez do que ainda for
+    # verdade. Nao se apaga nada.
+    (
+        """
+        CREATE TABLE IF NOT EXISTS notificacoes (
+            id            INTEGER PRIMARY KEY AUTOINCREMENT,
+            destinatario  TEXT    NOT NULL,
+            chave         TEXT    NOT NULL,
+            parametros    TEXT    NOT NULL DEFAULT '{}',
+            nivel         TEXT    NOT NULL DEFAULT 'informacao',
+            origem        TEXT    NOT NULL DEFAULT '',
+            assunto       TEXT    NOT NULL DEFAULT '',
+            criada_em     TEXT    NOT NULL,
+            lida_em       TEXT
+        )
+        """,
+        "CREATE INDEX IF NOT EXISTS idx_notificacoes_caixa "
+        "ON notificacoes (destinatario, lida_em, id)",
+        """
+        CREATE TABLE IF NOT EXISTS alertas_vistos_v13 (
+            destinatario  TEXT NOT NULL DEFAULT '',
+            chave         TEXT NOT NULL,
+            nivel         TEXT NOT NULL,
+            visto_em      TEXT NOT NULL,
+            PRIMARY KEY (destinatario, chave)
+        )
+        """,
+        "INSERT INTO alertas_vistos_v13 (destinatario, chave, nivel, visto_em) "
+        "SELECT '', chave, nivel, visto_em FROM alertas_vistos",
+        "DROP TABLE alertas_vistos",
+        "ALTER TABLE alertas_vistos_v13 RENAME TO alertas_vistos",
+    ),
+    # v14 -- a empresa a que cada registo de auditoria pertence (ADR-0015).
+    #
+    # Guarda-se a empresa de **quem agiu, no momento em que agiu**, pela mesma
+    # razao que a tarefa guarda a unidade: se a pessoa mudar de empresa
+    # amanha, o que ela fez continua a pertencer a onde foi feito. Deduzi-lo
+    # hoje a partir da conta seria reescrever o passado a cada mudanca de
+    # organigrama.
+    #
+    # As linhas antigas ficam com NULL: sao anteriores a esta coluna e nao se
+    # sabe. NULL quer dizer "da instalacao, nao de uma empresa" -- e e o que
+    # uma instalacao com uma empresa so continua a escrever, por isso nada
+    # muda para quem nao usa multiempresa.
+    (
+        "ALTER TABLE auditoria ADD COLUMN empresa_id INTEGER",
+        "CREATE INDEX IF NOT EXISTS idx_auditoria_empresa ON auditoria (empresa_id)",
+    ),
 ]
 
 #: Colunas devolvidas por :func:`buscar_tarefas` — contrato estável de que a
@@ -222,31 +283,55 @@ COLUNAS_TAREFA_COMPLETA = COLUNAS_TAREFA + ", concluida_em, criada_por"
 SEM_DONO = ""
 
 
-def _clausula_de_dono(dono: Optional[str], unidades: Optional[Sequence[int]] = None) -> tuple:
+def _clausula_de_dono(
+    dono: Optional[str],
+    unidades: Optional[Sequence[int]] = None,
+    empresa: Optional[Sequence[int]] = None,
+) -> tuple:
     """Condição SQL e parâmetros para o âmbito de quem está a ver.
 
-    ``dono=None`` significa "não filtrar". Quem pede as suas tarefas vê também
-    as que não têm dono: são anteriores às contas e não pertencem a mais
-    ninguém.
+    ``dono=None`` significa "não filtrar por dono". Quem pede as suas tarefas
+    vê também as que não têm dono: são anteriores às contas e não pertencem a
+    mais ninguém.
 
     ``unidades`` alarga o âmbito às tarefas dessas unidades — é assim que um
     chefe de departamento vê o trabalho da sua equipa além do seu. A relação
     é **OU**: as minhas *ou* as da minha unidade. Uma lista vazia não alarga
     nada, que é o que acontece a quem não tem lugar na estrutura.
 
+    ``empresa`` **estreita**, e é a única aqui que o faz: limita o que se vê
+    às unidades da empresa de quem está em sessão. Aplica-se a quem vê tudo,
+    que é precisamente quem, sem isto, veria as tarefas de todas as empresas
+    da instalação.
+
+    As tarefas **sem unidade** ficam sempre dentro: são anteriores à
+    estrutura e não pertencem a empresa nenhuma. Sem esta exceção, criar a
+    segunda empresa fazia desaparecer o histórico inteiro do ecrã de toda a
+    gente — o dado continuaria lá, mas ninguém acreditaria nisso.
+
     Quem decide o que vai aqui dentro é :mod:`tarefas_servico`; o
     armazenamento só sabe montar a condição.
     """
-    if dono is None:
-        return "", []
+    partes: List[str] = []
+    parametros: List = []
 
-    condicao = "(criada_por = ? OR criada_por = ?)"
-    parametros: List = [dono, SEM_DONO]
-    if unidades:
-        marcadores = ", ".join("?" for _ in unidades)
-        condicao = f"({condicao} OR unidade_id IN ({marcadores}))"
-        parametros.extend(unidades)
-    return condicao, parametros
+    if dono is not None:
+        condicao = "(criada_por = ? OR criada_por = ?)"
+        parametros.extend([dono, SEM_DONO])
+        if unidades:
+            marcadores = ", ".join("?" for _ in unidades)
+            condicao = f"({condicao} OR unidade_id IN ({marcadores}))"
+            parametros.extend(unidades)
+        partes.append(condicao)
+
+    if empresa:
+        marcadores = ", ".join("?" for _ in empresa)
+        partes.append(f"(unidade_id IN ({marcadores}) OR unidade_id IS NULL)")
+        parametros.extend(empresa)
+
+    if not partes:
+        return "", []
+    return " AND ".join(partes), parametros
 
 
 def caminho_bd() -> Path:
@@ -385,6 +470,7 @@ def buscar_tarefas(
     incluir_concluidas: bool = True,
     de: Optional[str] = None,
     unidades: Optional[Sequence[int]] = None,
+    empresa: Optional[Sequence[int]] = None,
 ) -> List[tuple]:
     """Tarefas como tuplas ``(id, descrição, vencimento, concluída, criada_em)``.
 
@@ -398,7 +484,7 @@ def buscar_tarefas(
     parametros: List = []
     if not incluir_concluidas:
         condicoes.append("concluida = 0")
-    clausula, valores = _clausula_de_dono(de, unidades)
+    clausula, valores = _clausula_de_dono(de, unidades, empresa)
     if clausula:
         condicoes.append(clausula)
         parametros.extend(valores)
@@ -470,7 +556,9 @@ def remover_tarefa(tarefa_id: int) -> bool:
 
 
 def buscar_tarefas_completas(
-    de: Optional[str] = None, unidades: Optional[Sequence[int]] = None
+    de: Optional[str] = None,
+    unidades: Optional[Sequence[int]] = None,
+    empresa: Optional[Sequence[int]] = None,
 ) -> List[tuple]:
     """Tarefas com todas as colunas, incluindo ``concluida_em`` e ``criada_por``.
 
@@ -478,7 +566,7 @@ def buscar_tarefas_completas(
     cinco colunas de que a interface e os plugins dependem.
     """
     consulta = f"SELECT {COLUNAS_TAREFA_COMPLETA} FROM tarefas"
-    clausula, parametros = _clausula_de_dono(de, unidades)
+    clausula, parametros = _clausula_de_dono(de, unidades, empresa)
     if clausula:
         consulta += " WHERE " + clausula
     consulta += " ORDER BY id ASC"
@@ -487,12 +575,15 @@ def buscar_tarefas_completas(
 
 
 def tarefas_por_data(
-    data_iso: str, de: Optional[str] = None, unidades: Optional[Sequence[int]] = None
+    data_iso: str,
+    de: Optional[str] = None,
+    unidades: Optional[Sequence[int]] = None,
+    empresa: Optional[Sequence[int]] = None,
 ) -> List[tuple]:
     """Tarefas cujo vencimento é exatamente ``data_iso`` (``AAAA-MM-DD``)."""
     consulta = f"SELECT {COLUNAS_TAREFA} FROM tarefas WHERE data_vencimento = ?"
     parametros: List = [data_iso]
-    clausula, valores = _clausula_de_dono(de, unidades)
+    clausula, valores = _clausula_de_dono(de, unidades, empresa)
     if clausula:
         consulta += " AND " + clausula
         parametros.extend(valores)

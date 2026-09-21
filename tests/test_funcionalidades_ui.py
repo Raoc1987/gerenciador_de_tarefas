@@ -121,8 +121,10 @@ def test_repor_volta_tudo_ao_inicio(janela):
     funcionalidades.definir("relatorios", False)
     janela.repor()
 
-    assert all(e.ativa for e in janela.estados())
-    assert all(bool(v.get()) for v in janela._variaveis.values())
+    # Repor devolve cada uma ao seu padrão, não liga tudo.
+    for e in janela.estados():
+        assert e.ativa is e.funcionalidade.padrao
+        assert bool(janela._variaveis[e.chave].get()) is e.ativa
 
 
 # ================================================================ PERMISSÕES
@@ -155,12 +157,24 @@ def test_quem_nao_administra_nao_mexe(raiz):
 # ======================================= O EFEITO REAL NA JANELA PRINCIPAL
 
 
-def abas(janela) -> list:
-    from tkinter import ttk
+def _contentor_principal(raiz):
+    """O contentor principal, encontrado pela interface e não pelo tipo.
 
-    notebook = next(
-        f for f in janela.winfo_children() if isinstance(f, ttk.Notebook)
-    )
+    A concha de navegação substituiu o ``ttk.Notebook`` e implementa os
+    mesmos métodos, de propósito. Um teste que exija a classe passa a testar
+    a arrumação interna em vez do comportamento.
+    """
+    por_ver = [raiz]
+    while por_ver:
+        widget = por_ver.pop(0)
+        if all(hasattr(widget, n) for n in ("add", "forget", "tab", "tabs", "index")):
+            return widget
+        por_ver.extend(widget.winfo_children())
+    raise AssertionError("não há contentor principal")
+
+
+def abas(janela) -> list:
+    notebook = _contentor_principal(janela)
     return [notebook.tab(aba, "text") for aba in notebook.tabs()]
 
 

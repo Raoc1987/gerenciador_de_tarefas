@@ -424,3 +424,181 @@ def test_o_administrador_tem_tudo_o_que_o_modulo_registou(estoque_instalado):
 
     permissoes.definir_sessao("ana", "administrador", persistir=False)
     assert all(permissoes.pode(nome) for nome in manifesto.permissoes_proprias)
+
+
+# ===================================== o módulo como prova da multiempresa
+#
+# O Estoque existe para verificar a arquitetura, e esta é a verificação mais
+# exigente até agora: a plataforma **não pode** isolar os dados de um módulo
+# sozinha, porque não conhece as tabelas dele. O que ela dá é a resposta a
+# "de que empresa é esta sessão"; quem é dono do esquema decide o resto.
+
+
+@pytest.fixture
+def inventario_de_empresa(tmp_path):
+    """Um inventário cuja empresa se pode trocar de teste para teste."""
+    dominio = carregar_dominio()
+    atual = {"empresa": None}
+    dados = ArmazenamentoPlugin("estoque", tmp_path)
+    inventario = dominio.Inventario(dados, lambda: atual["empresa"])
+    inventario.preparar()
+    return inventario, atual, dominio
+
+
+def test_o_esquema_chega_a_versao_que_tem_a_empresa(inventario_de_empresa):
+    inventario, _, _ = inventario_de_empresa
+    assert inventario._dados.versao() == 2
+
+
+def test_cada_empresa_ve_so_os_seus_itens(inventario_de_empresa):
+    inventario, atual, _ = inventario_de_empresa
+
+    atual["empresa"] = 1
+    inventario.criar_item("CX-01", "Caixa da Acme")
+    atual["empresa"] = 2
+    inventario.criar_item("PAR-01", "Parafuso da Rival")
+
+    assert [i.nome for i in inventario.listar()] == ["Parafuso da Rival"]
+    atual["empresa"] = 1
+    assert [i.nome for i in inventario.listar()] == ["Caixa da Acme"]
+
+
+def test_o_mesmo_codigo_em_empresas_diferentes_deixa_de_ser_conflito(inventario_de_empresa):
+    """Os códigos vêm dos fornecedores; duas empresas repetem-nos naturalmente.
+
+    É por isto que a chave única teve de ser reconstruída — e é por isso que
+    o contrato precisou de saber substituir uma tabela.
+    """
+    inventario, atual, _ = inventario_de_empresa
+
+    atual["empresa"] = 1
+    inventario.criar_item("CX-01", "Caixa da Acme")
+    atual["empresa"] = 2
+    criado = inventario.criar_item("CX-01", "Caixa da Rival")
+    assert criado.codigo == "CX-01"
+
+
+def test_dentro_da_mesma_empresa_o_codigo_continua_unico(inventario_de_empresa):
+    inventario, atual, dominio = inventario_de_empresa
+
+    atual["empresa"] = 1
+    inventario.criar_item("CX-01", "Caixa")
+    with pytest.raises(dominio.CodigoDuplicadoError):
+        inventario.criar_item("cx-01", "Outra caixa")
+
+
+def test_um_id_de_outra_empresa_nao_abre(inventario_de_empresa):
+    """A forma clássica de um isolamento ter buracos: chegar pelo id.
+
+    Se ``obter`` não tivesse âmbito, um item que não aparece na lista abria
+    na mesma — e ``exigir`` (que guarda a escrita) passa por ``obter``.
+    """
+    inventario, atual, dominio = inventario_de_empresa
+
+    atual["empresa"] = 1
+    da_acme = inventario.criar_item("CX-01", "Caixa da Acme")
+
+    atual["empresa"] = 2
+    assert inventario.obter(da_acme.id) is None
+    with pytest.raises(dominio.ItemNaoEncontradoError):
+        inventario.exigir(da_acme.id)
+
+
+def test_nao_se_pode_mexer_no_stock_de_outra_empresa(inventario_de_empresa):
+    """A escrita é guardada pela mesma porta que a leitura."""
+    inventario, atual, dominio = inventario_de_empresa
+
+    atual["empresa"] = 1
+    da_acme = inventario.criar_item("CX-01", "Caixa da Acme")
+    inventario.entrada(da_acme.id, 10)
+
+    atual["empresa"] = 2
+    with pytest.raises(dominio.ItemNaoEncontradoError):
+        inventario.entrada(da_acme.id, 5)
+    with pytest.raises(dominio.ItemNaoEncontradoError):
+        inventario.definir_ativo(da_acme.id, False)
+
+
+def test_o_historico_nao_mostra_movimentos_de_outra_empresa(inventario_de_empresa):
+    """Senão dava a ver códigos e quantidades pela porta das traseiras."""
+    inventario, atual, _ = inventario_de_empresa
+
+    atual["empresa"] = 1
+    da_acme = inventario.criar_item("CX-01", "Caixa da Acme")
+    inventario.entrada(da_acme.id, 10)
+
+    atual["empresa"] = 2
+    da_rival = inventario.criar_item("PAR-01", "Parafuso")
+    inventario.entrada(da_rival.id, 3)
+
+    vistos = inventario.movimentos()
+    assert [m.item_id for m in vistos] == [da_rival.id]
+
+
+# ------------------------------------ o que a migração não podia ter partido
+
+
+def test_o_que_ja_estava_la_continua_visivel_a_todos(tmp_path):
+    """A regra das tarefas, aplicada aos dados de um módulo.
+
+    Um item criado antes de haver estrutura não pertence a empresa nenhuma.
+    Escondê-lo faria desaparecer o inventário inteiro no dia em que a segunda
+    empresa fosse criada — e o dado continuaria lá, sem ninguém acreditar.
+    """
+    dominio = carregar_dominio()
+    dados = ArmazenamentoPlugin("estoque", tmp_path)
+
+    # Uma instalação anterior: só a v1, e um item sem empresa.
+    antes = dominio.Inventario(dados)
+    antes.preparar()
+    antes.criar_item("ANTIGO-01", "Comprado antes da estrutura")
+
+    # Agora com empresas.
+    atual = {"empresa": 7}
+    depois = dominio.Inventario(dados, lambda: atual["empresa"])
+    assert [i.codigo for i in depois.listar()] == ["ANTIGO-01"]
+
+    atual["empresa"] = 9
+    assert [i.codigo for i in depois.listar()] == ["ANTIGO-01"]
+
+
+def test_a_migracao_nao_perde_itens_nem_movimentos(tmp_path):
+    dominio = carregar_dominio()
+    dados = ArmazenamentoPlugin("estoque", tmp_path)
+
+    # O esquema antigo, e uma linha escrita como ele a escrevia: sem coluna
+    # de empresa, porque nessa versão ela não existia. Passar pelo
+    # ``criar_item`` de hoje seria testar a migração com dados que a versão
+    # antiga nunca teria produzido.
+    for versao, *instrucoes in dominio.MIGRACOES:
+        dados.migrar(versao, *instrucoes)
+    item_id = dados.executar(
+        "INSERT INTO itens (codigo, nome, unidade, minimo, ativo, criado_em) "
+        "VALUES ('CX-01', 'Caixa', 'un', 5, 1, '2026-01-01T00:00:00')"
+    )
+    dados.executar(
+        "INSERT INTO movimentos (item_id, tipo, quantidade, motivo, quem, momento) "
+        "VALUES (?, 'entrada', 12, 'compra', 'ana', '2026-01-02T00:00:00')",
+        (item_id,),
+    )
+
+    # A reconstrução.
+    for versao, *instrucoes in dominio.RECONSTRUCOES:
+        assert dados.migrar(versao, *instrucoes, reconstroi_tabelas=True)
+
+    novo = dominio.Inventario(dados)
+    reposto = novo.exigir(item_id)
+    assert (reposto.codigo, reposto.nome, reposto.minimo) == ("CX-01", "Caixa", 5)
+    assert reposto.quantidade == 12, "o saldo vem dos movimentos, que têm de estar lá"
+    assert [m.motivo for m in novo.movimentos()] == ["compra"]
+
+
+def test_sem_empresa_o_modulo_comporta_se_como_sempre(tmp_path):
+    """Uma instalação com uma empresa só não nota diferença nenhuma."""
+    dominio = carregar_dominio()
+    inventario = dominio.Inventario(ArmazenamentoPlugin("estoque", tmp_path))
+    inventario.preparar()
+
+    inventario.criar_item("CX-01", "Caixa")
+    inventario.criar_item("PAR-01", "Parafuso")
+    assert len(inventario.listar()) == 2

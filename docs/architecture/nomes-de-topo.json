@@ -1,8 +1,6 @@
 {
   "_leia_me": "Inventário do espaço de nomes de topo de src/ (ver ADR-0005). src/ está no sys.path, por isso cada nome aqui é um nome no espaço global de módulos, partilhado com tudo o que estiver instalado. Um nome genérico colide com um pacote do PyPI: foi assim que src/workflow/ bateu com o hook do pacote `workflow` e o build parou, com os testes todos verdes. tests/test_arquitetura.py falha se aparecer um nome que não conste daqui — é o que obriga a decisão a ser tomada quando o módulo é criado, e não quando o build parte.",
-
   "_regra": "Um nome novo é uma palavra do domínio, em português. O índice de pacotes é um espaço de nomes em inglês; não partilhar a língua é a maneira mais barata de não partilhar nomes.",
-
   "expostos_a_plugins": {
     "_leia_me": "Nomes congelados. Um plugin já instalado na máquina de alguém escreve `import utils`; renomear parte esse plugin sem aviso e sem forma de o corrigir à distância. O risco de colisão é real mas é menor do que partir código que não controlamos. Têm de coincidir com os hiddenimports do GerenciadorDeTarefas.spec.",
     "calendar_widget": "Widget de calendário reutilizável; o plugin Calendar importa-o.",
@@ -10,13 +8,11 @@
     "language_manager": "Tradução. Um plugin que não traduza não serve para um produto em três idiomas.",
     "utils": "Formatação partilhada (datas, números). Está no SDK desde a primeira versão."
   },
-
   "excecoes_de_nome": {
     "_leia_me": "Nomes genéricos em inglês que ficaram, cada um com a razão. Não são dívida escondida: estão aqui, e o teste de colisão com os hooks do PyInstaller cobre-os a cada execução.",
     "gui": "Janela principal. É interno — um plugin não o pode importar — por isso renomeá-lo é possível, mas o nome aparece em 42 sítios e no vocabulário de toda a documentação. Fica declarado e vigiado; muda no dia em que o teste de colisão o apanhar.",
     "main": "Ponto de entrada passado ao PyInstaller. O nome faz parte da receita do empacotamento e da convenção do Python."
   },
-
   "nomes": {
     "alertas": "Análise que passa a alerta, com persistência do que já foi anunciado.",
     "analitica": "Métricas, séries, previsão e insights. Sem interface.",
@@ -49,6 +45,14 @@
     "tarefas_servico": "Serviço das tarefas: permissões e âmbito por cima da persistência.",
     "textos": "Frases derivadas de números, traduzidas.",
     "utilizadores_ui": "Ecrã de contas e papéis.",
-    "utils": "Ver expostos_a_plugins."
+    "utils": "Ver expostos_a_plugins.",
+    "politicas_incluidas": "Políticas de acesso por atributo que vêm com a aplicação.",
+    "aparencia": "Cores, espaços e tipos de letra, e a sua aplicação ao ttk.",
+    "navegacao": "A concha: barra lateral, barra de topo e área de conteúdo.",
+    "navegacao_incluida": "Onde as secções que vêm com a aplicação vivem na barra lateral.",
+    "painel": "Motor do painel: widgets declarados, grelha que se reparte, e o contexto dos filtros.",
+    "painel_incluido": "Os widgets de painel que vêm com a aplicação.",
+    "notificacoes": "Caixa de entrada: o que foi anunciado a cada pessoa, e o que ja foi lido.",
+    "notificacoes_ui": "Sino na barra de topo e o centro onde se leem."
   }
 }

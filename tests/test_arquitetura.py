@@ -13,6 +13,7 @@ Falhar aqui não é um bug a tapar: é uma decisão de arquitetura por tomar.
 
 import ast
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -34,6 +35,12 @@ INTERFACE = {
     "login_ui",
     "utilizadores_ui",
     "componentes",
+    # Importa tkinter: quem não pode tocar na interface também não
+    # pode tocar no que a pinta.
+    "aparencia",
+    "navegacao",
+    "painel",
+    "notificacoes_ui",
 }
 
 
@@ -484,6 +491,78 @@ def test_cada_plugin_embutido_declara_o_acesso_que_usa():
         )
 
 
+# ============================================ A APARÊNCIA NÃO SE ESCOLHE À MÃO
+
+
+#: Onde é legítimo escrever uma cor: é lá que elas são definidas.
+DONOS_DA_PALETA = {"paleta.py", "contraste.py", "graficos.py"}
+
+#: Uma cor escrita à mão.
+COR_A_OLHO = re.compile(r"#[0-9a-fA-F]{6}")
+
+#: ``font=("Arial", ...)`` — uma família de letra escolhida no sítio errado.
+LETRA_A_OLHO = re.compile(r'font=\(\s*"[A-Z]')
+
+
+def _varrer(padrao) -> dict:
+    """Que ficheiros de ``src/`` casam com este padrão, tirando os donos."""
+    achados = {}
+    for arquivo in SRC.rglob("*.py"):
+        if "__pycache__" in arquivo.parts or arquivo.name in DONOS_DA_PALETA:
+            continue
+        casos = padrao.findall(arquivo.read_text(encoding="utf-8"))
+        if casos:
+            achados[arquivo.name] = sorted(set(casos))
+    return achados
+
+
+def test_nenhum_ecra_escolhe_a_sua_propria_cor():
+    """Um token vale enquanto ninguém escrever um hexadecimal ao lado dele.
+
+    Não é hipotético: antes da paleta, onze valores andavam copiados por doze
+    ficheiros de interface, e o cinzento do texto secundário dava 3,67 de
+    contraste — abaixo do mínimo da norma. Ninguém errou de propósito: foi
+    escolhido a olho, e a olho não se vê a diferença entre 3,67 e 4,5.
+
+    A exceção é ``graficos.py``, que tem os preenchimentos dos gráficos: são
+    cores de área, com um limiar diferente do texto, e estão lá com a razão
+    escrita.
+    """
+    culpados = _varrer(COR_A_OLHO)
+    assert not culpados, (
+        f"Cores escritas à mão: {culpados}. Peça o papel a aparencia.cores() "
+        f"— senão o modo escuro não as alcança e ninguém mede o contraste."
+    )
+
+
+def test_nenhum_ecra_escolhe_a_sua_propria_letra():
+    """O mesmo para a tipografia.
+
+    ``("Arial", 9)`` espalhado é o que faz dois ecrãs do mesmo produto
+    parecerem de produtos diferentes — e ignora a letra do sistema de quem
+    está a usar.
+    """
+    culpados = _varrer(LETRA_A_OLHO)
+    assert not culpados, (
+        f"Famílias de letra escritas à mão: {culpados}. Use aparencia.fonte()."
+    )
+
+
+def test_estas_duas_regras_apanhariam_mesmo_uma_fuga(tmp_path, monkeypatch):
+    """Prova que os padrões detetam o que dizem detetar.
+
+    Vale a pena, e não é zelo a mais: a primeira versão desta regra passava
+    sempre. O padrão tinha ficado com um caractere de escape errado e exigia
+    um byte que nunca aparece, por isso nunca casava com nada. Ficou verde
+    desde o primeiro minuto e não verificava coisa nenhuma — que é pior do
+    que não existir, porque dá a impressão de estar coberto.
+    """
+    assert COR_A_OLHO.findall('cor = "#7a8794"') == ["#7a8794"]
+    assert COR_A_OLHO.findall('x = 3  # sem cor aqui') == []
+    assert LETRA_A_OLHO.findall('font=("Arial", 9)')
+    assert LETRA_A_OLHO.findall('font=fonte("corpo")') == []
+
+
 # ====================================================== DOCUMENTOS FIÉIS
 
 
@@ -501,6 +580,46 @@ def test_a_classificacao_cobre_tudo_o_que_existe(classificacao):
     for pasta in PLUGINS.iterdir():
         if pasta.is_dir():
             assert pasta.name in classificacao, f"o plugin {pasta.name} não está classificado."
+
+
+def test_nenhum_numero_de_adr_se_repete():
+    """Dois ADRs com o mesmo número são duas decisões com a mesma morada.
+
+    Aconteceu: dois ramos a andar em paralelo escolheram ambos o 0006 — um
+    para a posse dos plugins, outro para as políticas de acesso. O git juntou
+    os dois sem se queixar, porque os nomes dos ficheiros eram diferentes, e
+    a partir daí "ver ADR-0006" no meio do código deixava de apontar para
+    sítio nenhum em concreto.
+
+    Escolher o número seguinte é a parte fácil. O que faltava era alguém
+    reparar, e é isso que este teste faz.
+    """
+    import re
+    from collections import defaultdict
+
+    por_numero = defaultdict(list)
+    for adr in sorted(ARQUITETURA.glob("ADR-*.md")):
+        achado = re.match(r"ADR-(\d+)", adr.name)
+        assert achado, f"{adr.name} não começa por ADR-<número>."
+        por_numero[achado.group(1)].append(adr.name)
+
+    repetidos = {n: f for n, f in por_numero.items() if len(f) > 1}
+    assert not repetidos, (
+        f"Números de ADR repetidos: {repetidos}. Renumere o mais recente — "
+        f"o número já publicado é referido a partir do código."
+    )
+
+
+def test_o_numero_no_titulo_e_o_do_ficheiro():
+    """Um ADR renumerado no nome e não no título mente duas vezes."""
+    import re
+
+    for adr in sorted(ARQUITETURA.glob("ADR-*.md")):
+        numero = re.match(r"ADR-(\d+)", adr.name).group(1)
+        primeira = adr.read_text(encoding="utf-8").splitlines()[0]
+        assert primeira.startswith(f"# ADR-{numero}"), (
+            f"{adr.name} começa por {primeira!r}, que não é o seu número."
+        )
 
 
 def test_cada_adr_tem_decisao_e_consequencias():

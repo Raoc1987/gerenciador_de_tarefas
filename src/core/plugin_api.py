@@ -468,6 +468,94 @@ class InterfaceAnfitria(Protocol):
         """Mostra uma mensagem informativa ao utilizador."""
 
 
+class Aparencia(Protocol):
+    """O que o contrato precisa de saber sobre a aparência — e mais nada.
+
+    O Core **não pode** importar o módulo que pinta a aplicação: importa
+    ``tkinter``, e a regra de camadas diz que quem não toca na interface
+    também não toca no que a pinta. Mas o contrato dos plugins vive aqui.
+
+    A saída é a inversão: o Core declara o que precisa, e quem está por cima
+    fornece. É o mesmo padrão das permissões de módulos e das políticas — o
+    núcleo avalia, quem sabe do domínio regista.
+    """
+
+    def cor(self, papel: str) -> str: ...
+
+    def fonte(self, tamanho: str, negrito: bool) -> tuple: ...
+
+    def espaco(self, nome: str) -> int: ...
+
+
+class _SemAparencia:
+    """O que responde quando ninguém instalou aparência nenhuma.
+
+    Acontece a correr sem interface — num teste, num agendamento. Devolver
+    valores neutros é melhor do que rebentar: um plugin que pergunte a cor não
+    tem de saber se há janela.
+    """
+
+    def cor(self, papel: str) -> str:
+        return ""
+
+    def fonte(self, tamanho: str, negrito: bool) -> tuple:
+        return ()
+
+    def espaco(self, nome: str) -> int:
+        return 0
+
+
+class Painel(Protocol):
+    """O que o contrato precisa do painel — e mais nada.
+
+    Segunda inversão pelo mesmo desenho do ADR-0008, e pela mesma razão: o
+    painel importa ``tkinter``, o Core não importa interface, e o contrato
+    dos plugins vive no Core. Duas são um padrão; se aparecer uma terceira,
+    vale a pena juntá-las num fornecedor só.
+    """
+
+    def registar_widget(self, **kwargs): ...
+
+
+class _SemPainel:
+    """O que responde quando não há painel — a correr sem interface."""
+
+    def registar_widget(self, **kwargs):
+        return None
+
+
+_painel: "Painel" = _SemPainel()
+
+
+def instalar_painel(fornecedor: "Painel") -> None:
+    """Diz ao contrato onde registar widgets de painel."""
+    global _painel
+    _painel = fornecedor
+
+
+def painel_da_aplicacao() -> "Painel":
+    """O fornecedor em vigor."""
+    return _painel
+
+
+_aparencia: "Aparencia" = _SemAparencia()
+
+
+def instalar_aparencia(fornecedor: "Aparencia") -> None:
+    """Diz ao contrato onde ir buscar cores, letras e espaços.
+
+    Chamada pela camada de interface no arranque. O Core continua sem saber
+    que módulo é.
+    """
+    global _aparencia
+    _aparencia = fornecedor
+
+
+def aparencia_da_aplicacao() -> "Aparencia":
+    """O fornecedor em vigor."""
+    return _aparencia
+
+
 @dataclass
 class ContextoPlugin:
     """Tudo o que um plugin pode usar da aplicação.
@@ -595,6 +683,194 @@ class ContextoPlugin:
             permissao=permissao,
             dono=self.manifesto.id,
         )
+
+    def registar_politica(
+        self, nome: str, acoes, tipos, avaliar, funcionalidade=None
+    ):
+        """Declara uma regra que **recusa** pedidos sobre objetos deste módulo.
+
+        Como nos indicadores e nos destinos, o nome é prefixado com o id do
+        plugin, e a política sai quando o plugin é descarregado.
+
+        Uma política só pode **tirar**: o papel decide primeiro, e o que ela
+        devolve é a recusa ou nada. É por isso que é seguro um plugin
+        registar uma — no pior caso tranca alguém de fora do seu próprio
+        módulo, que é visível e reclamável. Se pudesse conceder, um plugin
+        passava a poder abrir portas, e o contrato inteiro deixava de valer.
+
+        Args:
+            avaliar: recebe ``(sessao, pedido)`` e devolve ``None`` para
+                deixar passar, ou a **chave de tradução** do motivo da
+                recusa — quem a lê pode não falar a sua língua.
+        """
+        from core import permissoes as _permissoes
+
+        prefixo = f"{self.manifesto.id}."
+        completo = nome if str(nome).startswith(prefixo) else prefixo + str(nome)
+        return _permissoes.registar_politica(
+            completo,
+            acoes,
+            tipos,
+            avaliar,
+            funcionalidade=funcionalidade,
+            dono=self.manifesto.id,
+        )
+
+    def cor(self, papel: str) -> str:
+        """Uma cor da paleta, pelo **papel** — ``"texto_suave"``, ``"mau"``.
+
+        Os widgets ttk de um plugin já herdam o tema sem pedir nada: as
+        classes de estilo são globais. Isto é para o que o ttk não alcança —
+        desenhar num ``Canvas``, sobretudo.
+
+        Pedir o papel e não o valor é o que faz a aba do módulo acompanhar o
+        modo escuro. Um plugin que escreva a cor à mão fica a ser o único
+        sítio claro de uma janela escura.
+
+        Sem aparência instalada — a correr sem interface, num teste — devolve
+        ``""``, que o Tk lê como "a de origem". Um plugin não tem de saber se
+        há tema.
+
+        Raises:
+            KeyError: papel que não existe.
+        """
+        return aparencia_da_aplicacao().cor(papel)
+
+    def fonte(self, tamanho: str = "corpo", negrito: bool = False) -> tuple:
+        """Uma letra da escala da aplicação.
+
+        Raises:
+            ValueError: tamanho fora da escala.
+        """
+        return aparencia_da_aplicacao().fonte(tamanho, negrito)
+
+    def espaco(self, nome: str = "normal") -> int:
+        """Um degrau da escala de espaçamento, em píxeis.
+
+        Raises:
+            KeyError: degrau que não existe.
+        """
+        return aparencia_da_aplicacao().espaco(nome)
+
+    def registar_widget_de_painel(
+        self, nome: str, chave_titulo: str, construir, largura: int = 1,
+        ordem: int = 100, permissao=None,
+    ):
+        """Põe um widget deste módulo no painel principal.
+
+        Um indicador (:meth:`registar_indicador`) é um **número**. Isto é o
+        resto: um gráfico, uma tabela, uma lista — o que um módulo precise de
+        mostrar e não caiba num cartão.
+
+        ``construir`` recebe o widget pai e devolve um widget do Tk. Se esse
+        widget tiver ``atualizar(contexto)``, o painel chama-o sempre que os
+        filtros mudarem; o contexto traz o período e os dados já calculados,
+        para o widget não abrir a sua própria ligação ao banco e não dar um
+        número diferente do cartão do lado.
+
+        Como nos indicadores, o nome é prefixado com o id do plugin, e o
+        widget sai do painel quando o plugin é descarregado. A correr sem
+        interface devolve ``None``: um módulo não tem de saber se há janela.
+        """
+        prefixo = f"{self.manifesto.id}."
+        completo = nome if str(nome).startswith(prefixo) else prefixo + str(nome)
+        return painel_da_aplicacao().registar_widget(
+            id=completo, chave_titulo=chave_titulo, construir=construir,
+            largura=largura, ordem=ordem, permissao=permissao,
+            dono=self.manifesto.id,
+        )
+
+    def empresa(self) -> Optional[int]:
+        """A empresa de quem está em sessão, ou ``None`` se não há isolamento.
+
+        **Um módulo que guarde dados por empresa tem de carregar esta coluna
+        ele próprio**, na sua tabela e na sua migração. Não é preguiça da
+        plataforma: é que ela não sabe quais das tabelas de um módulo são por
+        empresa e quais são da instalação inteira — as definições do módulo,
+        uma tabela de referência, um catálogo partilhado. Separar ficheiros
+        por empresa tomaria essa decisão por si, e tomá-la-ia mal.
+
+        Quem é dono do esquema decide. A plataforma responde a quem pergunta.
+
+        ``None`` quer dizer **sem isolamento**, e acontece em três casos que
+        valem a pena conhecer: há uma empresa ou nenhuma, quem está em sessão
+        não está na estrutura, ou a estrutura não respondeu. Guarde ``None``
+        na coluna nesses casos — é o que torna os dados anteriores à
+        estrutura visíveis a toda a gente, tal como acontece com as tarefas.
+
+        Example:
+            >>> empresa = self.contexto.empresa()
+            >>> self.contexto.dados.executar(
+            ...     "INSERT INTO itens (empresa, codigo) VALUES (?, ?)",
+            ...     (empresa, "CX-01"),
+            ... )
+        """
+        from core import organizacao
+
+        return organizacao.empresa_da_sessao()
+
+    def notificar(
+        self,
+        chave: str,
+        nivel: str = "informacao",
+        assunto: str = "",
+        **parametros: Any,
+    ) -> Optional[int]:
+        """Põe um aviso na caixa de quem está em sessão.
+
+        A chave é procurada primeiro nos textos **deste plugin** e só depois
+        nos da aplicação, como em :meth:`traduzir` — e é guardada, não
+        resolvida: a frase é montada quando for para mostrar, no idioma de
+        então. Guardá-la já feita congelava-a no idioma do dia em que o aviso
+        aconteceu.
+
+        O ``assunto`` é prefixado com o id do plugin, como nos indicadores e
+        nos destinos: dois módulos que escolham "stock_baixo" deixavam de se
+        poder distinguir, e :meth:`ja_anunciado` passava a responder sobre o
+        aviso do outro.
+
+        Não levanta por falha de escrita, e o aviso **vai para quem está em
+        sessão** — não há forma de notificar outra pessoa. Um módulo corre com
+        o âmbito de quem o está a usar, e um aviso pode falar de dados que só
+        essa pessoa pode ver.
+
+        Returns:
+            O ``id`` do aviso, ou ``None`` se não foi possível guardá-lo.
+
+        Example:
+            >>> if not self.contexto.ja_anunciado("stock_baixo"):
+            ...     self.contexto.notificar(
+            ...         "estoque_stock_baixo", nivel="atencao",
+            ...         assunto="stock_baixo", quantidade=3,
+            ...     )
+        """
+        import notificacoes
+
+        return notificacoes.criar(
+            chave,
+            nivel=nivel,
+            origem=self.manifesto.id,
+            assunto=self._assunto(assunto),
+            **parametros,
+        )
+
+    def ja_anunciado(self, assunto: str) -> bool:
+        """Se este módulo já pôs na caixa desta pessoa um aviso sobre isto.
+
+        É o que evita repetir o mesmo aviso a cada arranque. O assunto é
+        prefixado com o id do plugin, tal como em :meth:`notificar`.
+        """
+        import notificacoes
+
+        return notificacoes.ja_anunciado(self._assunto(assunto))
+
+    def _assunto(self, assunto: str) -> str:
+        """Prefixa o assunto com o id do plugin. Vazio continua vazio."""
+        assunto = str(assunto or "").strip()
+        if not assunto:
+            return ""
+        prefixo = f"{self.manifesto.id}."
+        return assunto if assunto.startswith(prefixo) else prefixo + assunto
 
     def utilizador(self) -> str:
         """Quem está em sessão, para o módulo registar quem fez o quê."""

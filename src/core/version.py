@@ -14,7 +14,7 @@ APP_NAME: str = "Gerenciador de Tarefas"
 APP_ID: str = "GerenciadorDeTarefas"
 """Identificador sem espaços, usado em caminhos, executável e instalador."""
 
-APP_VERSION: str = "1.0.0"
+APP_VERSION: str = "1.1.0"
 """Versão semântica da aplicação (MAJOR.MINOR.PATCH)."""
 
 APP_PUBLISHER: str = "Rodrigo Costa"

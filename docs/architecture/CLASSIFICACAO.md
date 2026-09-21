@@ -16,9 +16,10 @@ interface) · **Module** (domínio de negócio, como plugin) · **Plugin**
 | Barramento de eventos | Core | `core/eventos.py` |
 | Permissões (RBAC) | Core | `core/permissoes.py` |
 | Funcionalidades da instalacao | Core | `core/funcionalidades.py` |
-| Contas e autenticação | Core | `core/utilizadores.py`, `core/seguranca.py` |
-| Auditoria, com antes/depois | Core | `core/auditoria.py` |
+| Contas e autenticação, com âmbito por empresa | Core | `core/utilizadores.py`, `core/seguranca.py` |
+| Auditoria, com antes/depois e a empresa de quem agiu | Core | `core/auditoria.py` |
 | Estrutura da organizacao | Core | `core/organizacao.py` |
+| **Seletor de empresa** (filtra dentro do alcance, nunca o alarga) | **Core** | `core/organizacao.py`, `src/navegacao/concha.py` |
 | Copia de seguranca e restauro | Core | `core/backup.py` |
 | Visibilidade por unidade | Service | `src/tarefas_servico.py` |
 | Plugin Engine | Core | `core/plugin_*.py` |
@@ -33,15 +34,21 @@ interface) · **Module** (domínio de negócio, como plugin) · **Plugin**
 | **Indicadores declarados** | **Service** | `src/indicadores.py` |
 | **Importação de ficheiros** | **Service** | `src/importacao/` |
 | **Vigilância (análise -> alerta)** | **Service** | `src/alertas.py` |
+| **Caixa de notificações (alerta -> pessoa)** | **Service** | `src/notificacoes.py` |
 | Ações que a aplicação oferece às regras | Ligação | `src/automacoes.py` |
 | Tela das automações | UI | `src/regras_ui.py` |
+| Sino e centro de notificações | UI | `src/notificacoes_ui.py` |
 | Gráficos | Service (UI) | `src/componentes/` |
+| **Aparência (tokens e tema)** | **Service (UI)** | `src/aparencia/` |
+| **Concha de navegação (sidebar, topbar)** | **Service (UI)** | `src/navegacao/` |
+| **Motor do painel (widgets, grelha, filtros)** | **Service (UI)** | `src/painel/` |
 | Interface | UI | `src/*_ui.py`, `gui.py` |
 | Calendar Integration | Plugin | `plugins/available/calendar/` |
 | Verificação de atualizações | Plugin | `plugins/available/atualizacoes/` |
 | **Estoque** (inventário) | **Module** | `plugins/available/estoque/` |
 | **Calculadora** (simples, científica, conversões, financeira) | **Plugin** | `plugins/available/calculadora/` |
 | Permissões trazidas por um módulo | Core (contrato) | `core/permissoes.py`, `core/plugin_api.py` |
+| **Políticas por atributo (ABAC)** | **Core (contrato)** | `core/permissoes.py`, `src/politicas_incluidas.py` |
 
 ## O que foi proposto
 
@@ -49,9 +56,14 @@ Ordenado por **valor sobre custo**, não pela ordem em que foi proposto.
 
 ### Faz-se a seguir
 
+**A fila está vazia.** Não é um convite a inventar: o que resta está na
+lista de baixo, e cada item tem escrito o que falta acontecer antes de
+valer a pena. Quando nada tem a condição cumprida, a resposta certa é
+consolidar o que existe, não abrir mais uma frente.
+
 | # | Bloco | Categoria | Porquê agora | Depende de |
 |---|---|---|---|---|
-| 3 | ABAC (regras por atributo) | **Core** | O caso que mais pesava — "o gestor vê o seu departamento" — já está feito com a hierarquia. O que falta do ABAC é o caso geral: regras por atributo arbitrário | hierarquia |
+| 3 | ABAC (regras por atributo) | **feito** | Uma política decide sobre o objeto, não só sobre o verbo, e **só pode recusar** — é o que torna seguro um plugin registar uma. Entrou com uma regra a sério a usá-la (segregação de funções), para não ser um motor à espera de utilizador. Ver ADR-0007 | hierarquia |
 
 ### Faz-se depois, por esta ordem
 
@@ -82,6 +94,19 @@ o contrato só aceitava as permissões do núcleo. A resposta certa era melhorar
 o contrato, não abrir uma exceção (ADR-0004). Um módulo passa a poder
 declarar permissões **no seu próprio espaço de nomes** — o pior que consegue
 conceder é acesso aos seus próprios dados.
+
+### Porque é que a caixa de notificações é Service e não Core
+
+As quatro perguntas do ADR-0004, respondidas antes de escrever: nenhum módulo
+precisa dela para funcionar (não é Core); o produto funciona sem ela — os
+alertas continuavam a ser publicados e as regras a agir (não é Core); não
+decide nada, entrega (não é Agent); e não tem domínio de negócio nem dados de
+ninguém, só o que outros anunciaram (não é Module).
+
+Fica ao lado da vigilância, dos indicadores e da pesquisa: um registo
+transversal, sem interface, que liga duas peças que não se conhecem. O núcleo
+não cresceu para isto existir, que é a mesma resposta que a pesquisa global já
+tinha dado quando a classificação dela estava errada.
 
 ### Porque é que a Calculadora é Plugin e não Module
 

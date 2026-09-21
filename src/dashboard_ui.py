@@ -17,13 +17,20 @@ from analitica.fontes import PERIODO_PADRAO, PERIODOS, Panorama
 from analitica.insights import Insight, Nivel
 from core import eventos, permissoes
 from core.log import obter_logger
+import painel_incluido
 from core.permissoes import Permissao
+from painel import Grelha, Rolo
+from painel.contexto import Contexto
+from aparencia import ESPACO, cores, fonte
 from language_manager import carregar_texto
 from relatorios import exportadores, servico
 from relatorios.construtor import relatorio_de_tarefas
 from textos import texto_do_insight
 from componentes.graficos import (
     COR_ALERTA,
+    PREENCHER_ATENCAO,
+    PREENCHER_BOM,
+    PREENCHER_MAU,
     COR_ATENCAO,
     COR_NEUTRA,
     COR_PRIMARIA,
@@ -39,16 +46,26 @@ logger = obter_logger(__name__)
 #: Espera antes de recalcular, para uma rajada de eventos dar um só recálculo.
 ATRASO_ATUALIZACAO_MS = 250
 
-CORES_POR_NIVEL = {
-    Nivel.CRITICO: COR_ALERTA,
-    Nivel.ATENCAO: COR_ATENCAO,
-    Nivel.POSITIVO: COR_SECUNDARIA,
-    Nivel.INFORMACAO: COR_NEUTRA,
+#: Que token de cor corresponde a cada nível — o **nome**, não o valor.
+#:
+#: Guardar o valor aqui prendia a aplicação ao modo que estava em vigor
+#: quando este módulo foi lido, que é sempre o claro.
+TOKEN_POR_NIVEL = {
+    Nivel.CRITICO: "mau",
+    Nivel.ATENCAO: "aviso",
+    Nivel.POSITIVO: "bom",
+    Nivel.INFORMACAO: "texto_suave",
 }
 
+#: A marca de cada gravidade. **Nenhuma se distingue de outra só pela cor.**
+#:
+#: Crítico e atenção partilhavam o "!" e separavam-se por vermelho contra
+#: âmbar — que é a mesma marca para quem não distingue as duas cores, e são
+#: cerca de 8% dos homens. O contraste do texto já era medido contra a WCAG;
+#: isto é a outra metade da mesma regra.
 MARCAS_POR_NIVEL = {
     Nivel.CRITICO: "!",
-    Nivel.ATENCAO: "!",
+    Nivel.ATENCAO: "▲",
     Nivel.POSITIVO: "+",
     Nivel.INFORMACAO: "•",
 }
@@ -86,10 +103,15 @@ class PainelDashboard(ttk.Frame):
 
     def _construir(self) -> None:
         barra = ttk.Frame(self)
-        barra.pack(fill=tk.X, pady=(8, 4), padx=8)
+        barra.pack(fill=tk.X, pady=(ESPACO["largo"], ESPACO["normal"]),
+                   padx=ESPACO["seccao"])
 
-        self._titulo = ttk.Label(barra, font=("Arial", 13, "bold"))
-        self._titulo.pack(side=tk.LEFT)
+        # O título fica, mas escondido: a concha já põe o nome da secção na
+        # barra de topo, e vê-lo duas vezes na mesma janela faz parecer que
+        # há duas coisas abertas. Fica construído porque a tradução e os
+        # testes falam dele, e porque uma instalação sem concha — um painel
+        # embutido noutro sítio — volta a precisar dele.
+        self._titulo = ttk.Label(barra, font=fonte("subtitulo", negrito=True))
 
         self._botao_atualizar = ttk.Button(barra, command=self.atualizar, width=12)
         self._botao_atualizar.pack(side=tk.RIGHT)
@@ -108,42 +130,27 @@ class PainelDashboard(ttk.Frame):
         self._seletor.pack(side=tk.RIGHT, padx=8)
         self._seletor.bind("<<ComboboxSelected>>", self._ao_mudar_periodo)
 
-        self._linha_kpis = ttk.Frame(self)
-        self._linha_kpis.pack(fill=tk.X, padx=8)
-        # Fluxo (criadas/concluídas) leva variação face ao período anterior;
-        # estado (pendentes/atrasadas/taxa) não leva — não há histórico de estado.
-        self._cartoes = {
-            "criadas": CartaoKPI(self._linha_kpis, cor=COR_PRIMARIA),
-            "concluidas": CartaoKPI(self._linha_kpis, cor=COR_SECUNDARIA),
-            "pendentes": CartaoKPI(self._linha_kpis, cor=COR_ATENCAO),
-            "atrasadas": CartaoKPI(self._linha_kpis, cor=COR_ALERTA, subir_e_bom=False),
-            "taxa": CartaoKPI(self._linha_kpis, cor=COR_PRIMARIA),
-        }
-        for coluna, cartao in enumerate(self._cartoes.values()):
-            cartao.grid(row=0, column=coluna, sticky="ew", padx=3, pady=4)
-            self._linha_kpis.columnconfigure(coluna, weight=1)
+        # O corpo é a grelha: os blocos são widgets registados, e um módulo
+        # pode pôr o seu ao lado deles. Ver ADR-0010.
+        painel_incluido.registar_incluidos()
+        # A grelha vive dentro de um rolo. A 940x620 -- o minimo que a
+        # aplicacao declarava -- a caixa "Analise" ficava abaixo da dobra e
+        # nao havia como la chegar: calculada, desenhada, e inalcancavel.
+        self._rolo = Rolo(self)
+        self._rolo.pack(fill=tk.BOTH, expand=True)
+        self._grelha = Grelha(self._rolo.interior,
+                              padding=(ESPACO["largo"], 0, ESPACO["largo"], ESPACO["largo"]))
+        self._grelha.pack(fill=tk.BOTH, expand=True)
+        self._grelha.montar()
 
-        # Segunda linha: o que os módulos declararem. Vazia e invisível
-        # quando não há nenhum — um painel não deve ter espaço reservado a
-        # coisas que talvez existam.
-        self._linha_modulos = ttk.Frame(self)
-        self._cartoes_modulos = {}
-
-        graficos = ttk.Frame(self)
-        graficos.pack(fill=tk.BOTH, expand=True, padx=8, pady=4)
-        graficos.columnconfigure(0, weight=3)
-        graficos.columnconfigure(1, weight=2)
-        graficos.rowconfigure(0, weight=1)
-
-        self._grafico_linhas = GraficoLinhas(graficos, altura=180)
-        self._grafico_linhas.grid(row=0, column=0, sticky="nsew", padx=(0, 6))
-        self._grafico_barras = GraficoBarras(graficos, altura=180)
-        self._grafico_barras.grid(row=0, column=1, sticky="nsew")
-
-        self._caixa_insights = ttk.LabelFrame(self, padding=8)
-        self._caixa_insights.pack(fill=tk.X, padx=8, pady=(4, 8))
-        self._lista_insights = ttk.Frame(self._caixa_insights)
-        self._lista_insights.pack(fill=tk.X)
+        # A razão de não haver nada vive **no painel**, e não num widget.
+        #
+        # Estava num widget, e a primeira execução mostrou porquê é que não
+        # podia: sem permissão de análise nenhum widget é visível — incluindo
+        # o que ia mostrar a razão. O painel ficava vazio e calado, que é pior
+        # do que dizer "não tem permissão".
+        self._aviso = ttk.Label(self, style="Suave.TLabel",
+                                padding=(ESPACO["seccao"], ESPACO["largo"]))
 
         self.aplicar_idioma()
 
@@ -154,16 +161,40 @@ class PainelDashboard(ttk.Frame):
         self._titulo.config(text=carregar_texto("dashboard"))
         self._botao_atualizar.config(text=carregar_texto("atualizar_lista"))
         self._botao_exportar.config(text=carregar_texto("exportar"))
-        self._caixa_insights.config(text=carregar_texto("analise"))
         self._seletor.config(values=[self._rotulo_periodo(d) for d in PERIODOS])
         self._periodo_var.set(self._rotulo_periodo(self._dias))
-        self._grafico_linhas.definir_titulo(carregar_texto("grafico_conclusoes"))
-        self._grafico_barras.definir_titulo(carregar_texto("grafico_estado"))
-        self._grafico_linhas.definir_texto_sem_dados(carregar_texto("sem_dados_periodo"))
-        self._grafico_barras.definir_texto_sem_dados(carregar_texto("sem_dados_periodo"))
-        if self._panorama is not None:
-            self._mostrar(self._panorama)
-        self._mostrar_indicadores_de_modulos()
+
+        # Cada widget traduz-se a si próprio quando recebe o contexto: o
+        # painel não tem de conhecer os títulos de widgets que não escreveu —
+        # e há-os, vindos de plugins.
+        for declarado in self._grelha._ordem:
+            widget = self._grelha.widget(declarado.id)
+            titulo = getattr(widget, "definir_titulo", None)
+            if callable(titulo):
+                titulo(carregar_texto(declarado.chave_titulo, declarado.id))
+            caixa = getattr(widget, "configure", None)
+            if isinstance(widget, ttk.LabelFrame) and callable(caixa):
+                caixa(text=carregar_texto(declarado.chave_titulo, declarado.id))
+        self._mostrar(self._panorama) if self._panorama is not None else None
+        self._grelha.atualizar_widgets(self._grelha.contexto())
+
+    @property
+    def _cartoes(self) -> dict:
+        """Os cartões das tarefas, para quem os inspecione.
+
+        Um atalho para dentro da grelha, e não estado próprio: o painel
+        deixou de os possuir quando passaram a ser um widget registado.
+        """
+        widget = self._grelha.widget("tarefas.kpis")
+        return getattr(widget, "cartoes", {})
+
+    @property
+    def _grafico_linhas(self):
+        return self._grelha.widget("tarefas.serie")
+
+    @property
+    def _grafico_barras(self):
+        return self._grelha.widget("tarefas.estado")
 
     @property
     def dias(self) -> int:
@@ -198,46 +229,6 @@ class PainelDashboard(ttk.Frame):
             self._mostrar_mensagem(carregar_texto("dashboard_erro"))
             return
         self._mostrar(self._panorama)
-
-    def _mostrar_indicadores_de_modulos(self) -> None:
-        """Desenha os cartões que os módulos instalados declararam.
-
-        O painel não sabe o que cada um mede. Pergunta ao registo, e mostra o
-        que a sessão puder ver — quem não pode ver um número não vê o cartão,
-        e não vê sequer que ele existe.
-        """
-        import indicadores
-
-        for cartao in self._cartoes_modulos.values():
-            cartao.destroy()
-        self._cartoes_modulos = {}
-
-        try:
-            leituras = [l for l in indicadores.ler() if l.indicador.dono]
-        except Exception:  # pragma: no cover - defensivo
-            logger.exception("Falha ao ler os indicadores dos módulos.")
-            return
-
-        if not leituras:
-            self._linha_modulos.pack_forget()
-            return
-
-        for coluna, leitura in enumerate(leituras):
-            cartao = CartaoKPI(
-                self._linha_modulos,
-                cor=COR_PRIMARIA if leitura.indicador.subir_e_bom else COR_ATENCAO,
-                subir_e_bom=leitura.indicador.subir_e_bom,
-            )
-            cartao.atualizar(
-                rotulo=carregar_texto(leitura.indicador.chave_titulo, leitura.chave),
-                valor=leitura.valor.formatado(),
-                variacao=leitura.valor.variacao,
-            )
-            cartao.grid(row=0, column=coluna, sticky="ew", padx=3, pady=4)
-            self._linha_modulos.columnconfigure(coluna, weight=1)
-            self._cartoes_modulos[leitura.chave] = cartao
-
-        self._linha_modulos.pack(fill=tk.X, padx=8, before=self._grafico_linhas.master)
 
     def exportar(self) -> Optional[Path]:
         """Gera o relatório do período e grava-o no formato escolhido.
@@ -301,87 +292,35 @@ class PainelDashboard(ttk.Frame):
     # ------------------------------------------------------------ desenho
 
     def _mostrar(self, visao: Panorama) -> None:
-        kpis = visao.kpis
-        variacoes = visao.variacoes
-
-        self._cartoes["criadas"].atualizar(
-            carregar_texto("kpi_criadas", dias=visao.dias),
-            str(visao.fluxo.criadas),
-            variacoes.get("criadas"),
-        )
-        self._cartoes["concluidas"].atualizar(
-            carregar_texto("kpi_concluidas", dias=visao.dias),
-            str(visao.fluxo.concluidas),
-            variacoes.get("concluidas"),
-        )
-        self._cartoes["pendentes"].atualizar(
-            carregar_texto("kpi_pendentes"), str(kpis.pendentes)
-        )
-        self._cartoes["atrasadas"].atualizar(
-            carregar_texto("kpi_atrasadas"), str(kpis.atrasadas)
-        )
-        self._cartoes["taxa"].atualizar(
-            carregar_texto("kpi_taxa_conclusao"), f"{kpis.taxa_conclusao:.0f}%"
-        )
-
-        series: List[Serie] = [
-            Serie(carregar_texto("serie_concluidas"), visao.concluidas, COR_SECUNDARIA),
-            Serie(carregar_texto("serie_media_movel"), visao.concluidas_suavizadas, COR_PRIMARIA),
-        ]
-        if visao.previsao:
-            series.append(
-                Serie(carregar_texto("serie_previsao"), visao.previsao, COR_NEUTRA, tracejado=True)
-            )
-        self._grafico_linhas.definir_series(series)
-
-        self._grafico_barras.definir_dados(
-            [
-                (carregar_texto("estado_concluidas"), kpis.concluidas),
-                (carregar_texto("estado_pendentes"), kpis.pendentes - kpis.atrasadas),
-                (carregar_texto("estado_atrasadas"), kpis.atrasadas),
-            ],
-            cores=(COR_SECUNDARIA, COR_ATENCAO, COR_ALERTA),
-        )
-
-        self._mostrar_insights(visao.insights)
-
-    def _mostrar_insights(self, encontrados: List[Insight]) -> None:
-        for filho in self._lista_insights.winfo_children():
-            filho.destroy()
-
-        if not encontrados:
-            ttk.Label(
-                self._lista_insights,
-                text=carregar_texto("sem_insights"),
-                foreground=COR_NEUTRA,
-            ).pack(anchor=tk.W)
-            return
-
-        for insight in encontrados[:4]:
-            linha = ttk.Frame(self._lista_insights)
-            linha.pack(fill=tk.X, anchor=tk.W)
-            ttk.Label(
-                linha,
-                text=MARCAS_POR_NIVEL[insight.nivel],
-                foreground=CORES_POR_NIVEL[insight.nivel],
-                font=("Arial", 10, "bold"),
-                width=2,
-            ).pack(side=tk.LEFT)
-            ttk.Label(linha, text=texto_do_insight(insight), wraplength=680, justify=tk.LEFT).pack(
-                side=tk.LEFT, anchor=tk.W
-            )
+        """Dá o panorama aos widgets. Nenhum deles vai buscar dados."""
+        self._dizer("")
+        self._grelha.atualizar_widgets(Contexto(dias=self._dias, panorama=visao))
+        self._rolo.sincronizar()
 
     def _mostrar_mensagem(self, mensagem: str) -> None:
-        """Estado degradado: sem dados, sem permissão ou com erro."""
-        for cartao in self._cartoes.values():
-            cartao.atualizar(valor="—", variacao=None)
-        self._grafico_linhas.definir_series([])
-        self._grafico_barras.definir_dados([])
-        for filho in self._lista_insights.winfo_children():
-            filho.destroy()
-        ttk.Label(self._lista_insights, text=mensagem, foreground=COR_NEUTRA).pack(anchor=tk.W)
+        """Estado degradado: sem dados, sem permissão ou com erro.
 
-    # ------------------------------------------------------------- eventos
+        A razão viaja no contexto, e é cada widget que decide como a mostra —
+        um cartão põe "—", a caixa de análise escreve a frase. O painel não
+        precisa de saber quantos widgets existem para os apagar.
+        """
+        self._grelha.atualizar_widgets(
+            Contexto(dias=self._dias, panorama=None, mensagem=mensagem)
+        )
+        self._rolo.sincronizar()
+        self._dizer(mensagem)
+
+    def _dizer(self, mensagem: str = "") -> None:
+        """Mostra (ou esconde) a razão de o painel não ter o que mostrar."""
+        if mensagem:
+            self._aviso.configure(text=mensagem)
+            # `before` tem de nomear um irmao. A grelha deixou de o ser
+            # quando passou para dentro do rolo, e o `pack` com um
+            # `before` de outro pai **nao faz nada nem levanta**: a
+            # mensagem desaparecia do ecra em silencio.
+            self._aviso.pack(anchor=tk.W, before=self._rolo)
+        else:
+            self._aviso.pack_forget()
 
     def _ao_mudar_periodo(self, _evento=None) -> None:
         rotulo = self._periodo_var.get()

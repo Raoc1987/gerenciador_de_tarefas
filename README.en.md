@@ -287,6 +287,33 @@ modules available to plugins are declared in `hiddenimports` inside
 
 ---
 
+## ♿ Accessibility
+
+**This application is not usable with a screen reader.** It was measured, not
+assumed: below the main window a screen reader finds 78 anonymous native
+windows — **not one** carries a name in the accessibility tree: no button, no
+field, no list. The cause is Tk 8.6, which draws its own widgets and does not
+expose them; it is not an oversight on one screen or another.
+
+What *is* verified and holds: every visible control is reachable with `Tab`,
+the focus ring is visible — measured by counting pixels — and the shortcuts
+work. That serves people who do not use a mouse. **It does not serve people
+who cannot see**: two different needs, and the product answers only one.
+
+Saying so is better than pretending one more shortcut fixes it. See
+[ADR-0016](docs/architecture/ADR-0016-leitor-de-ecra.md) (in Portuguese) for
+the measurement and what each path to change it would cost.
+
+---
+
+## 🤝 Contributing
+
+See the [contributing guide](CONTRIBUTING.md) — written in Portuguese, like the
+rest of the project documentation. It covers what to classify before writing
+code, the rules that fail a test when broken, and how a release goes out.
+
+---
+
 ## 📄 License
 
 MIT — see [LICENSE](LICENSE).

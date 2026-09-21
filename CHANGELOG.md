@@ -7,7 +7,33 @@ o projeto usa [versionamento semântico](https://semver.org/lang/pt-BR/).
 
 ## [Não lançado]
 
-Nada ainda.
+### Adicionado
+
+- **Guia de contribuições** (`CONTRIBUTING.md`): o que classificar antes de
+  escrever código (ADR-0004), as regras que falham um teste quando são
+  violadas, como sai uma versão, e o que uma boa issue traz. O README
+  prometia um guia em inglês que nunca existiu no repositório.
+
+### Corrigido
+
+- `docs/MANUTENCAO.md` dizia coisas que deixaram de ser verdade: a versão de
+  referência (1.0.0, com uma etiqueta que já não existe), o log a rodar em
+  três cópias quando passou a cinco, os ensaios como passo manual antes da
+  release quando o `release.yml` os corre sempre, e o CI "sem permissões de
+  escrita" quando o `release.yml` precisa delas para publicar. Passa também a
+  cobrir a release por etiqueta e as etiquetas que ficam sem release.
+- `.gitignore`: ficheiros de editor e `.env`, que não dizem respeito a mais
+  ninguém.
+
+### Documentação
+
+- **A limitação de acessibilidade passa a estar onde se lê.** O
+  [ADR-0016](docs/architecture/ADR-0016-leitor-de-ecra.md) decidiu declarar
+  que a aplicação não é utilizável com leitor de ecrã, e porquê — mas a
+  declaração não tinha chegado a nenhum dos READMEs, que são o único sítio
+  onde um utilizador a iria procurar. Ambos passam a dizê-lo, com o que está
+  verificado ao lado do que não está.
+- O README em inglês passa a ligar ao guia de contribuições.
 
 ## [1.1.0] - 2026-09-20
 

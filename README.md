@@ -525,6 +525,24 @@ Os widgets ttk de um módulo herdam o tema: as classes de estilo são globais.
 Para o que o ttk não alcança — desenhar num `Canvas` — o contexto oferece
 `cor()`, `fonte()` e `espaco()`.
 
+## ♿ Acessibilidade: o que serve e o que não serve
+
+**Esta aplicação não é utilizável com um leitor de ecrã.** Foi medido, não
+suposto: por baixo da janela principal, um leitor encontra 78 janelas nativas
+anónimas — **nenhuma** com nome na árvore de acessibilidade, nem um botão, nem
+um campo, nem uma lista. A causa é o Tk 8.6, que desenha os seus próprios
+widgets e não os expõe; não é uma desatenção num ecrã ou noutro.
+
+O que **está** verificado e vale: todos os controlos visíveis se alcançam com
+`Tab`, o foco vê-se — medido a contar píxeis — e os atalhos funcionam. Isso
+serve quem não usa rato. **Não serve quem não vê**: são duas necessidades
+diferentes, e o produto só responde a uma.
+
+Dizê-lo é preferível a fingir que um atalho a mais resolve o problema. O
+[ADR-0016](docs/architecture/ADR-0016-leitor-de-ecra.md) tem a medição, e o
+que custaria cada caminho para mudar isto; as medições estão em
+[docs/MEDICOES.md](docs/MEDICOES.md).
+
 ## Políticas: quando o papel não chega
 
 O papel responde a *"podes concluir tarefas?"*. Quase toda a regra que uma
@@ -1106,7 +1124,9 @@ aplicação e confirma que tarefas, configurações e plugins sobreviveram.
 
 ## 🤝 Contribuições
 
-Veja o guia de contribuições em `CONTRIBUTING.md` (disponível em inglês).
+Veja o [guia de contribuições](CONTRIBUTING.md): o que classificar antes de
+escrever código, as regras que falham um teste quando são violadas, e o que
+tem de acompanhar cada mudança.
 
 ## 📝 Licença
 

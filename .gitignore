@@ -21,3 +21,14 @@ installer/Output/
 .vscode/
 .idea/
 .DS_Store
+
+# Áreas de trabalho que o Claude Code cria dentro do próprio repositório.
+# São cópias da árvore: enquanto têm o ficheiro `.git`, o git trata-as como
+# outro repositório e nem olha para lá; quando esse ficheiro desaparece — e
+# desaparece, se a worktree for removida a meio — os ficheiros todos passam a
+# aparecer por rastrear, e um `git add -A` distraído commita o projeto
+# duplicado dentro de si mesmo.
+#
+# Para versionar configuração do Claude (settings.json, agentes, skills),
+# acrescente uma excepção: `!.claude/settings.json`.
+.claude/

@@ -49,6 +49,18 @@ aplicação: tudo chega à base como a pessoa em sessão.
    npm run dev              # http://localhost:3000
    ```
 
+## Copiloto (Claude)
+
+Pergunta-se em linguagem natural ("o que está atrasado e quem precisa de
+ajuda?", "cria tarefas a partir desta lista"). O Copiloto **lê com a sessão de
+quem pergunta** — vê o mesmo que a pessoa — e **não escreve nada**: propõe, e a
+pessoa aplica com um clique, pelo mesmo caminho de um formulário. Decisão e
+custos no [ADR-0018](../docs/architecture/ADR-0018-copiloto.md).
+
+Para o ligar, defina `ANTHROPIC_API_KEY` no servidor (no Vercel, em
+*Environment Variables*; nunca com o prefixo `NEXT_PUBLIC_`). Cada pessoa tem um
+limite diário de perguntas, e o consumo fica em `copiloto_uso`.
+
 ## Verificar
 
 ```bash
@@ -86,12 +98,14 @@ web/
 │           ├── layout.tsx      concha: navegação, Ctrl+K
 │           ├── page.tsx        painel
 │           ├── tarefas/        lista, quadro, detalhe, comentários
+│           ├── copiloto/       conversa com o Claude e propostas
 │           ├── equipa/         membros, papéis, convites
 │           ├── auditoria/      trilha só de leitura
 │           └── definicoes/     nome e segregação de funções
 ├── components/                 ui, gráficos SVG, navegação, paleta
 ├── lib/
 │   ├── dominio/                regras puras + testes (sem React, sem rede)
+│   ├── copiloto/               ciclo do Copiloto (cliente injetado, testável)
 │   ├── supabase/               clientes servidor e browser
 │   └── contexto.ts             sessão, empresa e papel
 └── proxy.ts                    renova a sessão; /app exige login

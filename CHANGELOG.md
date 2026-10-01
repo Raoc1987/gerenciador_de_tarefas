@@ -7,6 +7,18 @@ o projeto usa [versionamento semântico](https://semver.org/lang/pt-BR/).
 
 ## [Não lançado]
 
+### Copiloto (ADR-0018)
+
+- **Perguntar em linguagem natural** pelo trabalho da equipa ("o que está
+  atrasado?", "resume a semana", "cria tarefas a partir desta lista"), com o
+  Claude (`claude-opus-5-5`).
+- **Vê só o que a pessoa vê**: lê com a sessão dela, sob a mesma RLS.
+- **Não muda nada sozinho**: propõe tarefas novas e alterações, e a pessoa
+  aplica as que quiser. Cada aplicação volta a ser validada no servidor e fica
+  na auditoria em nome da pessoa. Não há proposta de apagar.
+- **Custo com teto**: limite diário de perguntas por pessoa e registo do
+  consumo por empresa (`copiloto_uso`, migração `20261002000000`).
+
 ### Plataforma web (ADR-0017)
 
 O produto passa a ser uma **plataforma web multiempresa**, em `web/`, com

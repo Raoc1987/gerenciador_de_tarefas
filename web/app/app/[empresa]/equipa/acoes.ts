@@ -10,7 +10,11 @@ import { PAPEIS, type Papel } from "@/lib/dominio/papeis";
 // (alterar_papel, remover_membro, policy convites_criar). Aqui só se valida
 // a forma e se traduz a recusa.
 
-export async function convidar(empresaId: string, _: { erro?: string; ok?: number }, form: FormData) {
+export async function convidar(
+  empresaId: string,
+  _: { erro?: string; ok?: number },
+  form: FormData,
+): Promise<{ erro?: string; ok?: number }> {
   const email = String(form.get("email") ?? "").trim().toLowerCase();
   const papel = String(form.get("papel") ?? "colaborador") as Papel;
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return { erro: "Email inválido." };
@@ -26,14 +30,14 @@ export async function convidar(empresaId: string, _: { erro?: string; ok?: numbe
   return { ok: Date.now() };
 }
 
-export async function revogarConvite(empresaId: string, conviteId: string) {
+export async function revogarConvite(empresaId: string, conviteId: string): Promise<{ erro?: string }> {
   const { supabase } = await exigirSessao();
   const { error } = await supabase.from("convites").delete().eq("id", conviteId);
   revalidatePath(`/app/${empresaId}/equipa`);
   return error ? { erro: mensagemDeErro(error) } : {};
 }
 
-export async function alterarPapel(empresaId: string, userId: string, papel: Papel) {
+export async function alterarPapel(empresaId: string, userId: string, papel: Papel): Promise<{ erro?: string }> {
   if (!PAPEIS.includes(papel)) return { erro: "Papel inválido." };
   const { supabase } = await exigirSessao();
   const { error } = await supabase.rpc("alterar_papel", { p_empresa: empresaId, p_user: userId, p_papel: papel });
@@ -41,7 +45,7 @@ export async function alterarPapel(empresaId: string, userId: string, papel: Pap
   return error ? { erro: mensagemDeErro(error) } : {};
 }
 
-export async function removerMembro(empresaId: string, userId: string) {
+export async function removerMembro(empresaId: string, userId: string): Promise<{ erro?: string }> {
   const { supabase, user } = await exigirSessao();
   const { error } = await supabase.rpc("remover_membro", { p_empresa: empresaId, p_user: userId });
   if (error) return { erro: mensagemDeErro(error) };

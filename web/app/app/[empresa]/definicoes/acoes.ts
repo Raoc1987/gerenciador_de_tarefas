@@ -4,7 +4,11 @@ import { revalidatePath } from "next/cache";
 import { exigirSessao } from "@/lib/contexto";
 import { mensagemDeErro } from "@/lib/dominio/erros";
 
-export async function gravarDefinicoes(empresaId: string, _: { erro?: string; ok?: number }, form: FormData) {
+export async function gravarDefinicoes(
+  empresaId: string,
+  _: { erro?: string; ok?: number },
+  form: FormData,
+): Promise<{ erro?: string; ok?: number }> {
   const nome = String(form.get("nome") ?? "").trim();
   if (nome.length < 2 || nome.length > 120) return { erro: "O nome tem entre 2 e 120 caracteres." };
   const { supabase } = await exigirSessao();

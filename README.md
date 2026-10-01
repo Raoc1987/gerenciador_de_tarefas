@@ -16,6 +16,15 @@ Só usa a biblioteca padrão do Python — sem dependências externas em execuç
 - [Português (BR)](README.md)
 - [English (US)](README.en.md)
 
+
+> ### 🌐 Plataforma web
+>
+> O produto está a passar para a web: **multiempresa, em tempo real, com a
+> segurança na base de dados**. Está em [`web/`](web/README.md), e a decisão
+> no [ADR-0017](docs/architecture/ADR-0017-plataforma-web.md). A aplicação de
+> secretária descrita abaixo continua disponível e recebe correções, mas as
+> funcionalidades novas entram na web.
+
 ---
 
 ## 📦 Instalação (utilizador)

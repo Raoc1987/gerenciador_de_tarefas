@@ -110,3 +110,42 @@ jobs:
       # limpo não existe.
       - name: Instalador de ponta a ponta
         run: python tools/testar_instalador.py
+
+  # ---------------------------------------------------------------- web (ADR-0017)
+
+  base-de-dados:
+    name: Supabase — migrações e RLS
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      # O runner Ubuntu traz os binários do PostgreSQL; o script levanta um
+      # cluster efémero, aplica as migrações reais e corre os testes SQL.
+      - name: Migrações reais + testes de RLS
+        run: supabase/tests/correr.sh
+
+  web:
+    name: Web — testes e build
+    runs-on: ubuntu-latest
+    # A imagem oficial do Node em vez de setup-node: assim não há outra
+    # Action para fixar por SHA.
+    container: node:22-bookworm
+    defaults:
+      run:
+        working-directory: web
+    env:
+      NEXT_TELEMETRY_DISABLED: "1"
+      # O build não fala com o Supabase; as variáveis só têm de existir.
+      NEXT_PUBLIC_SUPABASE_URL: https://exemplo.supabase.co
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_ci
+      NEXT_PUBLIC_SITE_URL: http://localhost:3000
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      # `npm ci` quando houver package-lock.json; até lá, `npm install`.
+      - name: Instalar dependências
+        run: if [ -f package-lock.json ]; then npm ci; else npm install --no-audit --no-fund; fi
+      - name: Testes do domínio
+        run: npm test
+      - name: Build (inclui a verificação de tipos)
+        run: npm run build
+      - name: Verificação de tipos
+        run: npm run typecheck

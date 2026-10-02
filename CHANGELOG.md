@@ -7,6 +7,14 @@ o projeto usa [versionamento semântico](https://semver.org/lang/pt-BR/).
 
 ## [Não lançado]
 
+### Relatórios (ADR-0021)
+
+- **Exportar em PDF, Excel e CSV** as tarefas que cada pessoa pode ver, com os
+  indicadores e a análise do painel, e os filtros escolhidos.
+- Os mesmos escritores do desktop, sem bibliotecas, com duas correções: o PDF
+  passa a A4 deitado e as datas deixam de sair cortadas, e o CSV neutraliza
+  fórmulas escondidas em títulos de tarefas.
+
 ### Importação do desktop (ADR-0020)
 
 - **Traga as tarefas da aplicação de secretária** para a web: escolhe-se o

@@ -73,6 +73,14 @@ verificado no Resend), `SUPABASE_SERVICE_ROLE_KEY` (usada **só** pelas rotas de
 cron) e `CRON_SECRET` (16+ caracteres). O `vercel.json` agenda a entrega de 5 em
 5 minutos (plano pago do Vercel) e o resumo às 8h de Brasília, nos dias úteis.
 
+## Importar do desktop
+
+Quem administra uma empresa traz as tarefas da aplicação de secretária em
+*Definições → Importar do desktop*: escolhe o `tarefas.db`, diz quem fica com
+as tarefas de cada pessoa, e importa. O ficheiro é lido **no browser** — só as
+tarefas seguem para o servidor — e reimportar não duplica nada. Decisão e
+limites no [ADR-0020](../docs/architecture/ADR-0020-importacao-do-desktop.md).
+
 ## Verificar
 
 ```bash
@@ -112,6 +120,7 @@ web/
 │           ├── tarefas/        lista, quadro, detalhe, comentários
 │           ├── copiloto/       conversa com o Claude e propostas
 │           ├── notificacoes/   que emails cada pessoa recebe
+│           ├── importar/       trazer as tarefas do tarefas.db
 │           ├── equipa/         membros, papéis, convites
 │           ├── auditoria/      trilha só de leitura
 │           └── definicoes/     nome e segregação de funções
@@ -120,6 +129,7 @@ web/
 │   ├── dominio/                regras puras + testes (sem React, sem rede)
 │   ├── copiloto/               ciclo do Copiloto (cliente injetado, testável)
 │   ├── emails/                 carteiro da fila de emails (Resend)
+│   ├── importacao/             leitor SQLite e conversão do desktop
 │   ├── supabase/               clientes servidor e browser
 │   └── contexto.ts             sessão, empresa e papel
 └── proxy.ts                    renova a sessão; /app exige login

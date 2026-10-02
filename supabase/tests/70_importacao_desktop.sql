@@ -11,7 +11,7 @@ update public.empresas set segregacao_funcoes = true where id = :'alfa';
 reset role;
 insert into public.membros values (:'alfa', :'col', 'colaborador');
 
-\set lote '[{"origem":"desktop:1:2026-01-05T09:00:00","titulo":"Ligar ao fornecedor","prazo":"2026-02-01","estado":"a_fazer","criada_em":"2026-01-05T09:00:00-03:00","etiquetas":["importado"]},{"origem":"desktop:2:2026-01-06T10:00:00","titulo":"Fechar o mês","estado":"concluida","criada_em":"2026-01-06T10:00:00-03:00","concluida_em":"2026-01-20T17:00:00-03:00","responsavel_id":"__COL__"},{"origem":"desktop:3:x","titulo":"   ","estado":"a_fazer"},{"origem":"desktop:4:x","titulo":"Para alguém de fora","responsavel_id":"__FORA__"}]'
+\set lote '[{"origem":"desktop:1:2026-01-05T09:00:00","titulo":"Ligar ao fornecedor","prazo":"2026-02-01","estado":"a_fazer","criada_em":"2026-01-05T09:00:00","etiquetas":["importado"]},{"origem":"desktop:2:2026-01-06T10:00:00","titulo":"Fechar o mês","estado":"concluida","criada_em":"2026-01-06T10:00:00","concluida_em":"2026-07-20T17:00:00","responsavel_id":"__COL__"},{"origem":"desktop:3:x","titulo":"   ","estado":"a_fazer"},{"origem":"desktop:4:x","titulo":"Para alguém de fora","responsavel_id":"__FORA__"}]'
 select replace(replace(:'lote', '__COL__', :'col'), '__FORA__', :'fora') as lote \gset
 
 select t.sessao(:'col'); set role authenticated;
@@ -31,11 +31,11 @@ select public.importar_tarefas(:'alfa', :'lote') as r2 \gset
 select t.ok((:'r2'::jsonb ->> 'inseridas')::int = 0 and (:'r2'::jsonb ->> 'repetidas')::int = 3,
             'importar o mesmo ficheiro outra vez não duplica nada');
 
-select t.ok((select criada_em = '2026-01-05T12:00:00Z'::timestamptz from public.tarefas where titulo = 'Ligar ao fornecedor'),
-            'a data de criação é a do desktop');
-select t.ok((select concluida_em = '2026-01-20T20:00:00Z'::timestamptz and concluida_por = auth.uid()
+select t.ok((select criada_em = '2026-01-05T09:00:00Z'::timestamptz from public.tarefas where titulo = 'Ligar ao fornecedor'),
+            'a data de criação é a do desktop: 9h de inverno em Lisboa são 9h UTC');
+select t.ok((select concluida_em = '2026-07-20T16:00:00Z'::timestamptz and concluida_por = auth.uid()
              from public.tarefas where titulo = 'Fechar o mês'),
-            'a data de conclusão também, mesmo com segregação de funções ligada');
+            'a de conclusão também, com hora de verão (17h em Lisboa = 16h UTC), mesmo com segregação');
 select t.ok((select criada_por = auth.uid() from public.tarefas where titulo = 'Fechar o mês'),
             'o autor é quem importou');
 select t.ok((select responsavel_id = :'col'::uuid from public.tarefas where titulo = 'Fechar o mês'),
@@ -50,6 +50,8 @@ select t.ok((select criada_em > now() - interval '1 minute' from public.tarefas 
 select t.ok(coalesce(current_setting('gdt.importacao', true), '') = '', 'a importação não deixa o modo ligado');
 select t.recusa(format($$select public.importar_tarefas(%L, (select jsonb_agg(x) from generate_series(1, 1001) x))$$, :'alfa'),
                 'lotes acima de 1000 são recusados');
+select t.recusa(format($$select public.importar_tarefas(%L, '[]', 'Marte/Olympus')$$, :'alfa'),
+                'um fuso desconhecido é recusado');
 reset role;
 
 select t.ok(not exists (select 1 from public.emails_pendentes where tipo = 'atribuicao'),

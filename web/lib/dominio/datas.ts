@@ -1,8 +1,8 @@
 // Datas no fuso de quem usa. "Hoje" num servidor em UTC não é o hoje de
-// quem está em São Paulo às 22h — e é isso que decide se uma tarefa está
-// atrasada.
+// quem está em Lisboa às 00h30 de verão — e é isso que decide se uma tarefa
+// está atrasada.
 
-export const FUSO_PADRAO = "America/Sao_Paulo";
+export const FUSO_PADRAO = "Europe/Lisbon";
 
 export function hojeNoFuso(fuso: string = FUSO_PADRAO, agora: Date = new Date()): string {
   // en-CA formata como AAAA-MM-DD.
@@ -21,7 +21,7 @@ export function formatarData(iso: string | null | undefined): string {
 }
 
 export function formatarDataHora(iso: string, fuso: string = FUSO_PADRAO): string {
-  return new Intl.DateTimeFormat("pt-BR", {
+  return new Intl.DateTimeFormat("pt-PT", {
     timeZone: fuso,
     dateStyle: "short",
     timeStyle: "short",

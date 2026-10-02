@@ -105,10 +105,14 @@ begin
   return new;
 end $$;
 
+-- As datas do desktop chegam como hora local sem fuso; `p_fuso` diz qual era
+-- (com as regras de hora de verão desse fuso, que um desvio fixo não tem).
 -- Grava um lote de até 1000 tarefas. Devolve quantas entraram, quantas já
 -- lá estavam (mesma origem) e quantas foram recusadas (com o motivo das
 -- primeiras). Uma tarefa inválida não deita abaixo o lote.
-create function public.importar_tarefas(p_empresa uuid, p_tarefas jsonb) returns jsonb
+create function public.importar_tarefas(
+  p_empresa uuid, p_tarefas jsonb, p_fuso text default 'Europe/Lisbon'
+) returns jsonb
 language plpgsql security definer set search_path = '' as $$
 declare
   v_t jsonb;
@@ -121,6 +125,9 @@ declare
 begin
   if not public.tem_papel(p_empresa, 'administrador') then
     raise exception 'só quem administra a empresa importa dados' using errcode = '42501';
+  end if;
+  if not exists (select 1 from pg_timezone_names where name = p_fuso) then
+    raise exception 'fuso desconhecido: %', p_fuso using errcode = '22023';
   end if;
   if jsonb_typeof(p_tarefas) <> 'array' or jsonb_array_length(p_tarefas) > 1000 then
     raise exception 'um lote tem no máximo 1000 tarefas' using errcode = '22023';
@@ -146,8 +153,8 @@ begin
         nullif(v_t ->> 'prazo', '')::date,
         coalesce(array(select jsonb_array_elements_text(v_t -> 'etiquetas')), '{}'),
         v_resp,
-        nullif(v_t ->> 'criada_em', '')::timestamptz,
-        nullif(v_t ->> 'concluida_em', '')::timestamptz,
+        nullif(v_t ->> 'criada_em', '')::timestamp at time zone p_fuso,
+        nullif(v_t ->> 'concluida_em', '')::timestamp at time zone p_fuso,
         v_t ->> 'origem'
       )
       on conflict (empresa_id, origem) where origem is not null do nothing;
@@ -167,5 +174,5 @@ begin
   );
 end $$;
 
-revoke execute on function public.importar_tarefas(uuid, jsonb) from public, anon;
-grant execute on function public.importar_tarefas(uuid, jsonb) to authenticated;
+revoke execute on function public.importar_tarefas(uuid, jsonb, text) from public, anon;
+grant execute on function public.importar_tarefas(uuid, jsonb, text) to authenticated;

@@ -7,6 +7,15 @@ o projeto usa [versionamento semântico](https://semver.org/lang/pt-BR/).
 
 ## [Não lançado]
 
+### Portugal primeiro (ADR-0022)
+
+- Fuso de **Lisboa**, datas e textos em **português europeu**, e o Copiloto a
+  responder em português de Portugal.
+- Base de dados e funções em **Frankfurt**, perto dos clientes e dentro da UE.
+- O resumo da manhã às 7h UTC (8h em Lisboa no verão).
+- A importação do desktop converte as datas com as regras de hora de verão de
+  Portugal, em vez de um desvio fixo.
+
 ### Relatórios (ADR-0021)
 
 - **Exportar em PDF, Excel e CSV** as tarefas que cada pessoa pode ver, com os

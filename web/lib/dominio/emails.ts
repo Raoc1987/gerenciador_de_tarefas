@@ -37,7 +37,7 @@ const txt = (v: unknown) => String(v ?? "").replace(/[\r\n]+/g, " ").trim();
 const assunto = (s: string) => s.replace(/[\r\n]+/g, " ").slice(0, 200);
 
 function moldura(titulo: string, corpo: string, botao: { texto: string; url: string }, rodape: string): string {
-  return `<!doctype html><html lang="pt-BR"><body style="margin:0;background:#f7f7f8;font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;color:#18181b">
+  return `<!doctype html><html lang="pt-PT"><body style="margin:0;background:#f7f7f8;font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;color:#18181b">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:32px 16px">
 <table role="presentation" width="100%" style="max-width:520px;background:#ffffff;border:1px solid #e2e2e8;border-radius:12px" cellpadding="0" cellspacing="0">
 <tr><td style="padding:28px">

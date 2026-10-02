@@ -71,7 +71,7 @@ fila. Decisão e custos no [ADR-0019](../docs/architecture/ADR-0019-notificacoes
 Para ligar, no servidor: `RESEND_API_KEY` e `EMAIL_REMETENTE` (de um domínio
 verificado no Resend), `SUPABASE_SERVICE_ROLE_KEY` (usada **só** pelas rotas de
 cron) e `CRON_SECRET` (16+ caracteres). O `vercel.json` agenda a entrega de 5 em
-5 minutos (plano pago do Vercel) e o resumo às 8h de Brasília, nos dias úteis.
+5 minutos (plano pago do Vercel) e o resumo às 7h UTC nos dias úteis (8h em Lisboa no verão, 7h no inverno).
 
 ## Importar do desktop
 

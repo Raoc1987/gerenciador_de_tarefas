@@ -3,10 +3,13 @@ import assert from "node:assert/strict";
 import { formatarData, hojeNoFuso, relativo } from "./datas.ts";
 import { camposAlterados, descreverAcao, tituloDaLinha } from "./auditoria.ts";
 
-test("o hoje depende do fuso: 01:30 UTC ainda é ontem em São Paulo", () => {
-  const agora = new Date("2026-10-02T01:30:00Z");
-  assert.equal(hojeNoFuso("UTC", agora), "2026-10-02");
-  assert.equal(hojeNoFuso("America/Sao_Paulo", agora), "2026-10-01");
+test("o hoje depende do fuso: 23:30 UTC de verão já é amanhã em Lisboa", () => {
+  const verao = new Date("2026-07-14T23:30:00Z");
+  assert.equal(hojeNoFuso("UTC", verao), "2026-07-14");
+  assert.equal(hojeNoFuso("Europe/Lisbon", verao), "2026-07-15");
+  // No inverno Lisboa está em UTC: a mesma hora é o mesmo dia.
+  assert.equal(hojeNoFuso("Europe/Lisbon", new Date("2026-01-14T23:30:00Z")), "2026-01-14");
+  assert.equal(hojeNoFuso(undefined, verao), "2026-07-15", "Lisboa é o fuso por omissão");
 });
 
 test("datas em português", () => {

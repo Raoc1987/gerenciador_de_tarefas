@@ -33,6 +33,7 @@ export default async function ConchaDaEmpresa({
     { rotulo: "As minhas tarefas", href: `${base}/tarefas?responsavel=eu` },
     { rotulo: "Tarefas atrasadas", href: `${base}/tarefas?atrasadas=1` },
     { rotulo: "Quadro", href: `${base}/tarefas?vista=quadro` },
+    { rotulo: "Notificações por email", href: `${base}/notificacoes` },
     { rotulo: "Trocar de empresa", href: "/app?escolher=1" },
   ];
 
@@ -48,6 +49,9 @@ export default async function ConchaDaEmpresa({
           <p className="truncate px-2 text-texto-2" title={user.email ?? ""}>
             {user.email}
           </p>
+          <Link href={`${base}/notificacoes`} className="block rounded-lg px-2 py-1.5 text-texto-2 hover:bg-superficie-2 hover:text-texto">
+            Notificações
+          </Link>
           <form action="/sair" method="post">
             <button className="w-full rounded-lg px-2 py-1.5 text-left text-texto-2 hover:bg-superficie-2 hover:text-texto">
               Sair

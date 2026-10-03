@@ -34,6 +34,7 @@ export default async function ConchaDaEmpresa({
     { rotulo: "Tarefas atrasadas", href: `${base}/tarefas?atrasadas=1` },
     { rotulo: "Quadro", href: `${base}/tarefas?vista=quadro` },
     { rotulo: "Notificações por email", href: `${base}/notificacoes` },
+    ...(pode(papel, "pessoas.gerir") ? [{ rotulo: "Importar do desktop", href: `${base}/importar` }] : []),
     { rotulo: "Trocar de empresa", href: "/app?escolher=1" },
   ];
 

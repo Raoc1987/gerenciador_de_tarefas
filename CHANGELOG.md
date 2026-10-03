@@ -7,6 +7,18 @@ o projeto usa [versionamento semântico](https://semver.org/lang/pt-BR/).
 
 ## [Não lançado]
 
+### Importação do desktop (ADR-0020)
+
+- **Traga as tarefas da aplicação de secretária** para a web: escolhe-se o
+  `tarefas.db`, diz-se quem fica com as tarefas de cada pessoa, e importa-se.
+- **O ficheiro é lido no browser** e não é enviado: contas, palavras-passe e a
+  auditoria do desktop ficam no computador.
+- Mantêm-se prazos, estado e as **datas de criação e conclusão**, para o painel
+  contar a história certa. Cada tarefa leva a etiqueta `importado` e fica na
+  auditoria em nome de quem importou.
+- **Reimportar não duplica**, uma tarefa inválida não trava as outras, e
+  importar não manda um email por cada tarefa atribuída.
+
 ### Notificações por email (ADR-0019)
 
 - **Avisos por email** quando lhe atribuem uma tarefa e quando comentam uma

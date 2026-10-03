@@ -7,6 +7,16 @@ o projeto usa [versionamento semântico](https://semver.org/lang/pt-BR/).
 
 ## [Não lançado]
 
+### Testes de ponta a ponta
+
+- **A aplicação inteira é testada a cada PR**: o CI levanta um Supabase local
+  (Postgres, a autenticação verdadeira do Supabase e a API) com as migrações
+  reais, constrói a aplicação e percorre-a no browser com Playwright — entrar,
+  ver o painel, criar uma tarefa, e provar que o colaborador só vê as suas
+  tarefas, que quem não é membro não vê a empresa e que um destino disfarçado
+  em `?seguinte=` não leva para fora. Tudo em `localhost` do runner, sem
+  segredos.
+
 ### Segurança e operação
 
 - **Redirecionamento depois do login fechado a destinos disfarçados.** Um

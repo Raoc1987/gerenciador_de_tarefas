@@ -111,7 +111,18 @@ lados — o que passa e o que é recusado, **com o motivo verificado**. Com
 `VERBOSO=1` mostra cada verificação.
 
 O CI corre os três (`.github/workflows/tests.yml`, jobs `base-de-dados` e
-`web`).
+`web`), e ainda os **testes de ponta a ponta** (job `ponta-a-ponta`):
+
+```bash
+../supabase/e2e/levantar.sh          # Postgres + GoTrue + PostgREST em 127.0.0.1, migrações reais
+set -a; . /tmp/gdt-e2e/ambiente; set +a
+npm run build && node ../supabase/e2e/semear.mjs
+npx playwright install chromium && npm run test:e2e
+../supabase/e2e/levantar.sh parar
+```
+
+Os binários do GoTrue e do PostgREST são descarregados fixados por versão e
+SHA-256. Não é preciso Docker.
 
 Depois de um deploy, o ensaio de fumo prova que o que está no ar responde como
 deve — sem criar contas nem dados:

@@ -9,6 +9,11 @@ o projeto usa [versionamento semântico](https://semver.org/lang/pt-BR/).
 
 ### Segurança e operação
 
+- **Redirecionamento depois do login fechado a destinos disfarçados.** Um
+  `?seguinte=` com um tab ou uma quebra de linha (`/\t/outro-site`) passava a
+  verificação de "caminho interno", e o browser, que apaga esses caracteres, lia-o
+  como outro site. O destino passa a ser validado pelo mesmo parser de URLs que o
+  browser usa.
 - **Sem sessão, nenhuma função da base é executável.** As funções de ajuda da
   RLS deixam de estar abertas a pedidos anónimos, e uma função nova deixa de
   nascer aberta. Não havia fuga (todas leem a identidade da sessão), mas o

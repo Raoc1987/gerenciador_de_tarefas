@@ -31,10 +31,23 @@ function capitalizar(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1) + (/[.!?]$/.test(s) ? "" : ".");
 }
 
-/** Só caminhos internos: `?seguinte=https://mal.com` não leva ninguém para fora. */
+const ORIGEM_INTERNA = "https://interno.invalid";
+
+/**
+ * Só caminhos internos: `?seguinte=https://mal.com` não leva ninguém para fora.
+ *
+ * Quem decide é o parser de URLs, o mesmo que o browser usa: ele apaga tabs e
+ * quebras de linha e trata `\` como `/`, por isso `"/\t/mal.com"` seria lido
+ * como `//mal.com`. Verificar o texto à mão deixava estes casos passar.
+ */
 export function caminhoSeguro(destino: string | null | undefined, padrao = "/app"): string {
-  if (!destino || !destino.startsWith("/") || destino.startsWith("//") || destino.startsWith("/\\")) {
+  if (!destino || !destino.startsWith("/")) return padrao;
+  let url: URL;
+  try {
+    url = new URL(destino, ORIGEM_INTERNA);
+  } catch {
     return padrao;
   }
-  return destino;
+  if (url.origin !== ORIGEM_INTERNA) return padrao;
+  return url.pathname + url.search + url.hash;
 }

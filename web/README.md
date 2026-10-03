@@ -81,6 +81,13 @@ as tarefas de cada pessoa, e importa. O ficheiro é lido **no browser** — só 
 tarefas seguem para o servidor — e reimportar não duplica nada. Decisão e
 limites no [ADR-0020](../docs/architecture/ADR-0020-importacao-do-desktop.md).
 
+## Relatórios
+
+Em *Relatórios*, qualquer pessoa exporta as tarefas que pode ver em **PDF**
+(A4 deitado), **Excel** ou **CSV**, com os indicadores e a análise do painel e
+os filtros que escolher. Os ficheiros são escritos sem bibliotecas, como no
+desktop ([ADR-0021](../docs/architecture/ADR-0021-relatorios-na-web.md)).
+
 ## Verificar
 
 ```bash
@@ -121,6 +128,7 @@ web/
 │           ├── copiloto/       conversa com o Claude e propostas
 │           ├── notificacoes/   que emails cada pessoa recebe
 │           ├── importar/       trazer as tarefas do tarefas.db
+│           ├── relatorios/     exportar em PDF, Excel e CSV
 │           ├── equipa/         membros, papéis, convites
 │           ├── auditoria/      trilha só de leitura
 │           └── definicoes/     nome e segregação de funções
@@ -130,6 +138,7 @@ web/
 │   ├── copiloto/               ciclo do Copiloto (cliente injetado, testável)
 │   ├── emails/                 carteiro da fila de emails (Resend)
 │   ├── importacao/             leitor SQLite e conversão do desktop
+│   ├── relatorios/             PDF, XLSX e CSV escritos à mão
 │   ├── supabase/               clientes servidor e browser
 │   └── contexto.ts             sessão, empresa e papel
 └── proxy.ts                    renova a sessão; /app exige login

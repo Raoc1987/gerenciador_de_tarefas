@@ -37,3 +37,6 @@ installer/Output/
 # Estado de trabalho em curso da skill trabalho-profundo: é de uma sessão,
 # não do projeto.
 .trabalho/
+
+# Código-fonte de dependências clonado para leitura (skill clonar-dependencias).
+.dependencias/

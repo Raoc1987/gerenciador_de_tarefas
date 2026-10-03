@@ -41,6 +41,8 @@ que sobrevive.
   (ou PR, se o trabalho for em PRs encadeados).
 - Para cada fase regista: objetivo, o que valida, e a decisão ou o risco que
   o portão deve olhar.
+- A prova de cada fase planeia-se com a skill **plano-de-verificacao**:
+  alegação, caminho de prova, critério de sucesso e limite de tentativas.
 - Mostra à pessoa uma versão compacta do plano antes de começar.
 
 ## 3. Execução de cada fase
@@ -65,7 +67,10 @@ que sobrevive.
    para contexto estabelecido em vez de redescobrir.
 3. **Revisão independente:** `/code-review high` sobre o diff da fase. Se a
    fase toca em migrações, RLS, autenticação, segredos, rotas de cron ou na
-   chave de serviço, também `/security-review`.
+   chave de serviço, também `/security-review` — e, numa fase grande nessas
+   áreas, a skill **auditoria-seguranca**, com o modelo de ameaças do produto.
+   No fim do trabalho todo, antes do merge, a **auditoria-pr** em modo
+   conjunto sobre as fases juntas.
 4. **Uma passagem de correção** para o que for material, validada com prova
    focada. O que for opcional fica registado, não bloqueia.
 5. **Commit** da fase quando é uma entrega válida por si; só depois a fase

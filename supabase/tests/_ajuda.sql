@@ -2,7 +2,7 @@
 -- security definer), por isso a RLS aplica-se ao que executam.
 
 create schema t;
-grant usage on schema t to anon, authenticated;
+grant usage on schema t to anon, authenticated, service_role;
 
 create function t.pessoa(p_email text) returns uuid language sql as $$
   insert into auth.users (email) values (p_email) returning id
@@ -42,4 +42,4 @@ begin
   return n;
 end $$;
 
-grant execute on all functions in schema t to anon, authenticated;
+grant execute on all functions in schema t to anon, authenticated, service_role;

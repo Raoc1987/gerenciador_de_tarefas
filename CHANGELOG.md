@@ -7,6 +7,20 @@ o projeto usa [versionamento semântico](https://semver.org/lang/pt-BR/).
 
 ## [Não lançado]
 
+### Notificações por email (ADR-0019)
+
+- **Avisos por email** quando lhe atribuem uma tarefa e quando comentam uma
+  tarefa sua; **convites por email** em vez de só uma ligação para copiar; e
+  um **resumo da manhã** nos dias úteis com o que está atrasado ou vence hoje.
+- **Cada pessoa escolhe** o que recebe. Ninguém recebe aviso do que fez a si
+  próprio.
+- **Decidido na base, entregue por um carteiro**: gatilhos põem os emails numa
+  fila invisível a quem está em sessão (tem tokens de convite); o carteiro
+  entrega via Resend, sem repetidos mesmo com dois a correr ou com timeouts, e
+  com até 5 tentativas.
+- A chave de serviço do Supabase entra só aqui, confinada a três funções da
+  base, e um teste falha se aparecer noutro ficheiro.
+
 ### Copiloto (ADR-0018)
 
 - **Perguntar em linguagem natural** pelo trabalho da equipa ("o que está

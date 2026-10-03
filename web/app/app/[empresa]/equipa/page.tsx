@@ -3,6 +3,7 @@ import { contextoDaEmpresa, pessoasDaEmpresa } from "@/lib/contexto";
 import { DESCRICAO_PAPEL, PAPEIS, papeisAtribuiveis, papeisConvidaveis, pode, ROTULO_PAPEL, type Papel } from "@/lib/dominio/papeis";
 import { formatarData } from "@/lib/dominio/datas";
 import { urlDoSite } from "@/lib/supabase/config";
+import { emailsLigados } from "@/lib/emails/configuracao";
 import { Cabecalho, Cartao } from "@/components/ui";
 import { Convidar, LinhaConvite, LinhaMembro } from "./gestao";
 
@@ -70,9 +71,12 @@ export default async function Equipa({ params }: { params: Promise<{ empresa: st
             <Cartao className="p-5">
               <h2 className="mb-1 font-medium">Convidar</h2>
               <p className="mb-4 text-sm text-texto-2">
-                Recebe uma ligação para partilhar. O convite só serve para a conta com esse email e expira em 7 dias.
+                {emailsLigados()
+                  ? "A pessoa recebe a ligação por email; também a pode copiar da lista. "
+                  : "Recebe uma ligação para partilhar. "}
+                O convite só serve para a conta com esse email e expira em 7 dias.
               </p>
-              <Convidar empresaId={id} papeis={papeisConvidaveis(papel)} />
+              <Convidar empresaId={id} papeis={papeisConvidaveis(papel)} porEmail={emailsLigados()} />
             </Cartao>
           )}
           <Cartao className="p-5">

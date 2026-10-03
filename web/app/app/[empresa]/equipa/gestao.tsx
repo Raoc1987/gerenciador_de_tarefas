@@ -102,7 +102,7 @@ export function LinhaConvite({
   );
 }
 
-export function Convidar({ empresaId, papeis }: { empresaId: string; papeis: Papel[] }) {
+export function Convidar({ empresaId, papeis, porEmail }: { empresaId: string; papeis: Papel[]; porEmail: boolean }) {
   const [estado, submeter, aEnviar] = useActionState(convidar.bind(null, empresaId), {});
   const form = useRef<HTMLFormElement>(null);
   useEffect(() => {
@@ -119,7 +119,11 @@ export function Convidar({ empresaId, papeis }: { empresaId: string; papeis: Pap
         </select>
       </Campo>
       <Aviso>{estado.erro}</Aviso>
-      {estado.ok && <Aviso tom="sucesso">Convite criado. Copie a ligação na lista e envie-a.</Aviso>}
+      {estado.ok && (
+        <Aviso tom="sucesso">
+          {porEmail ? "Convite criado. O email segue nos próximos minutos." : "Convite criado. Copie a ligação na lista e envie-a."}
+        </Aviso>
+      )}
       <Botao type="submit" disabled={aEnviar} className="w-full">{aEnviar ? "A convidar…" : "Criar convite"}</Botao>
     </form>
   );

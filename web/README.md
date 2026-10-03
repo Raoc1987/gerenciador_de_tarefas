@@ -61,6 +61,18 @@ Para o ligar, defina `ANTHROPIC_API_KEY` no servidor (no Vercel, em
 *Environment Variables*; nunca com o prefixo `NEXT_PUBLIC_`). Cada pessoa tem um
 limite diário de perguntas, e o consumo fica em `copiloto_uso`.
 
+## Notificações por email
+
+Avisos de atribuição e de comentário, convites por email e um resumo da manhã
+com o que está atrasado. Cada pessoa escolhe o que recebe em *Notificações*.
+Quem decide o que se envia é a base de dados; as rotas de cron só entregam a
+fila. Decisão e custos no [ADR-0019](../docs/architecture/ADR-0019-notificacoes-por-email.md).
+
+Para ligar, no servidor: `RESEND_API_KEY` e `EMAIL_REMETENTE` (de um domínio
+verificado no Resend), `SUPABASE_SERVICE_ROLE_KEY` (usada **só** pelas rotas de
+cron) e `CRON_SECRET` (16+ caracteres). O `vercel.json` agenda a entrega de 5 em
+5 minutos (plano pago do Vercel) e o resumo às 8h de Brasília, nos dias úteis.
+
 ## Verificar
 
 ```bash
@@ -99,6 +111,7 @@ web/
 │           ├── page.tsx        painel
 │           ├── tarefas/        lista, quadro, detalhe, comentários
 │           ├── copiloto/       conversa com o Claude e propostas
+│           ├── notificacoes/   que emails cada pessoa recebe
 │           ├── equipa/         membros, papéis, convites
 │           ├── auditoria/      trilha só de leitura
 │           └── definicoes/     nome e segregação de funções
@@ -106,6 +119,7 @@ web/
 ├── lib/
 │   ├── dominio/                regras puras + testes (sem React, sem rede)
 │   ├── copiloto/               ciclo do Copiloto (cliente injetado, testável)
+│   ├── emails/                 carteiro da fila de emails (Resend)
 │   ├── supabase/               clientes servidor e browser
 │   └── contexto.ts             sessão, empresa e papel
 └── proxy.ts                    renova a sessão; /app exige login

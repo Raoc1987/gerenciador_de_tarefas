@@ -113,6 +113,16 @@ lados — o que passa e o que é recusado, **com o motivo verificado**. Com
 O CI corre os três (`.github/workflows/tests.yml`, jobs `base-de-dados` e
 `web`).
 
+Depois de um deploy, o ensaio de fumo prova que o que está no ar responde como
+deve — sem criar contas nem dados:
+
+```bash
+npm run ensaio:fumo -- https://<deploy>
+```
+
+Sai com `1` se uma verificação falhar e com `2` se o pedido nem chegou à
+aplicação (Proteção de Deployments do Vercel, ou um proxy pelo caminho).
+
 > **Ainda não há `package-lock.json`.** Esta primeira versão foi escrita num
 > ambiente sem acesso ao registo npm. A primeira pessoa a correr
 > `npm install` deve fazer commit do lock gerado; a partir daí o CI usa
@@ -144,10 +154,12 @@ web/
 │   ├── dominio/                regras puras + testes (sem React, sem rede)
 │   ├── copiloto/               ciclo do Copiloto (cliente injetado, testável)
 │   ├── emails/                 carteiro da fila de emails (Resend)
+│   ├── ensaio/                 ensaio de fumo de um deploy
 │   ├── importacao/             leitor SQLite e conversão do desktop
 │   ├── relatorios/             PDF, XLSX e CSV escritos à mão
 │   ├── supabase/               clientes servidor e browser
 │   └── contexto.ts             sessão, empresa e papel
+├── scripts/ensaio-fumo.ts      corre o ensaio contra um URL
 └── proxy.ts                    renova a sessão; /app exige login
 ```
 

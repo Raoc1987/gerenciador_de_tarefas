@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-export type Icone = "painel" | "tarefas" | "copiloto" | "relatorios" | "equipa" | "auditoria" | "definicoes";
+export type Icone = "painel" | "tarefas" | "cronograma" | "copiloto" | "relatorios" | "equipa" | "auditoria" | "definicoes";
 export interface ItemNav {
   href: string;
   rotulo: string;
@@ -13,6 +13,7 @@ export interface ItemNav {
 const CAMINHOS: Record<Icone, string> = {
   painel: "M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z",
   tarefas: "M9 11l3 3L22 4M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11",
+  cronograma: "M3 5h9M7 10h11M5 15h7M10 20h11M3 3v18",
   copiloto: "M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9L12 3zM19 15l.9 2.1L22 18l-2.1.9L19 21l-.9-2.1L16 18l2.1-.9L19 15z",
   relatorios: "M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M8 13h8M8 17h8M8 9h2",
   equipa: "M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm14 10v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75",

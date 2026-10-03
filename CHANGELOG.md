@@ -7,6 +7,22 @@ o projeto usa [versionamento semântico](https://semver.org/lang/pt-BR/).
 
 ## [Não lançado]
 
+### Cronograma
+
+- **Caminho crítico e nivelamento de recursos**, na nova página
+  "Cronograma". Mostra:
+  - a data de fim prevista, com e sem os limites das pessoas;
+  - as tarefas críticas;
+  - quem tem trabalho sobreposto;
+  - quantos dias cada tarefa foi empurrada por falta de quem a faça;
+  - barras com a posição antes e depois de nivelar.
+- O tempo conta-se em dias úteis, sem os feriados nacionais (incluindo
+  Sexta-feira Santa, Páscoa e Corpo de Deus).
+- A duração e o "não começa antes de" editam-se na própria tabela.
+- Uma tarefa com subtarefas é um resumo, e uma ligação a ela vale para todas
+  as subtarefas.
+- Decisão e limites no ADR-0024.
+
 ### Subtarefas e dependências
 
 - **Uma tarefa pode ter subtarefas**, sem limite de profundidade, com o

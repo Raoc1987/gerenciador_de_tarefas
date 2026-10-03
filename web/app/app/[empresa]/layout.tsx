@@ -20,6 +20,7 @@ export default async function ConchaDaEmpresa({
   const itens: ItemNav[] = [
     { href: base, rotulo: "Painel", icone: "painel" },
     { href: `${base}/tarefas`, rotulo: "Tarefas", icone: "tarefas" },
+    { href: `${base}/cronograma`, rotulo: "Cronograma", icone: "cronograma" },
     { href: `${base}/copiloto`, rotulo: "Copiloto", icone: "copiloto" },
     { href: `${base}/relatorios`, rotulo: "Relatórios", icone: "relatorios" },
     { href: `${base}/equipa`, rotulo: "Equipa", icone: "equipa" },
@@ -35,6 +36,7 @@ export default async function ConchaDaEmpresa({
     { rotulo: "As minhas tarefas", href: `${base}/tarefas?responsavel=eu` },
     { rotulo: "Tarefas atrasadas", href: `${base}/tarefas?atrasadas=1` },
     { rotulo: "Quadro", href: `${base}/tarefas?vista=quadro` },
+    { rotulo: "Caminho crítico e carga das pessoas", href: `${base}/cronograma` },
     { rotulo: "Notificações por email", href: `${base}/notificacoes` },
     { rotulo: "A minha conta: descarregar os meus dados ou apagar a conta", href: `${base}/conta` },
     ...(pode(papel, "pessoas.gerir") ? [{ rotulo: "Importar do desktop", href: `${base}/importar` }] : []),

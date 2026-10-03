@@ -20,6 +20,7 @@ export default async function ConchaDaEmpresa({
   const itens: ItemNav[] = [
     { href: base, rotulo: "Painel", icone: "painel" },
     { href: `${base}/tarefas`, rotulo: "Tarefas", icone: "tarefas" },
+    { href: `${base}/copiloto`, rotulo: "Copiloto", icone: "copiloto" },
     { href: `${base}/equipa`, rotulo: "Equipa", icone: "equipa" },
     ...(pode(papel, "auditoria.ler") ? [{ href: `${base}/auditoria`, rotulo: "Auditoria", icone: "auditoria" } as const] : []),
     ...(pode(papel, "definicoes.editar") ? [{ href: `${base}/definicoes`, rotulo: "Definições", icone: "definicoes" } as const] : []),
@@ -28,6 +29,7 @@ export default async function ConchaDaEmpresa({
   const comandos = [
     ...itens.map((i) => ({ rotulo: `Ir para ${i.rotulo}`, href: i.href })),
     ...(pode(papel, "tarefas.criar") ? [{ rotulo: "Nova tarefa", href: `${base}/tarefas?nova=1` }] : []),
+    { rotulo: "Perguntar ao Copiloto", href: `${base}/copiloto` },
     { rotulo: "As minhas tarefas", href: `${base}/tarefas?responsavel=eu` },
     { rotulo: "Tarefas atrasadas", href: `${base}/tarefas?atrasadas=1` },
     { rotulo: "Quadro", href: `${base}/tarefas?vista=quadro` },

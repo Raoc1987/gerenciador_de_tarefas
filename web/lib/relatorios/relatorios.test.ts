@@ -38,7 +38,7 @@ function lerZip(z: Uint8Array): Map<string, string> {
 
 const tarefa = (o: Partial<Tarefa>): Tarefa => ({
   id: "t", empresa_id: "e", titulo: "T", descricao: "", estado: "a_fazer", prioridade: "media", prazo: null,
-  etiquetas: [], responsavel_id: null, posicao: 0, criada_por: "u", criada_em: "2026-08-01T10:00:00Z",
+  etiquetas: [], responsavel_id: null, pai_id: null, posicao: 0, criada_por: "u", criada_em: "2026-08-01T10:00:00Z",
   atualizada_em: "", concluida_por: null, concluida_em: null, ...o,
 });
 

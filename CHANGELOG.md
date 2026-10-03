@@ -7,6 +7,21 @@ o projeto usa [versionamento semântico](https://semver.org/lang/pt-BR/).
 
 ## [Não lançado]
 
+### Subtarefas e dependências
+
+- **Uma tarefa pode ter subtarefas**, sem limite de profundidade, com o
+  progresso na tarefa-mãe e o caminho de volta no topo da página.
+- **As tarefas ligam-se umas às outras** com os quatro tipos de um
+  cronograma (fim→início, início→início, fim→fim, início→fim) e um
+  desfasamento em dias. A página mostra de que tarefas esta depende, quais
+  estão por cumprir e quem está à espera dela.
+- As regras estão na base: a mãe e as tarefas ligadas são da mesma empresa;
+  não há ciclos, nem na hierarquia nem nas dependências, mesmo com duas
+  pessoas a ligar ao mesmo tempo; mãe e filha não se ligam; só liga quem
+  pode escrever na tarefa que fica à espera, e uma recusa não revela nada
+  sobre tarefas que a pessoa não vê. É a primeira fatia do modelo de nós
+  (ADR-0023) e prepara o caminho crítico.
+
 ### RGPD
 
 - **Cada pessoa descarrega os seus dados e apaga a conta sozinha**, em "A

@@ -8,6 +8,8 @@ import { estaAtrasada, type Tarefa } from "@/lib/dominio/tarefas";
 import { Cartao, Selo } from "@/components/ui";
 import { EdicaoTarefa } from "./edicao";
 import { Comentarios } from "./comentarios";
+import { Ligacoes, type LigacaoVista, type TarefaCurta } from "./ligacoes";
+import type { TipoDependencia } from "@/lib/dominio/ligacoes";
 
 export const metadata: Metadata = { title: "Tarefa" };
 
@@ -19,10 +21,32 @@ export default async function DetalheTarefa({ params }: { params: Promise<{ empr
   if (!tarefa) notFound();
   const t = tarefa as Tarefa;
 
-  const [{ data: comentarios }, pessoas] = await Promise.all([
+  // A RLS filtra tudo isto: só chegam as subtarefas, ligações e candidatas
+  // que a pessoa pode ver.
+  const [{ data: comentarios }, pessoas, { data: filhas }, { data: deps }, { data: outras }, { data: mae }] = await Promise.all([
     supabase.from("comentarios").select("id, autor_id, corpo, criado_em").eq("tarefa_id", id).order("criado_em"),
     pessoasDaEmpresa(empresaId),
+    supabase.from("tarefas").select("id, titulo, estado").eq("pai_id", id).order("criada_em"),
+    supabase
+      .from("dependencias")
+      .select("id, antecessora_id, sucessora_id, tipo, desfasamento_dias")
+      .or(`antecessora_id.eq.${id},sucessora_id.eq.${id}`),
+    supabase.from("tarefas").select("id, titulo, estado").eq("empresa_id", empresaId).neq("id", id).order("titulo").limit(500),
+    t.pai_id
+      ? supabase.from("tarefas").select("id, titulo, estado").eq("id", t.pai_id).maybeSingle()
+      : Promise.resolve({ data: null }),
   ]);
+  const curtas = new Map<string, TarefaCurta>((outras ?? []).map((o) => [o.id as string, o as TarefaCurta]));
+  const vista = (d: Record<string, unknown>, outraId: string): LigacaoVista[] => {
+    const outra = curtas.get(outraId);
+    return outra ? [{ id: d.id as string, outra, tipo: d.tipo as TipoDependencia, desfasamento_dias: d.desfasamento_dias as number }] : [];
+  };
+  const dependeDe = (deps ?? []).filter((d) => d.sucessora_id === id).flatMap((d) => vista(d, d.antecessora_id as string));
+  const bloqueia = (deps ?? []).filter((d) => d.antecessora_id === id).flatMap((d) => vista(d, d.sucessora_id as string));
+  // Candidatas a antecessora: as que ainda não estão ligadas. A base recusa
+  // mães, filhas e ciclos; não vale a pena repetir essa conta aqui.
+  const ligadas = new Set([...dependeDe, ...bloqueia].map((l) => l.outra.id));
+  const candidatas = [...curtas.values()].filter((c) => !ligadas.has(c.id));
   const nome = (uid: string | null) => {
     const p = pessoas.find((x) => x.id === uid);
     return p ? p.nome || p.email : "—";
@@ -37,8 +61,14 @@ export default async function DetalheTarefa({ params }: { params: Promise<{ empr
   return (
     <div className="grid gap-6 lg:grid-cols-[1fr_18rem]">
       <div className="min-w-0 space-y-6">
-        <nav className="text-sm text-texto-2">
+        <nav className="flex flex-wrap gap-x-2 text-sm text-texto-2">
           <Link href={`/app/${empresaId}/tarefas`} className="hover:text-texto">← Tarefas</Link>
+          {mae && (
+            <>
+              <span aria-hidden>/</span>
+              <Link href={`/app/${empresaId}/tarefas/${mae.id}`} className="hover:text-texto">{mae.titulo as string}</Link>
+            </>
+          )}
         </nav>
         <Cartao className="p-6">
           <EdicaoTarefa
@@ -51,6 +81,15 @@ export default async function DetalheTarefa({ params }: { params: Promise<{ empr
             podeApagar={pode(papel, "tarefas.apagar")}
           />
         </Cartao>
+        <Ligacoes
+          empresaId={empresaId}
+          tarefaId={id}
+          subtarefas={(filhas ?? []) as TarefaCurta[]}
+          dependeDe={dependeDe}
+          bloqueia={bloqueia}
+          candidatas={candidatas}
+          podeEditar={podeEditar}
+        />
         <Comentarios
           empresaId={empresaId}
           tarefaId={id}

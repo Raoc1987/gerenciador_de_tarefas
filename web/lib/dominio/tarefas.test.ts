@@ -7,7 +7,7 @@ import {
 
 const base: Tarefa = {
   id: "1", empresa_id: "e", titulo: "T", descricao: "", estado: "a_fazer", prioridade: "media",
-  prazo: null, etiquetas: [], responsavel_id: null, posicao: 0, criada_por: "u",
+  prazo: null, etiquetas: [], responsavel_id: null, pai_id: null, posicao: 0, criada_por: "u",
   criada_em: "2026-10-01T10:00:00Z", atualizada_em: "2026-10-01T10:00:00Z",
   concluida_por: null, concluida_em: null,
 };

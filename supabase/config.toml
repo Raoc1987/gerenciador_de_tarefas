@@ -1,0 +1,3 @@
+# Configuração mínima para a CLI do Supabase aplicar supabase/migrations/
+# (`supabase db push`). Tudo o resto fica nos valores por omissão da CLI.
+project_id = "gerenciador-de-tarefas"

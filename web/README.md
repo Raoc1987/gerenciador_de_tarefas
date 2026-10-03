@@ -22,13 +22,20 @@ aplicação: tudo chega à base como a pessoa em sessão.
 
 ## Pôr a correr
 
-1. **Projeto Supabase.** Crie um em [supabase.com](https://supabase.com) e,
-   na raiz do repositório:
+1. **Projeto Supabase.** Crie um em [supabase.com](https://supabase.com)
+   (região `eu-central-1`, ver ADR-0022). As migrações chegam à produção pelo
+   workflow `.github/workflows/base-de-dados.yml`: corre os testes e depois
+   `supabase db push`, sempre que `supabase/migrations/` muda na `main` (ou à
+   mão, em *Actions → Base de dados — produção → Run workflow*). Para o ligar,
+   em *Settings → Environments* crie o ambiente `producao` com o segredo
+   `SUPABASE_DB_URL`: a ligação *Session pooler* do projeto (*Connect*), com
+   a palavra-passe da base. Os runners do GitHub não têm IPv6, por isso a
+   ligação direta não serve.
+
+   Para aplicar à mão, na raiz do repositório:
 
    ```bash
-   npx supabase init        # só se ainda não houver supabase/config.toml
-   npx supabase link --project-ref <ref-do-projeto>
-   npx supabase db push     # aplica supabase/migrations/
+   npx supabase db push --db-url "<ligação session pooler>"
    ```
 
    Nunca cole as migrações no editor SQL: ele não regista o que correu, e a

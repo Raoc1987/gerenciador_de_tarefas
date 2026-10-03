@@ -52,6 +52,9 @@ select t.ok(not exists (
     and not coalesce('security_invoker=true' = any (c.reloptions), false)
 ), 'toda a view de public corre com os direitos de quem a lê');
 
+select t.ok(not has_schema_privilege('anon', 'interno', 'usage') and not has_schema_privilege('authenticated', 'interno', 'usage'),
+            'ninguém em sessão entra no esquema interno (modos da importação e do apagamento)');
+
 -- A próxima migração também fica coberta: uma função criada agora não nasce
 -- executável por anon.
 create function public.sonda_postura() returns int language sql as 'select 1';

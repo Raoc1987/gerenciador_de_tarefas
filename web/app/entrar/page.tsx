@@ -11,9 +11,9 @@ export const metadata: Metadata = { title: "Entrar" };
 export default async function PaginaEntrar({
   searchParams,
 }: {
-  searchParams: Promise<{ seguinte?: string; modo?: string; erro?: string }>;
+  searchParams: Promise<{ seguinte?: string; modo?: string; erro?: string; conta?: string }>;
 }) {
-  const { seguinte, modo, erro } = await searchParams;
+  const { seguinte, modo, erro, conta } = await searchParams;
   const destino = caminhoSeguro(seguinte);
 
   const supabase = await clienteServidor();
@@ -31,6 +31,11 @@ export default async function PaginaEntrar({
         {erro && (
           <p role="alert" className="mb-4 rounded-lg bg-perigo-suave px-3 py-2 text-sm text-perigo">
             A ligação expirou ou já foi usada. Peça outra.
+          </p>
+        )}
+        {conta === "apagada" && (
+          <p role="status" className="mb-4 rounded-lg bg-superficie-2 px-3 py-2 text-sm">
+            A sua conta foi apagada.
           </p>
         )}
         <Formularios seguinte={destino} modoInicial={modo === "registar" ? "registar" : "entrar"} />

@@ -47,3 +47,11 @@ test("redirecionamentos: o que o browser apaga antes de ler o URL não abre uma 
   assert.equal(caminhoSeguro("/app/e1/tarefas?vista=quadro#t2"), "/app/e1/tarefas?vista=quadro#t2");
   assert.equal(caminhoSeguro("/convite/abc"), "/convite/abc");
 });
+
+test("as recusas de validação das nossas funções (22023) mostram-se como estão", () => {
+  assert.equal(
+    mensagemDeErro({ code: "22023", message: "para confirmar, escreva o email da sua conta" }),
+    "Para confirmar, escreva o email da sua conta.",
+  );
+  assert.equal(mensagemDeErro({ code: "22023", message: "invalid input syntax for type uuid: \"x\"" }), "Algo correu mal. Tente outra vez.");
+});

@@ -32,6 +32,21 @@ begin
   raise exception 'FALHOU (era para ser recusado): %', p_nome;
 end $$;
 
+-- Como t.recusa, mas a recusa tem de ser pelo motivo certo: um erro de
+-- sintaxe ou de permissão errada não conta como "recusado pela regra".
+create function t.recusa_por(p_sql text, p_motivo text, p_nome text) returns text language plpgsql as $$
+begin
+  begin
+    execute p_sql;
+  exception when others then
+    if position(lower(p_motivo) in lower(sqlerrm)) = 0 then
+      raise exception 'FALHOU (recusado, mas pelo motivo errado): % — %', p_nome, sqlerrm;
+    end if;
+    return 'ok  ' || p_nome || '  (' || sqlerrm || ')';
+  end;
+  raise exception 'FALHOU (era para ser recusado): %', p_nome;
+end $$;
+
 -- Quantas linhas um comando tocou: a RLS em UPDATE/DELETE não dá erro,
 -- simplesmente não encontra a linha.
 create function t.linhas(p_sql text) returns integer language plpgsql as $$

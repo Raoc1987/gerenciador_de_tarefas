@@ -22,13 +22,20 @@ aplicação: tudo chega à base como a pessoa em sessão.
 
 ## Pôr a correr
 
-1. **Projeto Supabase.** Crie um em [supabase.com](https://supabase.com) e,
-   na raiz do repositório:
+1. **Projeto Supabase.** Crie um em [supabase.com](https://supabase.com)
+   (região `eu-central-1`, ver ADR-0022). As migrações chegam à produção pelo
+   workflow `.github/workflows/base-de-dados.yml`: corre os testes e depois
+   `supabase db push`, sempre que `supabase/migrations/` muda na `main` (ou à
+   mão, em *Actions → Base de dados — produção → Run workflow*). Para o ligar,
+   em *Settings → Environments* crie o ambiente `producao` com o segredo
+   `SUPABASE_DB_URL`: a ligação *Session pooler* do projeto (*Connect*), com
+   a palavra-passe da base. Os runners do GitHub não têm IPv6, por isso a
+   ligação direta não serve.
+
+   Para aplicar à mão, na raiz do repositório:
 
    ```bash
-   npx supabase init        # só se ainda não houver supabase/config.toml
-   npx supabase link --project-ref <ref-do-projeto>
-   npx supabase db push     # aplica supabase/migrations/
+   npx supabase db push --db-url "<ligação session pooler>"
    ```
 
    Nunca cole as migrações no editor SQL: ele não regista o que correu, e a
@@ -71,7 +78,7 @@ fila. Decisão e custos no [ADR-0019](../docs/architecture/ADR-0019-notificacoes
 Para ligar, no servidor: `RESEND_API_KEY` e `EMAIL_REMETENTE` (de um domínio
 verificado no Resend), `SUPABASE_SERVICE_ROLE_KEY` (usada **só** pelas rotas de
 cron) e `CRON_SECRET` (16+ caracteres). O `vercel.json` agenda a entrega de 5 em
-5 minutos (plano pago do Vercel) e o resumo às 8h de Brasília, nos dias úteis.
+5 minutos (plano pago do Vercel) e o resumo às 7h UTC nos dias úteis (8h em Lisboa no verão, 7h no inverno).
 
 ## Importar do desktop
 
@@ -106,6 +113,16 @@ lados — o que passa e o que é recusado, **com o motivo verificado**. Com
 O CI corre os três (`.github/workflows/tests.yml`, jobs `base-de-dados` e
 `web`).
 
+Depois de um deploy, o ensaio de fumo prova que o que está no ar responde como
+deve — sem criar contas nem dados:
+
+```bash
+npm run ensaio:fumo -- https://<deploy>
+```
+
+Sai com `1` se uma verificação falhar e com `2` se o pedido nem chegou à
+aplicação (Proteção de Deployments do Vercel, ou um proxy pelo caminho).
+
 > **Ainda não há `package-lock.json`.** Esta primeira versão foi escrita num
 > ambiente sem acesso ao registo npm. A primeira pessoa a correr
 > `npm install` deve fazer commit do lock gerado; a partir daí o CI usa
@@ -137,10 +154,12 @@ web/
 │   ├── dominio/                regras puras + testes (sem React, sem rede)
 │   ├── copiloto/               ciclo do Copiloto (cliente injetado, testável)
 │   ├── emails/                 carteiro da fila de emails (Resend)
+│   ├── ensaio/                 ensaio de fumo de um deploy
 │   ├── importacao/             leitor SQLite e conversão do desktop
 │   ├── relatorios/             PDF, XLSX e CSV escritos à mão
 │   ├── supabase/               clientes servidor e browser
 │   └── contexto.ts             sessão, empresa e papel
+├── scripts/ensaio-fumo.ts      corre o ensaio contra um URL
 └── proxy.ts                    renova a sessão; /app exige login
 ```
 

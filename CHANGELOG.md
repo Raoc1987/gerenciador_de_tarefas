@@ -7,6 +7,48 @@ o projeto usa [versionamento semântico](https://semver.org/lang/pt-BR/).
 
 ## [Não lançado]
 
+### Segurança e operação
+
+- **Redirecionamento depois do login fechado a destinos disfarçados.** Um
+  `?seguinte=` com um tab ou uma quebra de linha (`/\t/outro-site`) passava a
+  verificação de "caminho interno", e o browser, que apaga esses caracteres, lia-o
+  como outro site. O destino passa a ser validado pelo mesmo parser de URLs que o
+  browser usa.
+- **Sem sessão, nenhuma função da base é executável.** As funções de ajuda da
+  RLS deixam de estar abertas a pedidos anónimos, e uma função nova deixa de
+  nascer aberta. Não havia fuga (todas leem a identidade da sessão), mas o
+  verificador do Supabase assinalava-o.
+- **A postura de segurança da base passa a ser um teste**
+  (`supabase/tests/80_postura_seguranca.sql`): falha se uma tabela nascer sem
+  RLS, uma função `security definer` sem `search_path` fixo, ou se `anon`
+  puder executar uma função ou tocar numa tabela.
+- **As migrações chegam à produção pelo GitHub Actions**
+  (`base-de-dados.yml`): os testes correm primeiro, depois `supabase db push`,
+  com a CLI fixada por versão e SHA-256 e o segredo no ambiente `producao`.
+- **Ensaio de fumo de um deploy** (`npm run ensaio:fumo -- <url>`): prova que
+  o site está de pé, que `/app` pede login, que os crons recusam sem segredo e
+  que os cabeçalhos de segurança vão em todas as respostas — e distingue uma
+  falha da aplicação de um pedido que nem lá chegou.
+- O Dependabot passa a atualizar também as dependências da web, com as
+  menores agrupadas num PR por semana.
+
+### Desenvolvimento
+
+- `CLAUDE.md` com as regras que não se dobram e skills do projeto em
+  `.claude/skills/` para auditorias de segurança, de PRs e de issues,
+  lançamentos, dependências, ensaios de deploy, arquitetura e escrita, com um
+  teste (`tests/test_skills.py`) que impede o índice e as skills de se
+  desencontrarem.
+
+### Portugal primeiro (ADR-0022)
+
+- Fuso de **Lisboa**, datas e textos em **português europeu**, e o Copiloto a
+  responder em português de Portugal.
+- Base de dados e funções em **Frankfurt**, perto dos clientes e dentro da UE.
+- O resumo da manhã às 7h UTC (8h em Lisboa no verão).
+- A importação do desktop converte as datas com as regras de hora de verão de
+  Portugal, em vez de um desvio fixo.
+
 ### Relatórios (ADR-0021)
 
 - **Exportar em PDF, Excel e CSV** as tarefas que cada pessoa pode ver, com os

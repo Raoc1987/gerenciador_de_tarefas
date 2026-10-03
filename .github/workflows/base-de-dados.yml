@@ -1,0 +1,63 @@
+name: Base de dados — produção
+
+# Aplica supabase/migrations/ ao projeto Supabase de produção quando entram
+# na main. As migrações correm antes nos testes (o mesmo correr.sh do CI), e
+# só depois `supabase db push` — que regista o que aplicou e não repete nada.
+on:
+  push:
+    branches: [main]
+    paths: ["supabase/migrations/**"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Duas aplicações ao mesmo tempo nunca: a segunda espera pela primeira.
+concurrency:
+  group: base-de-dados-producao
+  cancel-in-progress: false
+
+jobs:
+  testes:
+    name: Migrações reais + testes de RLS
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - run: supabase/tests/correr.sh
+
+  aplicar:
+    name: Aplicar à produção
+    needs: testes
+    runs-on: ubuntu-latest
+    # O ambiente "producao" pode exigir aprovação em Settings → Environments.
+    environment: producao
+    env:
+      # Ligação "Session pooler" (IPv4) do projeto, com a palavra-passe.
+      SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+      CLI_VERSAO: "2.119.0"
+      CLI_SHA256: bf1c3ae93be98533eb8a3105dbf4564bd0b2d9dc24690d8a920f980ef975c1b4
+      DO_NOT_TRACK: "1"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Sem SUPABASE_DB_URL, não há onde aplicar
+        if: env.SUPABASE_DB_URL == ''
+        run: echo "::warning::Defina o segredo SUPABASE_DB_URL no ambiente producao para aplicar as migrações."
+
+      # O binário é fixado por versão e por SHA-256, como as Actions por SHA.
+      - name: CLI do Supabase
+        if: env.SUPABASE_DB_URL != ''
+        run: |
+          f="supabase_${CLI_VERSAO}_linux_amd64.tar.gz"
+          curl -sSLf -o "$f" "https://github.com/supabase/cli/releases/download/v${CLI_VERSAO}/$f"
+          echo "$CLI_SHA256  $f" | sha256sum -c
+          tar xzf "$f" supabase
+          ./supabase --version
+
+      - name: O que vai ser aplicado
+        if: env.SUPABASE_DB_URL != ''
+        run: ./supabase db push --db-url "$SUPABASE_DB_URL" --dry-run
+
+      - name: Aplicar
+        if: env.SUPABASE_DB_URL != ''
+        run: ./supabase db push --db-url "$SUPABASE_DB_URL" --yes

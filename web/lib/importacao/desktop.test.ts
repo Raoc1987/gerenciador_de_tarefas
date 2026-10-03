@@ -62,8 +62,8 @@ test("datas: ISO e dd/mm/aaaa; impossíveis e vazias ficam sem prazo", () => {
   assert.equal(dataDoDesktop("2026-02-30"), null);
   assert.equal(dataDoDesktop(""), null);
   assert.equal(dataDoDesktop(null), null);
-  assert.equal(momentoDoDesktop("2026-09-01T09:30:00"), "2026-09-01T09:30:00-03:00");
-  assert.equal(momentoDoDesktop("2026-09-01 09:30"), "2026-09-01T09:30:00-03:00");
+  assert.equal(momentoDoDesktop("2026-09-01T09:30:00"), "2026-09-01T09:30:00", "sem fuso: a base converte");
+  assert.equal(momentoDoDesktop("2026-09-01 09:30"), "2026-09-01T09:30:00");
   assert.equal(momentoDoDesktop("ontem"), null);
 });
 
@@ -82,7 +82,7 @@ test("preparar: estados, datas, origem estável, responsável escolhido — e tu
   assert.equal(lote.length, 4);
   const feita = lote.find((t) => t.estado === "concluida")!;
   assert.equal(feita.titulo, "Fechar o mês");
-  assert.equal(feita.concluida_em, "2026-09-20T17:00:00-03:00");
+  assert.equal(feita.concluida_em, "2026-09-20T17:00:00");
   assert.equal(feita.responsavel_id, "6f1c2b9e-1a2b-4c3d-8e9f-0a1b2c3d4e5f");
   assert.equal(lote.find((t) => t.titulo.startsWith("Preparar"))!.responsavel_id, null, "o bruno ficou sem correspondência");
   assert.equal(lote.find((t) => t.titulo === "Tarefa sem dono")!.responsavel_id, null);

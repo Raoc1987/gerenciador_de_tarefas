@@ -36,3 +36,14 @@ test("redirecionamentos só para dentro", () => {
   assert.equal(caminhoSeguro("/\\mal.com"), "/app");
   assert.equal(caminhoSeguro(null), "/app");
 });
+
+test("redirecionamentos: o que o browser apaga antes de ler o URL não abre uma porta para fora", () => {
+  // O parser de URLs dos browsers (WHATWG) tira tabs e quebras de linha:
+  // "/\t/mal.com" é lido como "//mal.com", que é outro site.
+  for (const d of ["/\t/mal.com", "/\n/mal.com", "/\r\n/mal.com", "/\\\t/mal.com"]) {
+    assert.equal(caminhoSeguro(d), "/app", JSON.stringify(d));
+  }
+  // Caminhos legítimos continuam iguais, com query e âncora.
+  assert.equal(caminhoSeguro("/app/e1/tarefas?vista=quadro#t2"), "/app/e1/tarefas?vista=quadro#t2");
+  assert.equal(caminhoSeguro("/convite/abc"), "/convite/abc");
+});

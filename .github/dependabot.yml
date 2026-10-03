@@ -23,3 +23,19 @@ updates:
     open-pull-requests-limit: 5
     commit-message:
       prefix: "chore(ci)"
+
+  # A plataforma web (ADR-0017). As atualizações menores e de correção chegam
+  # num só PR por semana: verificam-se juntas, com um CI, em vez de uma a uma
+  # (skill `dependencias`). As de versão maior vêm sozinhas, porque podem
+  # partir a API.
+  - package-ecosystem: npm
+    directory: "/web"
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(deps)"
+    groups:
+      web-menores:
+        update-types: [minor, patch]

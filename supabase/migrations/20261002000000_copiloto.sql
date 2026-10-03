@@ -43,7 +43,7 @@ create trigger antes_de_registar
   for each row execute function public.antes_de_registar_uso();
 
 -- Quantas perguntas esta pessoa já fez hoje (no fuso que a aplicação indica).
-create function public.copiloto_perguntas_hoje(p_fuso text default 'America/Sao_Paulo')
+create function public.copiloto_perguntas_hoje(p_fuso text default 'Europe/Lisbon')
 returns integer
 language sql stable security invoker set search_path = '' as $$
   select count(*)::integer from public.copiloto_uso

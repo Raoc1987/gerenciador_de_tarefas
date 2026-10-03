@@ -57,14 +57,16 @@ export function dataDoDesktop(v: Valor): string | null {
 }
 
 /**
- * "2026-09-01T09:30:00" (hora local do computador, sem fuso) → com o fuso
- * indicado. O desktop não guardava o fuso; assume-se o da empresa.
+ * "2026-09-01 09:30" → "2026-09-01T09:30:00": a hora local do computador,
+ * normalizada e ainda SEM fuso. O desktop não guardava o fuso, e um desvio
+ * fixo erraria metade do ano em Portugal (hora de verão): quem converte é a
+ * base, com as regras do fuso da empresa (public.importar_tarefas, p_fuso).
  */
-export function momentoDoDesktop(v: Valor, desvio = "-03:00"): string | null {
+export function momentoDoDesktop(v: Valor): string | null {
   const s = texto(v).trim();
   const m = s.match(/^(\d{4}-\d{2}-\d{2})[T ](\d{2}:\d{2}(?::\d{2})?)/);
   if (!m || !dataDoDesktop(m[1])) return null;
-  return `${m[1]}T${m[2].length === 5 ? `${m[2]}:00` : m[2]}${desvio}`;
+  return `${m[1]}T${m[2].length === 5 ? `${m[2]}:00` : m[2]}`;
 }
 
 export function lerBaseDoDesktop(bytes: Uint8Array): LeituraDesktop {
@@ -127,13 +129,12 @@ export function dividirTexto(texto: string): { titulo: string; descricao: string
 export function prepararImportacao(
   leitura: LeituraDesktop,
   mapa: Record<string, string | null>,
-  desvio = "-03:00",
 ): TarefaParaImportar[] {
   return leitura.tarefas
     .filter((t) => t.texto.trim())
     .map((t) => {
       const { titulo, descricao } = dividirTexto(t.texto);
-      const criada = momentoDoDesktop(t.criada_em, desvio);
+      const criada = momentoDoDesktop(t.criada_em);
       return {
         origem: `desktop:${t.id}:${t.criada_em ?? ""}`.slice(0, 200),
         titulo,
@@ -141,7 +142,7 @@ export function prepararImportacao(
         estado: t.concluida ? "concluida" : "a_fazer",
         prazo: t.prazo,
         criada_em: criada,
-        concluida_em: t.concluida ? momentoDoDesktop(t.concluida_em, desvio) ?? criada : null,
+        concluida_em: t.concluida ? momentoDoDesktop(t.concluida_em) ?? criada : null,
         etiquetas: ["importado"],
         responsavel_id: (t.autor && mapa[t.autor.toLowerCase()]) || null,
       };

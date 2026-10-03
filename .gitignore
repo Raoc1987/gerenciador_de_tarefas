@@ -29,6 +29,11 @@ installer/Output/
 # aparecer por rastrear, e um `git add -A` distraído commita o projeto
 # duplicado dentro de si mesmo.
 #
-# Para versionar configuração do Claude (settings.json, agentes, skills),
-# acrescente uma excepção: `!.claude/settings.json`.
-.claude/
+# As skills do projeto são versionadas (`.claude/skills/`); para versionar
+# mais configuração do Claude, acrescente outra excepção.
+.claude/*
+!.claude/skills/
+
+# Estado de trabalho em curso da skill trabalho-profundo: é de uma sessão,
+# não do projeto.
+.trabalho/

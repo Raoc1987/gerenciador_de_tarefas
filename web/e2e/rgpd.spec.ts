@@ -17,7 +17,7 @@ async function entrar(page: Page, email: string) {
 test("descarregar os meus dados dá um JSON com a minha conta e só os meus dados", async ({ page }) => {
   const base = await entrar(page, "colaborador@ensaio.pt");
   await page.goto(base + "/conta");
-  const [descarga] = await Promise.all([page.waitForEvent("download"), page.getByText("Descarregar os meus dados").click()]);
+  const [descarga] = await Promise.all([page.waitForEvent("download"), page.getByRole("link", { name: "Descarregar os meus dados" }).click()]);
   expect(descarga.suggestedFilename()).toMatch(/^os-meus-dados-\d{4}-\d{2}-\d{2}\.json$/);
   const dados = JSON.parse(await readFile((await descarga.path())!, "utf8"));
   expect(dados.conta.email).toBe("colaborador@ensaio.pt");

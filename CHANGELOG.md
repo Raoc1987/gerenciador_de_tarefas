@@ -7,6 +7,35 @@ o projeto usa [versionamento semântico](https://semver.org/lang/pt-BR/).
 
 ## [Não lançado]
 
+### Plataforma web (ADR-0017)
+
+O produto passa a ser uma **plataforma web multiempresa**, em `web/`, com
+Next.js 16, React 19, TypeScript, Tailwind 4 e Supabase. O desktop em `src/`
+congela: recebe correções de segurança e de perda de dados, não recebe
+funcionalidades.
+
+- **Contas e empresas**: registo, entrada com palavra-passe ou por ligação de
+  email, várias empresas por pessoa e convites por email que só servem para a
+  conta a que se destinam.
+- **Seis papéis**, os do desktop mais o **proprietário**: um administrador
+  gere quem está abaixo de si e não toca no proprietário; a empresa nunca fica
+  sem um.
+- **Tarefas** em lista e em **quadro com arrastar e largar**, atualizadas **em
+  tempo real** quando outra pessoa mexe; filtros que vivem no URL; prazos,
+  prioridades, etiquetas, responsável e comentários.
+- **Painel**: abertas, atrasadas, a vencer hoje, série de 30 dias com média
+  móvel, distribuição por estado e prioridade, carga por pessoa e uma análise
+  em frases. Um colaborador vê os números **das suas** tarefas.
+- **Auditoria imutável**: quem, o quê, quando, antes e depois, por empresa.
+  Nem o dono da base a altera — um gatilho recusa-o.
+- **Segregação de funções** opcional: quem cria uma tarefa não a conclui.
+- **Paleta de comandos** (`Ctrl+K`), modo claro e escuro, estados de
+  carregamento e de erro, e o arrastar no quadro tem alternativa por teclado.
+- **A segurança é da base de dados**: RLS em todas as tabelas, provada por
+  95 verificações contra um Postgres real (`supabase/tests/correr.sh`), cada
+  recusa com o motivo verificado. A aplicação não usa a chave de serviço.
+
+
 ### Adicionado
 
 - **Guia de contribuições** (`CONTRIBUTING.md`): o que classificar antes de

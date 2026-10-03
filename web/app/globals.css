@@ -1,0 +1,62 @@
+@import "tailwindcss";
+
+/* Tokens do design system. Os pares de cor seguem a regra do desktop
+   (ADR-0008): texto sobre fundo com contraste WCAG AA, nos dois modos. */
+@theme {
+  --color-fundo: #f7f7f8;
+  --color-superficie: #ffffff;
+  --color-superficie-2: #f1f1f4;
+  --color-borda: #e2e2e8;
+  --color-texto: #18181b;
+  --color-texto-2: #52525b;
+  --color-marca: #4338ca;
+  --color-marca-texto: #ffffff;
+  --color-marca-suave: #eef2ff;
+  --color-perigo: #b91c1c;
+  --color-perigo-suave: #fef2f2;
+  --color-aviso: #a16207;
+  --color-aviso-suave: #fefce8;
+  --color-sucesso: #15803d;
+  --color-sucesso-suave: #f0fdf4;
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --radius-cartao: 0.75rem;
+}
+
+@layer base {
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --color-fundo: #0c0c0f;
+      --color-superficie: #16161b;
+      --color-superficie-2: #1e1e25;
+      --color-borda: #2c2c35;
+      --color-texto: #f4f4f5;
+      --color-texto-2: #a1a1aa;
+      --color-marca: #818cf8;
+      --color-marca-texto: #0c0c0f;
+      --color-marca-suave: #1e1b4b;
+      --color-perigo: #f87171;
+      --color-perigo-suave: #2a1313;
+      --color-aviso: #facc15;
+      --color-aviso-suave: #2a2410;
+      --color-sucesso: #4ade80;
+      --color-sucesso-suave: #0f2417;
+    }
+  }
+
+  html {
+    color-scheme: light dark;
+  }
+
+  body {
+    background: var(--color-fundo);
+    color: var(--color-texto);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* O foco vê-se sempre (no desktop isto foi medido a contar píxeis). */
+  :focus-visible {
+    outline: 2px solid var(--color-marca);
+    outline-offset: 2px;
+  }
+}

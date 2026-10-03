@@ -1,0 +1,109 @@
+# Gerenciador de Tarefas — plataforma web
+
+A plataforma multiempresa do Gerenciador de Tarefas: tarefas em lista e em
+quadro com tempo real, equipas com papéis, painel de indicadores e auditoria
+imutável. A decisão e o que ela custa estão no
+[ADR-0017](../docs/architecture/ADR-0017-plataforma-web.md).
+
+| Camada | Stack |
+|---|---|
+| Interface e servidor | Next.js 16 (App Router, Server Actions), React 19, TypeScript |
+| Estilo | Tailwind CSS 4, modo claro e escuro |
+| Dados, contas, tempo real | Supabase (Postgres + RLS, Auth, Realtime) |
+| Alojamento | Vercel |
+
+## A regra que organiza tudo
+
+**Quem decide é a base de dados.** Quem vê que tarefa, quem atribui a quem,
+quem gere quem, a segregação de funções e a auditoria vivem em
+`../supabase/migrations/` — RLS, funções e gatilhos. A interface esconde os
+botões que não servem, mas não protege nada. Não há chave de serviço na
+aplicação: tudo chega à base como a pessoa em sessão.
+
+## Pôr a correr
+
+1. **Projeto Supabase.** Crie um em [supabase.com](https://supabase.com) e,
+   na raiz do repositório:
+
+   ```bash
+   npx supabase init        # só se ainda não houver supabase/config.toml
+   npx supabase link --project-ref <ref-do-projeto>
+   npx supabase db push     # aplica supabase/migrations/
+   ```
+
+   Nunca cole as migrações no editor SQL: ele não regista o que correu, e a
+   base deixa de saber que migrações tem.
+
+2. **Auth.** Em *Authentication → URL Configuration*, ponha o URL do site e
+   acrescente `<url-do-site>/auth/callback` aos *Redirect URLs*. É para lá
+   que vão as ligações de confirmação de conta e de entrada sem
+   palavra-passe.
+
+3. **Variáveis.** `cp .env.example .env.local` e preencha com os valores de
+   *Project Settings → API*.
+
+4. **Aplicação.**
+
+   ```bash
+   npm install
+   npm run dev              # http://localhost:3000
+   ```
+
+## Verificar
+
+```bash
+npm test                   # domínio (node:test, sem dependências)
+npm run typecheck
+npm run build
+npm run test:bd            # migrações reais + RLS num Postgres efémero
+```
+
+`test:bd` (`../supabase/tests/correr.sh`) só precisa dos binários do
+PostgreSQL (`initdb`, `pg_ctl`, `psql`): levanta um cluster temporário, aplica
+as migrações **reais** e corre os testes SQL. Cada regra tem testes dos dois
+lados — o que passa e o que é recusado, **com o motivo verificado**. Com
+`VERBOSO=1` mostra cada verificação.
+
+O CI corre os três (`.github/workflows/tests.yml`, jobs `base-de-dados` e
+`web`).
+
+> **Ainda não há `package-lock.json`.** Esta primeira versão foi escrita num
+> ambiente sem acesso ao registo npm. A primeira pessoa a correr
+> `npm install` deve fazer commit do lock gerado; a partir daí o CI usa
+> `npm ci`.
+
+## Mapa
+
+```
+web/
+├── app/
+│   ├── entrar/                 login, registo, ligação por email
+│   ├── auth/callback/          troca do código por sessão
+│   ├── convite/[token]/        aceitar um convite
+│   └── app/
+│       ├── page.tsx            escolher ou criar empresa
+│       └── [empresa]/
+│           ├── layout.tsx      concha: navegação, Ctrl+K
+│           ├── page.tsx        painel
+│           ├── tarefas/        lista, quadro, detalhe, comentários
+│           ├── equipa/         membros, papéis, convites
+│           ├── auditoria/      trilha só de leitura
+│           └── definicoes/     nome e segregação de funções
+├── components/                 ui, gráficos SVG, navegação, paleta
+├── lib/
+│   ├── dominio/                regras puras + testes (sem React, sem rede)
+│   ├── supabase/               clientes servidor e browser
+│   └── contexto.ts             sessão, empresa e papel
+└── proxy.ts                    renova a sessão; /app exige login
+```
+
+## Papéis
+
+| Papel | Pode |
+|---|---|
+| Leitor | Ver todas as tarefas. Não altera nada. |
+| Colaborador | Ver e trabalhar nas suas tarefas (atribuídas a si ou criadas por si). |
+| Supervisor | Ver, atribuir e editar as de toda a equipa. |
+| Gestor | Como supervisor, e apagar tarefas. |
+| Administrador | Gerir pessoas abaixo de si, convites e definições; ler a auditoria. |
+| Proprietário | Tudo, incluindo nomear administradores. A empresa nunca fica sem um. |

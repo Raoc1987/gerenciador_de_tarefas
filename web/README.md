@@ -77,8 +77,19 @@ fila. Decisão e custos no [ADR-0019](../docs/architecture/ADR-0019-notificacoes
 
 Para ligar, no servidor: `RESEND_API_KEY` e `EMAIL_REMETENTE` (de um domínio
 verificado no Resend), `SUPABASE_SERVICE_ROLE_KEY` (usada **só** pelas rotas de
-cron) e `CRON_SECRET` (16+ caracteres). O `vercel.json` agenda a entrega de 5 em
+cron e pelo webhook de faturação) e `CRON_SECRET` (16+ caracteres). O `vercel.json` agenda a entrega de 5 em
 5 minutos (plano pago do Vercel) e o resumo às 7h UTC nos dias úteis (8h em Lisboa no verão, 7h no inverno).
+
+## Planos e faturação
+
+Os limites de cada plano (pessoas, tarefas por concluir, perguntas ao Copiloto
+por mês) estão na tabela `planos` e são aplicados pela base. A pessoa
+proprietária muda de plano em *Plano*, pelo Stripe. Para ligar, no servidor:
+`STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRECO_EQUIPA` e
+`STRIPE_PRECO_EMPRESA` (ids dos preços mensais no Stripe), e no Stripe um
+webhook para `/api/faturacao/webhook` com `checkout.session.completed` e
+`customer.subscription.*`. Sem isto, tudo funciona no Gratuito. Decisão no
+[ADR-0025](../docs/architecture/ADR-0025-planos-e-faturacao.md).
 
 ## Importar do desktop
 

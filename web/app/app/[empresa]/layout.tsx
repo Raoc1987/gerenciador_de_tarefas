@@ -38,6 +38,7 @@ export default async function ConchaDaEmpresa({
     { rotulo: "Quadro", href: `${base}/tarefas?vista=quadro` },
     { rotulo: "Caminho crítico e carga das pessoas", href: `${base}/cronograma` },
     { rotulo: "Notificações por email", href: `${base}/notificacoes` },
+    { rotulo: "Plano e faturação", href: `${base}/plano` },
     { rotulo: "A minha conta: descarregar os meus dados ou apagar a conta", href: `${base}/conta` },
     ...(pode(papel, "pessoas.gerir") ? [{ rotulo: "Importar do desktop", href: `${base}/importar` }] : []),
     { rotulo: "Trocar de empresa", href: "/app?escolher=1" },
@@ -57,6 +58,9 @@ export default async function ConchaDaEmpresa({
           </p>
           <Link href={`${base}/notificacoes`} className="block rounded-lg px-2 py-1.5 text-texto-2 hover:bg-superficie-2 hover:text-texto">
             Notificações
+          </Link>
+          <Link href={`${base}/plano`} className="block rounded-lg px-2 py-1.5 text-texto-2 hover:bg-superficie-2 hover:text-texto">
+            Plano
           </Link>
           <Link href={`${base}/conta`} className="block rounded-lg px-2 py-1.5 text-texto-2 hover:bg-superficie-2 hover:text-texto">
             A minha conta

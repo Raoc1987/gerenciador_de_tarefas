@@ -9,7 +9,9 @@ export interface ErroBd {
   message?: string;
 }
 
-const NOSSAS = /^[a-zà-ú][a-zà-ú ,:;—-]+$/i;
+// Letras, números e pontuação simples: "o plano Gratuito permite até 5 pessoas".
+// As mensagens do Postgres têm aspas, parênteses ou pontos que as deixam de fora.
+const NOSSAS = /^[a-zà-ú][a-zà-ú0-9 ,:;—-]+$/i;
 
 export function mensagemDeErro(e: ErroBd | null | undefined): string {
   if (!e) return "Algo correu mal. Tente outra vez.";

@@ -34,6 +34,14 @@ export async function perguntar(empresaId: string, historicoBruto: unknown, perg
     return { erro: `Chegou ao limite de ${LIMITE_DIARIO} perguntas por dia. Volte amanhã.` };
   }
 
+  // O limite do plano é por empresa e por mês; a base recusa o registo do
+  // uso, mas aqui pergunta-se antes, para não gastar uma chamada ao modelo.
+  const { data: uso } = await supabase.rpc("uso_do_plano", { p_empresa: empresaId });
+  const mes = (uso as { copiloto_mes?: { usados: number; maximo: number | null } } | null)?.copiloto_mes;
+  if (mes && mes.maximo !== null && mes.usados >= mes.maximo) {
+    return { erro: `Esta empresa já fez as ${mes.maximo} perguntas ao Copiloto que o plano permite este mês.` };
+  }
+
   const hoje = hojeNoFuso();
   const pessoas = await pessoasDaEmpresa(empresaId);
   const nomes = new Map<string, string>(pessoas.map((p) => [p.id, p.nome || p.email]));

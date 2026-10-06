@@ -56,6 +56,7 @@ em `supabase/tests/90_rgpd.sql` (os dois lados, com o motivo da recusa) e
 | Vercel | alojamento da aplicação | funções na região `fra1`; CDN global |
 | Anthropic | copiloto (só o texto que a pessoa pede para analisar) | EUA, com cláusulas contratuais-tipo |
 | Resend | envio de emails de notificação | EUA, com cláusulas contratuais-tipo |
+| Stripe | pagamentos, faturas e dados de faturação da empresa | Irlanda (Stripe Payments Europe), com transferências para os EUA ao abrigo de cláusulas contratuais-tipo |
 
 Cada um precisa de um acordo de subcontratação (DPA) assinado antes de haver
 clientes pagantes. Um subcontratante novo entra nesta tabela e na política de

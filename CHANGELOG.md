@@ -7,6 +7,22 @@ o projeto usa [versionamento semântico](https://semver.org/lang/pt-BR/).
 
 ## [Não lançado]
 
+### Planos e faturação
+
+- **Planos Gratuito, Equipa e Empresa**, com os limites na base: pessoas
+  (contando os convites pendentes), tarefas por concluir e perguntas ao
+  Copiloto por mês. Passar o limite é recusado com uma frase que diz qual é,
+  mesmo a quem contorne a interface.
+- **Página "Plano"**: o uso de cada limite em barras, os planos lado a lado
+  e, para a pessoa proprietária, a mudança de plano e a gestão de faturas
+  pelo Stripe.
+- O plano muda só quando o Stripe confirma o pagamento, por um webhook com
+  a assinatura verificada. Os eventos repetidos ou fora de ordem não mexem
+  em nada. Um período pago que não se renova volta ao Gratuito 3 dias depois.
+- O Copiloto avisa antes de perguntar quando a empresa já gastou as
+  perguntas do mês.
+- Decisão no ADR-0025. Os valores dos planos são uma proposta.
+
 ### Cronograma
 
 - **Caminho crítico e nivelamento de recursos**, na nova página

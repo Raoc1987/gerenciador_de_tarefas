@@ -117,7 +117,9 @@ select t.sessao(:'estranho'); set role authenticated;
 select t.ok((select count(*) from public.comentarios) = 0, 'outra empresa não vê comentários da Alfa');
 reset role;
 
--- O gestor apaga.
+-- O gestor apaga. É a sexta pessoa da Alfa: passa do plano Gratuito (os
+-- limites têm testes em 95_planos.sql).
+update public.empresas set plano = 'equipa' where id = :'alfa';
 insert into public.membros values (:'alfa', :'estranho', 'gestor');
 select t.sessao(:'estranho'); set role authenticated;
 select t.ok(t.linhas(format($$delete from public.tarefas where id = %L$$, :'t_solta')) = 1, 'um gestor apaga');

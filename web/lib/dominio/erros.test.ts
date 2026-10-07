@@ -55,3 +55,16 @@ test("as recusas de validação das nossas funções (22023) mostram-se como est
   );
   assert.equal(mensagemDeErro({ code: "22023", message: "invalid input syntax for type uuid: \"x\"" }), "Algo correu mal. Tente outra vez.");
 });
+
+test("os limites do plano mostram-se com os números, e os erros do Postgres continuam escondidos", () => {
+  assert.equal(
+    mensagemDeErro({ code: "23514", message: "o plano Gratuito permite até 5 pessoas: mude de plano para juntar mais" }),
+    "O plano Gratuito permite até 5 pessoas: mude de plano para juntar mais.",
+  );
+  assert.equal(
+    mensagemDeErro({ code: "23514", message: 'new row for relation "tarefas" violates check constraint "tarefas_duracao_dias_check"' }),
+    "Algum valor está fora do permitido.",
+  );
+  assert.equal(mensagemDeErro({ code: "22023", message: "value too long for type character varying(200)" }), "Algo correu mal. Tente outra vez.");
+  assert.equal(mensagemDeErro({ code: "42501", message: "permission denied for table empresas" }), "Não tem permissão para fazer isso.");
+});

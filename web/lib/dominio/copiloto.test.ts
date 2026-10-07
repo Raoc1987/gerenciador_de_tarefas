@@ -8,7 +8,7 @@ const OUTRO = "7a1c2b9e-1a2b-4c3d-8e9f-0a1b2c3d4e5f";
 const nulos = { titulo: null, descricao: null, estado: null, prioridade: null, prazo: null, responsavel_id: null, etiquetas: null };
 const tarefa: Tarefa = {
   id: ID, empresa_id: "e", titulo: "Fecho do mês", descricao: "", estado: "em_curso", prioridade: "media",
-  prazo: "2026-10-10", etiquetas: ["financeiro"], responsavel_id: null, posicao: 1, criada_por: "u",
+  prazo: "2026-10-10", etiquetas: ["financeiro"], responsavel_id: null, pai_id: null, posicao: 1, criada_por: "u",
   criada_em: "2026-10-01T00:00:00Z", atualizada_em: "2026-10-01T00:00:00Z", concluida_por: null, concluida_em: null,
 };
 

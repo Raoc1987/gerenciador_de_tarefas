@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { exigirSessao } from "@/lib/contexto";
 import { mensagemDeErro } from "@/lib/dominio/erros";
 import { ESTADOS, validarTarefa, type DadosTarefa, type Estado } from "@/lib/dominio/tarefas";
+import { validarLigacao } from "@/lib/dominio/ligacoes";
 
 // Todas as escritas passam por aqui e chegam à base como a pessoa em
 // sessão. Não há verificação de papel neste ficheiro de propósito: a RLS e
@@ -106,4 +107,56 @@ export async function comentar(
   if (error) return { erro: mensagemDeErro(error) };
   revalidatePath(`/app/${empresaId}/tarefas/${tarefaId}`);
   return { ok: Date.now() };
+}
+
+// ------------------------------------------------- subtarefas e dependências
+//
+// Mesma empresa, sem ciclos e quem pode ligar o quê: tudo decidido na base
+// (20261005000000_hierarquia_dependencias.sql). Daqui só vai o pedido.
+
+export async function criarSubtarefa(
+  empresaId: string,
+  paiId: string,
+  _: { erro?: string; ok?: number },
+  form: FormData,
+): Promise<{ erro?: string; ok?: number }> {
+  const titulo = String(form.get("titulo") ?? "").trim();
+  if (!titulo) return { erro: "Dê um título à subtarefa." };
+  if (titulo.length > 200) return { erro: "O título tem no máximo 200 caracteres." };
+  const { supabase, user } = await exigirSessao();
+  // Fica com quem a cria, como acontece a uma tarefa nova: um colaborador
+  // não atribui a outros, e assim a subtarefa não lhe desaparece da vista.
+  const { error } = await supabase
+    .from("tarefas")
+    .insert({ empresa_id: idValido(empresaId), pai_id: idValido(paiId), titulo, responsavel_id: user.id });
+  if (error) return { erro: mensagemDeErro(error) };
+  revalidatePath(`/app/${empresaId}`, "layout");
+  return { ok: Date.now() };
+}
+
+export async function ligarTarefas(
+  empresaId: string,
+  sucessoraId: string,
+  _: { erro?: string; ok?: number },
+  form: FormData,
+): Promise<{ erro?: string; ok?: number }> {
+  const v = validarLigacao(campos(form), idValido(sucessoraId));
+  if (!v.ok) return { erro: v.erro };
+  const { supabase } = await exigirSessao();
+  // empresa_id vem das tarefas, pelo gatilho; este valor só satisfaz o tipo.
+  const { error } = await supabase
+    .from("dependencias")
+    .insert({ ...v.dados, sucessora_id: sucessoraId, empresa_id: idValido(empresaId) });
+  if (error) return { erro: error.code === "23505" ? "Estas tarefas já estão ligadas." : mensagemDeErro(error) };
+  revalidatePath(`/app/${empresaId}/tarefas/${sucessoraId}`);
+  return { ok: Date.now() };
+}
+
+export async function desligarTarefas(empresaId: string, tarefaId: string, dependenciaId: string): Promise<{ erro?: string }> {
+  const { supabase } = await exigirSessao();
+  const { data, error } = await supabase.from("dependencias").delete().eq("id", idValido(dependenciaId)).select("id");
+  if (error) return { erro: mensagemDeErro(error) };
+  if (!data?.length) return { erro: "Não tem permissão para desfazer esta ligação." };
+  revalidatePath(`/app/${empresaId}/tarefas/${tarefaId}`);
+  return {};
 }

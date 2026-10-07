@@ -31,6 +31,8 @@ export interface Tarefa {
   prazo: string | null; // AAAA-MM-DD
   etiquetas: string[];
   responsavel_id: string | null;
+  /** Tarefa-mãe, quando é uma subtarefa (ADR-0023). */
+  pai_id: string | null;
   posicao: number;
   criada_por: string;
   criada_em: string;

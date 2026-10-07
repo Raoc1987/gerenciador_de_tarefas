@@ -65,6 +65,15 @@ o projeto usa [versionamento semântico](https://semver.org/lang/pt-BR/).
   em `?seguinte=` não leva para fora. Tudo em `localhost` do runner, sem
   segredos.
 
+### Produto
+
+- **PRD da plataforma enterprise** (`docs/produto/PRD.md`): modelo de dados de
+  nós com hierarquia infinita, IA em três camadas (triagem, caminho crítico e
+  carga, automações propostas pela própria IA), RBAC + ABAC até ao campo,
+  diário de eventos com time-travel, local-first, interface por lentes e o
+  plano de migração a partir de Jira, Asana, ClickUp e Notion. A direção do
+  modelo de dados fica no ADR-0023.
+
 ### Segurança e operação
 
 - **Redirecionamento depois do login fechado a destinos disfarçados.** Um

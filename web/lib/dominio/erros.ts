@@ -21,6 +21,9 @@ export function mensagemDeErro(e: ErroBd | null | undefined): string {
   if (e.code === "23505") return "Isso já existe.";
   if (e.code === "23514" && NOSSAS.test(msg) && !msg.includes("violates")) return capitalizar(msg);
   if (e.code === "23514") return "Algum valor está fora do permitido.";
+  // 22023 (invalid_parameter_value) é o que as nossas funções usam para um
+  // pedido mal formado: "para confirmar, escreva o email da sua conta".
+  if (e.code === "22023" && NOSSAS.test(msg)) return capitalizar(msg);
   if (e.code === "P0002" || e.code === "23503") {
     return NOSSAS.test(msg) && !msg.includes("violates") ? capitalizar(msg) : "Não encontrado.";
   }

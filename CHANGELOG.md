@@ -7,6 +7,23 @@ o projeto usa [versionamento semântico](https://semver.org/lang/pt-BR/).
 
 ## [Não lançado]
 
+### RGPD
+
+- **Cada pessoa descarrega os seus dados e apaga a conta sozinha**, em "A
+  minha conta": um JSON com tudo o que é seu, em todas as empresas, e um
+  apagamento confirmado com o email. O trabalho fica com as empresas, sem o
+  nome de quem saiu; uma empresa onde a pessoa estava sozinha apaga-se com
+  ela; a única proprietária de uma empresa com mais gente tem de passar a
+  propriedade primeiro. As regras estão na base, com testes dos dois lados e
+  um ensaio pela interface.
+- **Os modos internos da base deixam de poder ser forjados.** A importação do
+  desktop desligava regras através de uma variável de sessão que qualquer
+  pessoa com sessão podia definir. Passa a ser uma tabela num esquema a que a
+  API não chega, válida só na transação que a ligou.
+- `docs/RGPD.md`: direitos, subcontratantes, retenção, incidentes e os limites
+  conhecidos (a auditoria guarda texto; ensaiar o primeiro apagamento em
+  produção).
+
 ### Testes de ponta a ponta
 
 - **A aplicação inteira é testada a cada PR**: o CI levanta um Supabase local

@@ -34,6 +34,7 @@ const pessoas = {
   gestor: ["gestor@ensaio.pt", "Rui Gestor"],
   colaborador: ["colaborador@ensaio.pt", "João Colaborador"],
   outra: ["outra@ensaio.pt", "Inês Outra"],
+  apagar: ["apagar@ensaio.pt", "Pessoa a Apagar"],
 };
 const u = {};
 for (const [chave, [email, nome]] of Object.entries(pessoas)) {
@@ -44,7 +45,8 @@ for (const [chave, [email, nome]] of Object.entries(pessoas)) {
 const empresa = await api("POST", "/rest/v1/rpc/criar_empresa", u.dona.token, { p_nome: "Ensaio, Lda." });
 sql(`insert into public.membros (empresa_id, user_id, papel) values
   ('${empresa}', '${u.gestor.id}', 'gestor'),
-  ('${empresa}', '${u.colaborador.id}', 'colaborador')`);
+  ('${empresa}', '${u.colaborador.id}', 'colaborador'),
+  ('${empresa}', '${u.apagar.id}', 'colaborador')`);
 // "outra" tem conta mas não é membro: serve para provar o isolamento.
 
 const dia = (n) => new Date(Date.now() + n * 86400000).toISOString().slice(0, 10);
@@ -53,6 +55,7 @@ const tarefas = [
   ["Preparar proposta para cliente", "a_fazer", "alta", 4, "colaborador", "gestor"],
   ["Rever contrato de fornecedor", "em_revisao", "media", 7, "gestor", "dona"],
   ["Tarefa só da dona", "a_fazer", "baixa", 10, "dona", "dona"],
+  ["Tarefa de quem vai apagar a conta", "a_fazer", "media", 3, "apagar", "apagar"],
 ];
 for (const [titulo, estado, prioridade, prazo, responsavel, autor] of tarefas) {
   await api("POST", "/rest/v1/tarefas", u[autor].token, {

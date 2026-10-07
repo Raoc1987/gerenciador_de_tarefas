@@ -47,12 +47,12 @@ select t.ok((select responsavel_id is null from public.tarefas where titulo = 'P
 insert into public.tarefas (empresa_id, titulo, criada_em) values (:'alfa', 'Normal', '2020-01-01');
 select t.ok((select criada_em > now() - interval '1 minute' from public.tarefas where titulo = 'Normal'),
             'fora da importação ninguém escolhe a data de criação');
-select t.ok(coalesce(current_setting('gdt.importacao', true), '') = '', 'a importação não deixa o modo ligado');
 select t.recusa(format($$select public.importar_tarefas(%L, (select jsonb_agg(x) from generate_series(1, 1001) x))$$, :'alfa'),
                 'lotes acima de 1000 são recusados');
 select t.recusa(format($$select public.importar_tarefas(%L, '[]', 'Marte/Olympus')$$, :'alfa'),
                 'um fuso desconhecido é recusado');
 reset role;
+select t.ok(not exists (select 1 from interno.modos), 'a importação não deixa o modo ligado');
 
 select t.ok(not exists (select 1 from public.emails_pendentes where tipo = 'atribuicao'),
             'importar não manda um email por tarefa atribuída');

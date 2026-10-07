@@ -150,3 +150,50 @@ jobs:
         run: npm run build
       - name: Verificação de tipos
         run: npm run typecheck
+
+  ponta-a-ponta:
+    name: Web — ponta a ponta (Supabase local + Playwright)
+    runs-on: ubuntu-latest
+    # Tudo em 127.0.0.1 do runner: Postgres, GoTrue, PostgREST e a aplicação
+    # construída. Nada fica exposto e não há segredos — as chaves são deste
+    # ambiente efémero.
+    env:
+      NEXT_TELEMETRY_DISABLED: "1"
+      E2E_DIR: /tmp/gdt-e2e
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: "22"
+      - name: Supabase local (migrações reais sobre a autenticação verdadeira)
+        run: supabase/e2e/levantar.sh
+      - name: Instalar dependências
+        working-directory: web
+        run: if [ -f package-lock.json ]; then npm ci; else npm install --no-audit --no-fund; fi
+      - name: Construir com as variáveis do Supabase local
+        working-directory: web
+        run: |
+          set -a; . "$E2E_DIR/ambiente"; set +a
+          npm run build
+      - name: Browser
+        working-directory: web
+        run: npx playwright install --with-deps chromium
+      - name: Dados de ensaio
+        run: |
+          for d in /usr/lib/postgresql/*/bin; do PATH="$d:$PATH"; done
+          node supabase/e2e/semear.mjs
+      - name: Testes de ponta a ponta
+        working-directory: web
+        run: |
+          set -a; . "$E2E_DIR/ambiente"; set +a
+          npm run test:e2e
+      - name: Relatório e registos, se falhar
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ponta-a-ponta
+          path: |
+            web/relatorio-e2e/
+            web/test-results/
+            /tmp/gdt-e2e/*.log
+          retention-days: 7

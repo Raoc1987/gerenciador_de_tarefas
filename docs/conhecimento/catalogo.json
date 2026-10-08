@@ -1,0 +1,1549 @@
+{
+  "versao": 1,
+  "atualizado": "2026-10-08",
+  "descricao": "Práticas dos dois projetos (Gerenciador de Tarefas e ALKMIA), com os critérios e a decisão de cada uma. Validado por tools/conhecimento.py e pelo teste tests/test_conhecimento.py.",
+  "entradas": [
+    {
+      "id": "verificar-no-codigo",
+      "titulo": "Verificar no código e no ambiente, nunca num resumo",
+      "tipo": "regra",
+      "origem": "alkmia",
+      "fontes": [
+        "alkmia:docs/BIBLIA.md#M1"
+      ],
+      "destino": "docs/METODO.md#R1",
+      "criterios": {
+        "independente_do_dominio": true,
+        "nasceu_de_incidente": true,
+        "guardavel_por_procedimento": true,
+        "duplica": null,
+        "custo": "baixo"
+      },
+      "decisao": "adaptado",
+      "razao": "Vale para os dois. Aqui o ambiente conta tanto como o código: Vercel e Supabase.",
+      "guarda": {
+        "tipo": "agente",
+        "caminho": ".claude/agents/medidor.md"
+      }
+    },
+    {
+      "id": "niveis-de-verificacao",
+      "titulo": "Implementado não é verificado: cinco níveis",
+      "tipo": "regra",
+      "origem": "alkmia",
+      "fontes": [
+        "alkmia:docs/BIBLIA.md#M6"
+      ],
+      "destino": "docs/METODO.md#R2",
+      "criterios": {
+        "independente_do_dominio": true,
+        "nasceu_de_incidente": true,
+        "guardavel_por_procedimento": false,
+        "duplica": null,
+        "custo": "baixo"
+      },
+      "decisao": "adaptado",
+      "razao": "O workflow da base ficou verde sem aplicar nada (2026-10-07).",
+      "guarda": {
+        "tipo": "prosa",
+        "caminho": "docs/METODO.md"
+      }
+    },
+    {
+      "id": "erro-engolido",
+      "titulo": "Erro engolido paga-se em horas",
+      "tipo": "regra",
+      "origem": "alkmia",
+      "fontes": [
+        "alkmia:docs/BIBLIA.md#M3"
+      ],
+      "destino": "docs/METODO.md#R3",
+      "criterios": {
+        "independente_do_dominio": true,
+        "nasceu_de_incidente": true,
+        "guardavel_por_procedimento": true,
+        "duplica": null,
+        "custo": "baixo"
+      },
+      "decisao": "adaptado",
+      "razao": "Rotas na Vercel: um console.error numa resposta 200 não chega a ninguém.",
+      "guarda": {
+        "tipo": "prosa",
+        "caminho": "docs/METODO.md"
+      },
+      "divida": "web/app/app/[empresa]/copiloto/acoes.ts ignora o erro do insert em copiloto_uso, que desde os planos pode ser recusado pelo limite."
+    },
+    {
+      "id": "tres-mortes",
+      "titulo": "Escrito sem leitor, lido sem escrita, exportado sem importador",
+      "tipo": "regra",
+      "origem": "alkmia",
+      "fontes": [
+        "alkmia:docs/BIBLIA.md#M2",
+        "alkmia:docs/BIBLIA.md#M14",
+        "alkmia:docs/BIBLIA.md#M21"
+      ],
+      "destino": "docs/METODO.md#R4",
+      "criterios": {
+        "independente_do_dominio": true,
+        "nasceu_de_incidente": false,
+        "guardavel_por_procedimento": true,
+        "duplica": null,
+        "custo": "baixo"
+      },
+      "decisao": "adaptado",
+      "razao": "Três instrumentos diferentes; procurar leitores não prova escrita.",
+      "guarda": {
+        "tipo": "prosa",
+        "caminho": "docs/METODO.md"
+      },
+      "divida": "Não há detetor de exports sem importadores em web/lib (a terceira morte)."
+    },
+    {
+      "id": "diagnostico-antes-de-correcao",
+      "titulo": "Diagnóstico antes de correção",
+      "tipo": "regra",
+      "origem": "alkmia",
+      "fontes": [
+        "alkmia:docs/BIBLIA.md#M4"
+      ],
+      "destino": "docs/METODO.md#R6",
+      "criterios": {
+        "independente_do_dominio": true,
+        "nasceu_de_incidente": true,
+        "guardavel_por_procedimento": true,
+        "duplica": "docs/METODO.md#R6",
+        "custo": "baixo"
+      },
+      "decisao": "fundido",
+      "razao": "Cabe na R6 (verificar o instrumento) e no passo 1 do protocolo.",
+      "guarda": null
+    },
+    {
+      "id": "vocabulario-fechado",
+      "titulo": "Vocabulário fechado, e um teste quando vive em dois sítios",
+      "tipo": "regra",
+      "origem": "alkmia",
+      "fontes": [
+        "alkmia:docs/BIBLIA.md#M5"
+      ],
+      "destino": "tests/test_vocabulario.py",
+      "criterios": {
+        "independente_do_dominio": true,
+        "nasceu_de_incidente": false,
+        "guardavel_por_procedimento": true,
+        "duplica": null,
+        "custo": "baixo"
+      },
+      "decisao": "adotado",
+      "razao": "Os enums do Postgres e as listas da web não tinham nada que os comparasse; nos papéis a ordem decide permissões.",
+      "guarda": {
+        "tipo": "teste",
+        "caminho": "tests/test_vocabulario.py"
+      }
+    },
+    {
+      "id": "duas-teorias-verdadeiras",
+      "titulo": "Duas teorias plausíveis podem ser ambas verdadeiras em janelas diferentes",
+      "tipo": "regra",
+      "origem": "alkmia",
+      "fontes": [
+        "alkmia:docs/BIBLIA.md#M7"
+      ],
+      "destino": null,
+      "criterios": {
+        "independente_do_dominio": true,
+        "nasceu_de_incidente": false,
+        "guardavel_por_procedimento": false,
+        "duplica": null,
+        "custo": "baixo"
+      },
+      "decisao": "recusado",
+      "razao": "Útil, mas sem incidente aqui: regra sem cicatriz própria esquece-se. Entra quando houver.",
+      "guarda": null
+    },
+    {
+      "id": "regra-por-camada",
+      "titulo": "A mesma regra pode ser certa numa camada e errada na seguinte",
+      "tipo": "regra",
+      "origem": "alkmia",
+      "fontes": [
+        "alkmia:docs/BIBLIA.md#M8"
+      ],
+      "destino": null,
+      "criterios": {
+        "independente_do_dominio": true,
+        "nasceu_de_incidente": false,
+        "guardavel_por_procedimento": false,
+        "duplica": null,
+        "custo": "baixo"
+      },
+      "decisao": "recusado",
+      "razao": "Sem incidente aqui; o mais próximo (a ordem das verificações) está na R10.",
+      "guarda": null
+    },
+    {
+      "id": "cobertura-conta-causas",
+      "titulo": "Cobertura conta causas distintas, não casos",
+      "tipo": "regra",
+      "origem": "alkmia",
+      "fontes": [
+        "alkmia:docs/BIBLIA.md#M9"
+      ],
+      "destino": "docs/METODO.md#R9",
+      "criterios": {
+        "independente_do_dominio": true,
+        "nasceu_de_incidente": true,
+        "guardavel_por_procedimento": true,
+        "duplica": null,
+        "custo": "baixo"
+      },
+      "decisao": "adotado",
+      "razao": "Já se fazia: cada recusa da base é testada com o motivo (t.recusa_por).",
+      "guarda": {
+        "tipo": "teste",
+        "caminho": "supabase/tests/_ajuda.sql"
+      }
+    },
+    {
+      "id": "mudar-forma-enumerar-leitores",
+      "titulo": "Mudar a forma obriga a enumerar quem a lê",
+      "tipo": "regra",
+      "origem": "alkmia",
+      "fontes": [
+        "alkmia:docs/BIBLIA.md#M13"
+      ],
+      "destino": "docs/METODO.md#R5",
+      "criterios": {
+        "independente_do_dominio": true,
+        "nasceu_de_incidente": true,
+        "guardavel_por_procedimento": true,
+        "duplica": null,
+        "custo": "baixo"
+      },
+      "decisao": "adaptado",
+      "razao": "Tarefa ganhou pai_id e um fixture de relatórios deixou de compilar; o CI apanhou.",
+      "guarda": {
+        "tipo": "ci",
+        "caminho": ".github/workflows/tests.yml"
+      }
+    },
+    {
+      "id": "sucesso-nao-explicado",
+      "titulo": "Um sucesso não explicado é dívida",
+      "tipo": "regra",
+      "origem": "alkmia",
+      "fontes": [
+        "alkmia:docs/BIBLIA.md#M15"
+      ],
+      "destino": "docs/METODO.md#R6",
+      "criterios": {
+        "independente_do_dominio": true,
+        "nasceu_de_incidente": true,
+        "guardavel_por_procedimento": true,
+        "duplica": "docs/METODO.md#R6",
+        "custo": "baixo"
+      },
+      "decisao": "fundido",
+      "razao": "É o caso do typecheck local que dava limpo porque excluía os testes: está na R6.",
+      "guarda": null
+    },
+    {
+      "id": "estado-nao-e-evento",
+      "titulo": "Verificar o estado não é verificar o evento; histórico não é inventário",
+      "tipo": "regra",
+      "origem": "alkmia",
+      "fontes": [
+        "alkmia:docs/BIBLIA.md#M16",
+        "alkmia:docs/BIBLIA.md#M16-bis",
+        "alkmia:docs/BIBLIA.md#M20"
+      ],
+      "destino": "docs/METODO.md#R7",
+      "criterios": {
+        "independente_do_dominio": true,
+        "nasceu_de_incidente": true,
+        "guardavel_por_procedimento": true,
+        "duplica": null,
+        "custo": "baixo"
+      },
+      "decisao": "adaptado",
+      "razao": "Run verde, lista de deployments e schema_migrations são históricos.",
+      "guarda": {
+        "tipo": "skill",
+        "caminho": ".claude/skills/reconciliar-esquema/SKILL.md"
+      }
+    },
+    {
+      "id": "marcador-textual",
+      "titulo": "Num ficheiro com mais justificação do que código, um marcador textual encontra as palavras",
+      "tipo": "regra",
+      "origem": "alkmia",
+      "fontes": [
+        "alkmia:docs/BIBLIA.md#M17"
+      ],
+      "destino": null,
+      "criterios": {
+        "independente_do_dominio": true,
+        "nasceu_de_incidente": false,
+        "guardavel_por_procedimento": true,
+        "duplica": null,
+        "custo": "baixo"
+      },
+      "decisao": "por_decidir",
+      "razao": "Aplica-se aqui: web/lib/arquitetura.test.ts procura o texto SERVICE_ROLE em todos os ficheiros, incluindo comentários.",
+      "guarda": null,
+      "proximo_passo": "Rever o teste de arquitetura para procurar usos (process.env.X, imports) e não palavras soltas."
+    },
+    {
+      "id": "rls-propriedade-app-direito",
+      "titulo": "A RLS aplica propriedade, a aplicação aplica direito de utilização",
+      "tipo": "regra",
+      "origem": "alkmia",
+      "fontes": [
+        "alkmia:docs/BIBLIA.md#M18"
+      ],
+      "destino": null,
+      "criterios": {
+        "independente_do_dominio": true,
+        "nasceu_de_incidente": true,
+        "guardavel_por_procedimento": true,
+        "duplica": null,
+        "custo": "baixo"
+      },
+      "decisao": "recusado",
+      "razao": "Contraria a decisão deste produto: aqui a base decide as duas coisas, incluindo os limites do plano (ADR-0017, ADR-0025). Programas distintos, escolhas distintas.",
+      "guarda": null
+    },
+    {
+      "id": "disciplina-falha-procedimento-apanha",
+      "titulo": "A disciplina falha; o procedimento apanha",
+      "tipo": "regra",
+      "origem": "alkmia",
+      "fontes": [
+        "alkmia:docs/BIBLIA.md#M19"
+      ],
+      "destino": "docs/METODO.md#R8",
+      "criterios": {
+        "independente_do_dominio": true,
+        "nasceu_de_incidente": true,
+        "guardavel_por_procedimento": true,
+        "duplica": null,
+        "custo": "baixo"
+      },
+      "decisao": "adaptado",
+      "razao": "O primeiro ciclo de merges não parou à primeira recusa (2026-10-07).",
+      "guarda": {
+        "tipo": "hook",
+        "caminho": ".claude/hooks/teste-do-ficheiro.mjs"
+      }
+    },
+    {
+      "id": "ia-nao-decide",
+      "titulo": "A IA não decide sozinha nem fala sem contexto validado",
+      "tipo": "regra",
+      "origem": "alkmia",
+      "fontes": [
+        "alkmia:docs/BIBLIA.md#I",
+        "alkmia:docs/BIBLIA.md#IV"
+      ],
+      "destino": "docs/architecture/ADR-0018-copiloto.md",
+      "criterios": {
+        "independente_do_dominio": true,
+        "nasceu_de_incidente": false,
+        "guardavel_por_procedimento": true,
+        "duplica": null,
+        "custo": "baixo"
+      },
+      "decisao": "adaptado",
+      "razao": "Aqui o Copiloto propõe, a pessoa aceita e a base valida (ADR-0018).",
+      "guarda": {
+        "tipo": "teste",
+        "caminho": "web/lib/dominio/copiloto.test.ts"
+      }
+    },
+    {
+      "id": "medir-nao-adivinhar",
+      "titulo": "Medir em vez de adivinhar",
+      "tipo": "regra",
+      "origem": "alkmia",
+      "fontes": [
+        "alkmia:docs/BIBLIA.md#II"
+      ],
+      "destino": "docs/METODO.md#2",
+      "criterios": {
+        "independente_do_dominio": true,
+        "nasceu_de_incidente": true,
+        "guardavel_por_procedimento": true,
+        "duplica": "docs/METODO.md#2",
+        "custo": "baixo"
+      },
+      "decisao": "fundido",
+      "razao": "É o passo 1 do protocolo.",
+      "guarda": null
+    },
+    {
+      "id": "analitico-isolado",
+      "titulo": "O analítico isolado do transacional",
+      "tipo": "regra",
+      "origem": "alkmia",
+      "fontes": [
+        "alkmia:docs/BIBLIA.md#III"
+      ],
+      "destino": "docs/architecture/ADR-0024-cronograma.md",
+      "criterios": {
+        "independente_do_dominio": true,
+        "nasceu_de_incidente": false,
+        "guardavel_por_procedimento": false,
+        "duplica": null,
+        "custo": "baixo"
+      },
+      "decisao": "adaptado",
+      "razao": "O cálculo pesado é domínio puro e passará a um trabalhador (ADR-0023 ponto 4, ADR-0024).",
+      "guarda": {
+        "tipo": "prosa",
+        "caminho": "docs/architecture/ADR-0024-cronograma.md"
+      }
+    },
+    {
+      "id": "nada-para-todos-ao-mesmo-tempo",
+      "titulo": "Nada vai para todos ao mesmo tempo",
+      "tipo": "regra",
+      "origem": "alkmia",
+      "fontes": [
+        "alkmia:docs/BIBLIA.md#V"
+      ],
+      "destino": null,
+      "criterios": {
+        "independente_do_dominio": true,
+        "nasceu_de_incidente": false,
+        "guardavel_por_procedimento": true,
+        "duplica": null,
+        "custo": "medio"
+      },
+      "decisao": "por_decidir",
+      "razao": "Serve a um SaaS com clientes pagantes; hoje não há como ligar uma funcionalidade só a algumas empresas.",
+      "guarda": null,
+      "proximo_passo": "Antes do primeiro cliente pago: um interruptor por empresa na base, testado dos dois lados."
+    },
+    {
+      "id": "divida-com-matematica",
+      "titulo": "Dívida resolve-se com matemática",
+      "tipo": "regra",
+      "origem": "alkmia",
+      "fontes": [
+        "alkmia:docs/BIBLIA.md#VI"
+      ],
+      "destino": null,
+      "criterios": {
+        "independente_do_dominio": false,
+        "nasceu_de_incidente": false,
+        "guardavel_por_procedimento": false,
+        "duplica": null,
+        "custo": "baixo"
+      },
+      "decisao": "recusado",
+      "razao": "Ligado à distribuição de carga de treino; em geral é vago demais para virar procedimento.",
+      "guarda": null
+    },
+    {
+      "id": "maos-suadas",
+      "titulo": "A interface é para mãos suadas e cansadas",
+      "tipo": "regra",
+      "origem": "alkmia",
+      "fontes": [
+        "alkmia:docs/BIBLIA.md#VII"
+      ],
+      "destino": null,
+      "criterios": {
+        "independente_do_dominio": false,
+        "nasceu_de_incidente": true,
+        "guardavel_por_procedimento": true,
+        "duplica": null,
+        "custo": "baixo"
+      },
+      "decisao": "recusado",
+      "razao": "Do domínio do ALKMIA (treino).",
+      "guarda": null
+    },
+    {
+      "id": "volume-biologia",
+      "titulo": "O volume responde à biologia",
+      "tipo": "regra",
+      "origem": "alkmia",
+      "fontes": [
+        "alkmia:docs/BIBLIA.md#VIII"
+      ],
+      "destino": null,
+      "criterios": {
+        "independente_do_dominio": false,
+        "nasceu_de_incidente": true,
+        "guardavel_por_procedimento": true,
+        "duplica": null,
+        "custo": "baixo"
+      },
+      "decisao": "recusado",
+      "razao": "Do domínio do ALKMIA.",
+      "guarda": null
+    },
+    {
+      "id": "ecossistema-reativo",
+      "titulo": "O ecossistema é reativo entre módulos de treino",
+      "tipo": "regra",
+      "origem": "alkmia",
+      "fontes": [
+        "alkmia:docs/BIBLIA.md#IX"
+      ],
+      "destino": null,
+      "criterios": {
+        "independente_do_dominio": false,
+        "nasceu_de_incidente": true,
+        "guardavel_por_procedimento": true,
+        "duplica": null,
+        "custo": "baixo"
+      },
+      "decisao": "recusado",
+      "razao": "Do domínio do ALKMIA.",
+      "guarda": null
+    },
+    {
+      "id": "atleta-projeto",
+      "titulo": "O atleta é um projeto de engenharia",
+      "tipo": "regra",
+      "origem": "alkmia",
+      "fontes": [
+        "alkmia:docs/BIBLIA.md#X"
+      ],
+      "destino": null,
+      "criterios": {
+        "independente_do_dominio": false,
+        "nasceu_de_incidente": true,
+        "guardavel_por_procedimento": true,
+        "duplica": null,
+        "custo": "baixo"
+      },
+      "decisao": "recusado",
+      "razao": "Do domínio do ALKMIA.",
+      "guarda": null
+    },
+    {
+      "id": "seguranca-por-omissao",
+      "titulo": "Segurança por omissão: RLS em tudo",
+      "tipo": "regra",
+      "origem": "ambos",
+      "fontes": [
+        "alkmia:docs/BIBLIA.md#XI"
+      ],
+      "destino": "supabase/tests/80_postura_seguranca.sql",
+      "criterios": {
+        "independente_do_dominio": true,
+        "nasceu_de_incidente": true,
+        "guardavel_por_procedimento": true,
+        "duplica": null,
+        "custo": "baixo"
+      },
+      "decisao": "adotado",
+      "razao": "Já era regra aqui (ADR-0017) e tem teste de postura.",
+      "guarda": {
+        "tipo": "teste",
+        "caminho": "supabase/tests/80_postura_seguranca.sql"
+      }
+    },
+    {
+      "id": "historico-sagrado",
+      "titulo": "O histórico é sagrado",
+      "tipo": "regra",
+      "origem": "ambos",
+      "fontes": [
+        "alkmia:docs/BIBLIA.md#XII"
+      ],
+      "destino": "supabase/tests/30_auditoria.sql",
+      "criterios": {
+        "independente_do_dominio": true,
+        "nasceu_de_incidente": true,
+        "guardavel_por_procedimento": true,
+        "duplica": null,
+        "custo": "baixo"
+      },
+      "decisao": "adaptado",
+      "razao": "Aqui: migrações aplicadas não se editam e a auditoria é imutável.",
+      "guarda": {
+        "tipo": "teste",
+        "caminho": "supabase/tests/30_auditoria.sql"
+      }
+    },
+    {
+      "id": "db-push-nunca-editor",
+      "titulo": "Migrações por supabase db push, nunca pelo editor SQL",
+      "tipo": "regra",
+      "origem": "ambos",
+      "fontes": [
+        "alkmia:CLAUDE.md#1b"
+      ],
+      "destino": ".github/workflows/base-de-dados.yml",
+      "criterios": {
+        "independente_do_dominio": true,
+        "nasceu_de_incidente": true,
+        "guardavel_por_procedimento": true,
+        "duplica": null,
+        "custo": "baixo"
+      },
+      "decisao": "adotado",
+      "razao": "As 28 migrações aplicadas à mão no ALKMIA; aqui entra pelo workflow.",
+      "guarda": {
+        "tipo": "ci",
+        "caminho": ".github/workflows/base-de-dados.yml"
+      },
+      "para_alkmia": {
+        "estado_la": "parcial",
+        "medido": "2026-10-08, ALKMIA em cb14227: a regra existe (CLAUDE.md §1b), mas nenhum workflow corre supabase db push; aplica-se à mão",
+        "como_aplicar": "Workflow como .github/workflows/base-de-dados.yml: testes primeiro, CLI fixada por versão e SHA-256, ambiente producao com o segredo, concorrência sem cancelar. E a lição de cá: um run verde sem o segredo não aplicou nada (METODO §1), por isso o passo sem segredo tem de falhar ou avisar de forma visível."
+      }
+    },
+    {
+      "id": "protocolo-seis-passos",
+      "titulo": "Protocolo de criação em seis passos",
+      "tipo": "protocolo",
+      "origem": "alkmia",
+      "fontes": [
+        "alkmia:docs/PROJETO-CRIACAO-SENIOR.md"
+      ],
+      "destino": "docs/METODO.md#2",
+      "criterios": {
+        "independente_do_dominio": true,
+        "nasceu_de_incidente": true,
+        "guardavel_por_procedimento": true,
+        "duplica": null,
+        "custo": "baixo"
+      },
+      "decisao": "adaptado",
+      "razao": "Medir, propor com o rejeitado, decidir o que é do humano, executar, provar que a prova falha, registar.",
+      "guarda": {
+        "tipo": "agente",
+        "caminho": ".claude/agents/medidor.md"
+      }
+    },
+    {
+      "id": "prompt-criacao",
+      "titulo": "Prompt de sessão de criação",
+      "tipo": "prompt",
+      "origem": "alkmia",
+      "fontes": [
+        "alkmia:docs/PROJETO-CRIACAO-SENIOR.md#4"
+      ],
+      "destino": "docs/METODO.md#5",
+      "criterios": {
+        "independente_do_dominio": true,
+        "nasceu_de_incidente": true,
+        "guardavel_por_procedimento": false,
+        "duplica": null,
+        "custo": "baixo"
+      },
+      "decisao": "adaptado",
+      "razao": "Curto de propósito; aponta para o METODO.",
+      "guarda": {
+        "tipo": "prosa",
+        "caminho": "docs/METODO.md"
+      }
+    },
+    {
+      "id": "prompt-revisao-cirurgica",
+      "titulo": "Revisão cirúrgica ponta a ponta",
+      "tipo": "prompt",
+      "origem": "alkmia",
+      "fontes": [
+        "alkmia:docs/PROMPT-revisao-cirurgica.md"
+      ],
+      "destino": ".claude/skills/auditoria-pr/SKILL.md",
+      "criterios": {
+        "independente_do_dominio": true,
+        "nasceu_de_incidente": true,
+        "guardavel_por_procedimento": true,
+        "duplica": ".claude/skills/auditoria-pr",
+        "custo": "baixo"
+      },
+      "decisao": "fundido",
+      "razao": "Faz o mesmo que a auditoria-pr em modo conjunto com a auditoria-seguranca.",
+      "guarda": null
+    },
+    {
+      "id": "prompt-biblioteca-por-grupo",
+      "titulo": "Prompt biblioteca-por-grupo",
+      "tipo": "prompt",
+      "origem": "alkmia",
+      "fontes": [
+        "alkmia:docs/PROMPT-biblioteca-por-grupo.md"
+      ],
+      "destino": null,
+      "criterios": {
+        "independente_do_dominio": false,
+        "nasceu_de_incidente": true,
+        "guardavel_por_procedimento": true,
+        "duplica": null,
+        "custo": "baixo"
+      },
+      "decisao": "recusado",
+      "razao": "Do produto ALKMIA.",
+      "guarda": null
+    },
+    {
+      "id": "prompt-fecho-e-mobile",
+      "titulo": "Prompt fecho-e-mobile",
+      "tipo": "prompt",
+      "origem": "alkmia",
+      "fontes": [
+        "alkmia:docs/PROMPT-fecho-e-mobile.md"
+      ],
+      "destino": null,
+      "criterios": {
+        "independente_do_dominio": false,
+        "nasceu_de_incidente": true,
+        "guardavel_por_procedimento": true,
+        "duplica": null,
+        "custo": "baixo"
+      },
+      "decisao": "recusado",
+      "razao": "Do produto ALKMIA.",
+      "guarda": null
+    },
+    {
+      "id": "prompt-modulo-treinos",
+      "titulo": "Prompt modulo-treinos",
+      "tipo": "prompt",
+      "origem": "alkmia",
+      "fontes": [
+        "alkmia:docs/PROMPT-modulo-treinos.md"
+      ],
+      "destino": null,
+      "criterios": {
+        "independente_do_dominio": false,
+        "nasceu_de_incidente": true,
+        "guardavel_por_procedimento": true,
+        "duplica": null,
+        "custo": "baixo"
+      },
+      "decisao": "recusado",
+      "razao": "Do produto ALKMIA.",
+      "guarda": null
+    },
+    {
+      "id": "prompt-motor-vs-registo",
+      "titulo": "Prompt motor-vs-registo",
+      "tipo": "prompt",
+      "origem": "alkmia",
+      "fontes": [
+        "alkmia:docs/PROMPT-motor-vs-registo.md"
+      ],
+      "destino": null,
+      "criterios": {
+        "independente_do_dominio": false,
+        "nasceu_de_incidente": true,
+        "guardavel_por_procedimento": true,
+        "duplica": null,
+        "custo": "baixo"
+      },
+      "decisao": "recusado",
+      "razao": "Do produto ALKMIA.",
+      "guarda": null
+    },
+    {
+      "id": "prompt-pagina-inicial",
+      "titulo": "Prompt pagina-inicial",
+      "tipo": "prompt",
+      "origem": "alkmia",
+      "fontes": [
+        "alkmia:docs/PROMPT-pagina-inicial.md"
+      ],
+      "destino": null,
+      "criterios": {
+        "independente_do_dominio": false,
+        "nasceu_de_incidente": true,
+        "guardavel_por_procedimento": true,
+        "duplica": null,
+        "custo": "baixo"
+      },
+      "decisao": "recusado",
+      "razao": "Do produto ALKMIA.",
+      "guarda": null
+    },
+    {
+      "id": "agente-medidor",
+      "titulo": "Medidor",
+      "tipo": "agente",
+      "origem": "alkmia",
+      "fontes": [
+        "alkmia:.claude/agents/alkmia-medidor.md"
+      ],
+      "destino": ".claude/agents/medidor.md",
+      "criterios": {
+        "independente_do_dominio": true,
+        "nasceu_de_incidente": true,
+        "guardavel_por_procedimento": true,
+        "duplica": null,
+        "custo": "baixo"
+      },
+      "decisao": "adaptado",
+      "razao": "Números com data e fonte, só leitura, e proibido medir o ALKMIA.",
+      "guarda": {
+        "tipo": "agente",
+        "caminho": ".claude/agents/medidor.md"
+      }
+    },
+    {
+      "id": "agente-escrutinador",
+      "titulo": "Escrutinador de promessas",
+      "tipo": "agente",
+      "origem": "alkmia",
+      "fontes": [
+        "alkmia:.claude/agents/alkmia-escrutinador-de-promessas.md"
+      ],
+      "destino": ".claude/agents/escrutinador-de-promessas.md",
+      "criterios": {
+        "independente_do_dominio": true,
+        "nasceu_de_incidente": true,
+        "guardavel_por_procedimento": true,
+        "duplica": null,
+        "custo": "baixo"
+      },
+      "decisao": "adaptado",
+      "razao": "Antes de vender: a página do plano promete o que a tabela planos aplica?",
+      "guarda": {
+        "tipo": "agente",
+        "caminho": ".claude/agents/escrutinador-de-promessas.md"
+      }
+    },
+    {
+      "id": "agente-avaliador",
+      "titulo": "Avaliador de tecnologia",
+      "tipo": "agente",
+      "origem": "alkmia",
+      "fontes": [
+        "alkmia:.claude/agents/alkmia-avaliador-de-tecnologia.md"
+      ],
+      "destino": ".claude/agents/avaliador-de-tecnologia.md",
+      "criterios": {
+        "independente_do_dominio": true,
+        "nasceu_de_incidente": true,
+        "guardavel_por_procedimento": true,
+        "duplica": null,
+        "custo": "baixo"
+      },
+      "decisao": "adaptado",
+      "razao": "Sete filtros; o 2 passa a subcontratantes do RGPD e o 4 a cadeia de fornecimento.",
+      "guarda": {
+        "tipo": "agente",
+        "caminho": ".claude/agents/avaliador-de-tecnologia.md"
+      }
+    },
+    {
+      "id": "agente-biblia-reviewer",
+      "titulo": "Revisor contra a doutrina",
+      "tipo": "agente",
+      "origem": "alkmia",
+      "fontes": [
+        "alkmia:.claude/agents/biblia-reviewer.md"
+      ],
+      "destino": ".claude/skills/auditoria-pr/SKILL.md",
+      "criterios": {
+        "independente_do_dominio": true,
+        "nasceu_de_incidente": true,
+        "guardavel_por_procedimento": true,
+        "duplica": ".claude/skills/auditoria-pr",
+        "custo": "baixo"
+      },
+      "decisao": "fundido",
+      "razao": "A auditoria-pr já revê contra as regras do projeto; passa a citar o METODO.",
+      "guarda": null
+    },
+    {
+      "id": "agente-motion",
+      "titulo": "Designer de movimento",
+      "tipo": "agente",
+      "origem": "alkmia",
+      "fontes": [
+        "alkmia:.claude/agents/alkmia-motion.md"
+      ],
+      "destino": null,
+      "criterios": {
+        "independente_do_dominio": false,
+        "nasceu_de_incidente": true,
+        "guardavel_por_procedimento": true,
+        "duplica": null,
+        "custo": "baixo"
+      },
+      "decisao": "recusado",
+      "razao": "Ligado à marca e ao tema do ALKMIA.",
+      "guarda": null
+    },
+    {
+      "id": "hook-teste-do-ficheiro",
+      "titulo": "Correr o teste colocado depois de cada edição",
+      "tipo": "hook",
+      "origem": "alkmia",
+      "fontes": [
+        "alkmia:.claude/hooks/teste-do-ficheiro.mjs"
+      ],
+      "destino": ".claude/hooks/teste-do-ficheiro.mjs",
+      "criterios": {
+        "independente_do_dominio": true,
+        "nasceu_de_incidente": true,
+        "guardavel_por_procedimento": true,
+        "duplica": null,
+        "custo": "baixo"
+      },
+      "decisao": "adaptado",
+      "razao": "Aqui com node --test, que corre sem npm ci nas sessões na cloud.",
+      "guarda": {
+        "tipo": "hook",
+        "caminho": ".claude/hooks/teste-do-ficheiro.mjs"
+      }
+    },
+    {
+      "id": "hook-for-of",
+      "titulo": "Apanhar for...of que não compila",
+      "tipo": "hook",
+      "origem": "alkmia",
+      "fontes": [
+        "alkmia:.claude/hooks/armadilha-for-of.mjs"
+      ],
+      "destino": null,
+      "criterios": {
+        "independente_do_dominio": false,
+        "nasceu_de_incidente": true,
+        "guardavel_por_procedimento": true,
+        "duplica": null,
+        "custo": "baixo"
+      },
+      "decisao": "recusado",
+      "razao": "Medido: web/tsconfig.json tem target ES2022, onde for...of compila sempre.",
+      "guarda": null
+    },
+    {
+      "id": "skill-reconciliacao",
+      "titulo": "Reconciliação do esquema por assinaturas",
+      "tipo": "skill",
+      "origem": "alkmia",
+      "fontes": [
+        "alkmia:.claude/skills/alkmia-db-reconciliation"
+      ],
+      "destino": ".claude/skills/reconciliar-esquema/SKILL.md",
+      "criterios": {
+        "independente_do_dominio": true,
+        "nasceu_de_incidente": true,
+        "guardavel_por_procedimento": true,
+        "duplica": null,
+        "custo": "baixo"
+      },
+      "decisao": "adaptado",
+      "razao": "Uma consulta, testada a cada PR sobre as migrações.",
+      "guarda": {
+        "tipo": "teste",
+        "caminho": "supabase/tests/85_reconciliacao.sql"
+      }
+    },
+    {
+      "id": "skill-ensaio-restauro",
+      "titulo": "Ensaio de restauro de cópia de segurança",
+      "tipo": "skill",
+      "origem": "alkmia",
+      "fontes": [
+        "alkmia:.claude/skills/alkmia-bk1-harness"
+      ],
+      "destino": null,
+      "criterios": {
+        "independente_do_dominio": true,
+        "nasceu_de_incidente": true,
+        "guardavel_por_procedimento": true,
+        "duplica": null,
+        "custo": "medio"
+      },
+      "decisao": "por_decidir",
+      "razao": "Essencial, mas só se ensaia com a produção ligada e uma cópia real.",
+      "guarda": null,
+      "proximo_passo": "Quando o projeto Supabase existir: ensaiar um restauro e registar o tempo e o que se perdeu."
+    },
+    {
+      "id": "skill-integridade-treinos",
+      "titulo": "Integridade das séries de treino",
+      "tipo": "skill",
+      "origem": "alkmia",
+      "fontes": [
+        "alkmia:.claude/skills/alkmia-workout-integrity"
+      ],
+      "destino": null,
+      "criterios": {
+        "independente_do_dominio": false,
+        "nasceu_de_incidente": true,
+        "guardavel_por_procedimento": true,
+        "duplica": null,
+        "custo": "baixo"
+      },
+      "decisao": "recusado",
+      "razao": "Do domínio do ALKMIA.",
+      "guarda": null
+    },
+    {
+      "id": "knowledge-graph",
+      "titulo": "Grafo de conhecimento em JSON",
+      "tipo": "ferramenta",
+      "origem": "alkmia",
+      "fontes": [
+        "alkmia:docs/knowledge-graph.json"
+      ],
+      "destino": null,
+      "criterios": {
+        "independente_do_dominio": true,
+        "nasceu_de_incidente": true,
+        "guardavel_por_procedimento": false,
+        "duplica": null,
+        "custo": "baixo"
+      },
+      "decisao": "recusado",
+      "razao": "Medido a 2026-10-08: JSON inválido e parado em 2026-05-15. Um registo que ninguém valida apodrece (R7). Este catálogo tem validação no CI por isso.",
+      "guarda": null
+    },
+    {
+      "id": "recusa-pelo-motivo",
+      "titulo": "Recusas testadas com o motivo verificado (t.recusa_por)",
+      "tipo": "pratica",
+      "origem": "gdt",
+      "fontes": [],
+      "destino": "supabase/tests/_ajuda.sql",
+      "criterios": {
+        "independente_do_dominio": true,
+        "nasceu_de_incidente": true,
+        "guardavel_por_procedimento": true,
+        "duplica": null,
+        "custo": "baixo"
+      },
+      "decisao": "adotado",
+      "razao": "Nasceu neste projeto e não depende do domínio: serve também ao ALKMIA.",
+      "guarda": {
+        "tipo": "teste",
+        "caminho": "supabase/tests/_ajuda.sql"
+      },
+      "para_alkmia": {
+        "estado_la": "existe",
+        "medido": "2026-10-08, ALKMIA em cb14227: site/scripts/trainer-rpc-integration.mjs verifica a mensagem (ex.: /não encontrado/.test(erroB))",
+        "como_aplicar": "Nada a fazer."
+      }
+    },
+    {
+      "id": "modos-internos-nao-forjaveis",
+      "titulo": "Modos internos numa tabela por transação, em vez de variáveis de sessão forjáveis",
+      "tipo": "pratica",
+      "origem": "gdt",
+      "fontes": [],
+      "destino": "supabase/tests/90_rgpd.sql",
+      "criterios": {
+        "independente_do_dominio": true,
+        "nasceu_de_incidente": true,
+        "guardavel_por_procedimento": true,
+        "duplica": null,
+        "custo": "baixo"
+      },
+      "decisao": "adotado",
+      "razao": "Nasceu neste projeto e não depende do domínio: serve também ao ALKMIA.",
+      "guarda": {
+        "tipo": "teste",
+        "caminho": "supabase/tests/90_rgpd.sql"
+      },
+      "para_alkmia": {
+        "estado_la": "nao_se_aplica",
+        "medido": "2026-10-08, ALKMIA em cb14227: nenhum current_setting de variável própria em supabase/migrations",
+        "como_aplicar": "Só se um dia uma regra tiver de ser desligada durante uma importação ou um apagamento: usar uma tabela num esquema sem acesso pela API, com o id da transação, nunca uma variável de sessão (que qualquer sessão define)."
+      }
+    },
+    {
+      "id": "ponta-a-ponta-sem-docker",
+      "titulo": "Supabase local sem Docker no CI, com as migrações reais",
+      "tipo": "pratica",
+      "origem": "gdt",
+      "fontes": [],
+      "destino": ".github/workflows/tests.yml",
+      "criterios": {
+        "independente_do_dominio": true,
+        "nasceu_de_incidente": true,
+        "guardavel_por_procedimento": true,
+        "duplica": null,
+        "custo": "baixo"
+      },
+      "decisao": "adotado",
+      "razao": "Nasceu neste projeto e não depende do domínio: serve também ao ALKMIA.",
+      "guarda": {
+        "tipo": "ci",
+        "caminho": ".github/workflows/tests.yml"
+      },
+      "para_alkmia": {
+        "estado_la": "falta",
+        "medido": "2026-10-08, ALKMIA em cb14227: sem Playwright no CI; o test:rpc corre em pglite, que não é o Postgres do Supabase e não tem GoTrue nem PostgREST",
+        "como_aplicar": "Copiar a forma de supabase/e2e/levantar.sh: GoTrue e PostgREST fixados por versão e SHA-256, um proxy Node em /auth/v1 e /rest/v1, Postgres do runner, migrações reais, e Playwright sobre o build. GOTRUE_JWT_DEFAULT_GROUP_NAME=authenticated é obrigatório."
+      }
+    },
+    {
+      "id": "vocabulario-no-ci",
+      "titulo": "Enums da base comparados com as listas da web",
+      "tipo": "pratica",
+      "origem": "gdt",
+      "fontes": [],
+      "destino": "tests/test_vocabulario.py",
+      "criterios": {
+        "independente_do_dominio": true,
+        "nasceu_de_incidente": true,
+        "guardavel_por_procedimento": true,
+        "duplica": null,
+        "custo": "baixo"
+      },
+      "decisao": "adotado",
+      "razao": "Nasceu neste projeto e não depende do domínio: serve também ao ALKMIA.",
+      "guarda": {
+        "tipo": "teste",
+        "caminho": "tests/test_vocabulario.py"
+      },
+      "para_alkmia": {
+        "estado_la": "parcial",
+        "medido": "2026-10-08, ALKMIA em cb14227: 31 listas check (x in (...)) nas migrações; só site/lib/rotas-conhecidas.test.ts extrai uma",
+        "como_aplicar": "Um teste que extrai cada check (coluna in (...)) das migrações e o compara com a constante TypeScript correspondente, pela mesma ordem, com um mapa coluna→constante. O M5 do ALKMIA já pede isto."
+      }
+    },
+    {
+      "id": "acesso-antes-da-regra",
+      "titulo": "Verificar o acesso antes de responder com uma regra",
+      "tipo": "pratica",
+      "origem": "gdt",
+      "fontes": [],
+      "destino": "supabase/tests/25_hierarquia_dependencias.sql",
+      "criterios": {
+        "independente_do_dominio": true,
+        "nasceu_de_incidente": true,
+        "guardavel_por_procedimento": true,
+        "duplica": null,
+        "custo": "baixo"
+      },
+      "decisao": "adotado",
+      "razao": "Nasceu neste projeto e não depende do domínio: serve também ao ALKMIA.",
+      "guarda": {
+        "tipo": "teste",
+        "caminho": "supabase/tests/25_hierarquia_dependencias.sql"
+      },
+      "para_alkmia": {
+        "estado_la": "nao_se_aplica",
+        "medido": "2026-10-08, ALKMIA em cb14227: nenhum gatilho before insert/update nas migrações",
+        "como_aplicar": "Quando houver um gatilho que recuse com uma frase sobre os dados: verificar o acesso primeiro, porque a RLS só atua depois do gatilho."
+      }
+    },
+    {
+      "id": "skill-trabalho-profundo",
+      "titulo": "trabalho-profundo",
+      "tipo": "skill",
+      "origem": "gdt",
+      "fontes": [],
+      "destino": ".claude/skills/trabalho-profundo/SKILL.md",
+      "criterios": {
+        "independente_do_dominio": true,
+        "nasceu_de_incidente": false,
+        "guardavel_por_procedimento": true,
+        "duplica": null,
+        "custo": "baixo"
+      },
+      "decisao": "adotado",
+      "razao": "Trabalho grande por fases, com estado e portão de revisão.",
+      "guarda": {
+        "tipo": "skill",
+        "caminho": ".claude/skills/trabalho-profundo/SKILL.md"
+      }
+    },
+    {
+      "id": "skill-plano-de-verificacao",
+      "titulo": "plano-de-verificacao",
+      "tipo": "skill",
+      "origem": "gdt",
+      "fontes": [],
+      "destino": ".claude/skills/plano-de-verificacao/SKILL.md",
+      "criterios": {
+        "independente_do_dominio": true,
+        "nasceu_de_incidente": false,
+        "guardavel_por_procedimento": true,
+        "duplica": null,
+        "custo": "baixo"
+      },
+      "decisao": "adotado",
+      "razao": "Decidir como provar antes de mudar; é o passo 5 do protocolo.",
+      "guarda": {
+        "tipo": "skill",
+        "caminho": ".claude/skills/plano-de-verificacao/SKILL.md"
+      }
+    },
+    {
+      "id": "skill-auditoria-seguranca",
+      "titulo": "auditoria-seguranca",
+      "tipo": "skill",
+      "origem": "gdt",
+      "fontes": [],
+      "destino": ".claude/skills/auditoria-seguranca/SKILL.md",
+      "criterios": {
+        "independente_do_dominio": true,
+        "nasceu_de_incidente": false,
+        "guardavel_por_procedimento": true,
+        "duplica": null,
+        "custo": "baixo"
+      },
+      "decisao": "adotado",
+      "razao": "Auditoria com o modelo de ameaças deste produto.",
+      "guarda": {
+        "tipo": "skill",
+        "caminho": ".claude/skills/auditoria-seguranca/SKILL.md"
+      }
+    },
+    {
+      "id": "skill-auditoria-pr",
+      "titulo": "auditoria-pr",
+      "tipo": "skill",
+      "origem": "gdt",
+      "fontes": [],
+      "destino": ".claude/skills/auditoria-pr/SKILL.md",
+      "criterios": {
+        "independente_do_dominio": true,
+        "nasceu_de_incidente": false,
+        "guardavel_por_procedimento": true,
+        "duplica": null,
+        "custo": "baixo"
+      },
+      "decisao": "adotado",
+      "razao": "Rever um PR ou a main; absorve a revisão cirúrgica e o revisor da doutrina do ALKMIA.",
+      "guarda": {
+        "tipo": "skill",
+        "caminho": ".claude/skills/auditoria-pr/SKILL.md"
+      }
+    },
+    {
+      "id": "skill-auditoria-issue",
+      "titulo": "auditoria-issue",
+      "tipo": "skill",
+      "origem": "gdt",
+      "fontes": [],
+      "destino": ".claude/skills/auditoria-issue/SKILL.md",
+      "criterios": {
+        "independente_do_dominio": true,
+        "nasceu_de_incidente": false,
+        "guardavel_por_procedimento": true,
+        "duplica": null,
+        "custo": "baixo"
+      },
+      "decisao": "adotado",
+      "razao": "Triar issues antes de implementar.",
+      "guarda": {
+        "tipo": "skill",
+        "caminho": ".claude/skills/auditoria-issue/SKILL.md"
+      }
+    },
+    {
+      "id": "skill-resolucao",
+      "titulo": "resolucao",
+      "tipo": "skill",
+      "origem": "gdt",
+      "fontes": [],
+      "destino": ".claude/skills/resolucao/SKILL.md",
+      "criterios": {
+        "independente_do_dominio": true,
+        "nasceu_de_incidente": false,
+        "guardavel_por_procedimento": true,
+        "duplica": null,
+        "custo": "baixo"
+      },
+      "decisao": "adotado",
+      "razao": "Executar o que uma auditoria aprovou.",
+      "guarda": {
+        "tipo": "skill",
+        "caminho": ".claude/skills/resolucao/SKILL.md"
+      }
+    },
+    {
+      "id": "skill-dependencias",
+      "titulo": "dependencias",
+      "tipo": "skill",
+      "origem": "gdt",
+      "fontes": [],
+      "destino": ".claude/skills/dependencias/SKILL.md",
+      "criterios": {
+        "independente_do_dominio": true,
+        "nasceu_de_incidente": false,
+        "guardavel_por_procedimento": true,
+        "duplica": null,
+        "custo": "baixo"
+      },
+      "decisao": "adotado",
+      "razao": "PRs do Dependabot, consolidados.",
+      "guarda": {
+        "tipo": "skill",
+        "caminho": ".claude/skills/dependencias/SKILL.md"
+      }
+    },
+    {
+      "id": "skill-lancamento",
+      "titulo": "lancamento",
+      "tipo": "skill",
+      "origem": "gdt",
+      "fontes": [],
+      "destino": ".claude/skills/lancamento/SKILL.md",
+      "criterios": {
+        "independente_do_dominio": true,
+        "nasceu_de_incidente": false,
+        "guardavel_por_procedimento": true,
+        "duplica": null,
+        "custo": "baixo"
+      },
+      "decisao": "adotado",
+      "razao": "Lançar o desktop ou a web.",
+      "guarda": {
+        "tipo": "skill",
+        "caminho": ".claude/skills/lancamento/SKILL.md"
+      }
+    },
+    {
+      "id": "skill-ensaio-de-fumo",
+      "titulo": "ensaio-de-fumo",
+      "tipo": "skill",
+      "origem": "gdt",
+      "fontes": [],
+      "destino": ".claude/skills/ensaio-de-fumo/SKILL.md",
+      "criterios": {
+        "independente_do_dominio": true,
+        "nasceu_de_incidente": false,
+        "guardavel_por_procedimento": true,
+        "duplica": null,
+        "custo": "baixo"
+      },
+      "decisao": "adotado",
+      "razao": "Ensaiar um deploy publicado.",
+      "guarda": {
+        "tipo": "skill",
+        "caminho": ".claude/skills/ensaio-de-fumo/SKILL.md"
+      }
+    },
+    {
+      "id": "skill-pos-refatoracao",
+      "titulo": "pos-refatoracao",
+      "tipo": "skill",
+      "origem": "gdt",
+      "fontes": [],
+      "destino": ".claude/skills/pos-refatoracao/SKILL.md",
+      "criterios": {
+        "independente_do_dominio": true,
+        "nasceu_de_incidente": false,
+        "guardavel_por_procedimento": true,
+        "duplica": null,
+        "custo": "baixo"
+      },
+      "decisao": "adotado",
+      "razao": "Verificação focada depois de refatorar.",
+      "guarda": {
+        "tipo": "skill",
+        "caminho": ".claude/skills/pos-refatoracao/SKILL.md"
+      }
+    },
+    {
+      "id": "skill-arquitetura",
+      "titulo": "arquitetura",
+      "tipo": "skill",
+      "origem": "gdt",
+      "fontes": [],
+      "destino": ".claude/skills/arquitetura/SKILL.md",
+      "criterios": {
+        "independente_do_dominio": true,
+        "nasceu_de_incidente": false,
+        "guardavel_por_procedimento": true,
+        "duplica": null,
+        "custo": "baixo"
+      },
+      "decisao": "adotado",
+      "razao": "Encontrar aprofundamentos que valem a pena.",
+      "guarda": {
+        "tipo": "skill",
+        "caminho": ".claude/skills/arquitetura/SKILL.md"
+      }
+    },
+    {
+      "id": "skill-mapa-do-codigo",
+      "titulo": "mapa-do-codigo",
+      "tipo": "skill",
+      "origem": "gdt",
+      "fontes": [],
+      "destino": ".claude/skills/mapa-do-codigo/SKILL.md",
+      "criterios": {
+        "independente_do_dominio": true,
+        "nasceu_de_incidente": false,
+        "guardavel_por_procedimento": true,
+        "duplica": null,
+        "custo": "baixo"
+      },
+      "decisao": "adotado",
+      "razao": "Mapas do código para pessoas e agentes.",
+      "guarda": {
+        "tipo": "skill",
+        "caminho": ".claude/skills/mapa-do-codigo/SKILL.md"
+      }
+    },
+    {
+      "id": "skill-clonar-dependencias",
+      "titulo": "clonar-dependencias",
+      "tipo": "skill",
+      "origem": "gdt",
+      "fontes": [],
+      "destino": ".claude/skills/clonar-dependencias/SKILL.md",
+      "criterios": {
+        "independente_do_dominio": true,
+        "nasceu_de_incidente": false,
+        "guardavel_por_procedimento": true,
+        "duplica": null,
+        "custo": "baixo"
+      },
+      "decisao": "adotado",
+      "razao": "Ler o código-fonte das dependências na versão usada.",
+      "guarda": {
+        "tipo": "skill",
+        "caminho": ".claude/skills/clonar-dependencias/SKILL.md"
+      }
+    },
+    {
+      "id": "skill-verificar-factos",
+      "titulo": "verificar-factos",
+      "tipo": "skill",
+      "origem": "gdt",
+      "fontes": [],
+      "destino": ".claude/skills/verificar-factos/SKILL.md",
+      "criterios": {
+        "independente_do_dominio": true,
+        "nasceu_de_incidente": false,
+        "guardavel_por_procedimento": true,
+        "duplica": null,
+        "custo": "baixo"
+      },
+      "decisao": "adotado",
+      "razao": "Factos das docs contra fontes primárias.",
+      "guarda": {
+        "tipo": "skill",
+        "caminho": ".claude/skills/verificar-factos/SKILL.md"
+      }
+    },
+    {
+      "id": "skill-refletir",
+      "titulo": "refletir",
+      "tipo": "skill",
+      "origem": "gdt",
+      "fontes": [],
+      "destino": ".claude/skills/refletir/SKILL.md",
+      "criterios": {
+        "independente_do_dominio": true,
+        "nasceu_de_incidente": false,
+        "guardavel_por_procedimento": true,
+        "duplica": null,
+        "custo": "baixo"
+      },
+      "decisao": "adotado",
+      "razao": "Aprender com trabalho repetido.",
+      "guarda": {
+        "tipo": "skill",
+        "caminho": ".claude/skills/refletir/SKILL.md"
+      }
+    },
+    {
+      "id": "skill-humanizar",
+      "titulo": "humanizar",
+      "tipo": "skill",
+      "origem": "gdt",
+      "fontes": [],
+      "destino": ".claude/skills/humanizar/SKILL.md",
+      "criterios": {
+        "independente_do_dominio": true,
+        "nasceu_de_incidente": false,
+        "guardavel_por_procedimento": true,
+        "duplica": null,
+        "custo": "baixo"
+      },
+      "decisao": "adotado",
+      "razao": "Prosa em português europeu sem tiques.",
+      "guarda": {
+        "tipo": "skill",
+        "caminho": ".claude/skills/humanizar/SKILL.md"
+      }
+    },
+    {
+      "id": "faturacao-pelo-webhook",
+      "titulo": "Plano que só muda pelo webhook: assinatura verificada, eventos idempotentes e ordenados, caducidade",
+      "tipo": "pratica",
+      "origem": "gdt",
+      "fontes": [],
+      "destino": "docs/architecture/ADR-0025-planos-e-faturacao.md",
+      "criterios": {
+        "independente_do_dominio": true,
+        "nasceu_de_incidente": false,
+        "guardavel_por_procedimento": true,
+        "duplica": null,
+        "custo": "medio"
+      },
+      "decisao": "adotado",
+      "razao": "Nasceu aqui (PR #56). O ALKMIA tem Stripe e a faturação por implementar.",
+      "guarda": {
+        "tipo": "teste",
+        "caminho": "supabase/tests/95_planos.sql"
+      },
+      "para_alkmia": {
+        "estado_la": "falta",
+        "medido": "2026-10-08, ALKMIA em cb14227: BIBLIA §4d, faturação não implementada; profiles.plan escrito por um só sítio, o webhook (M18)",
+        "como_aplicar": "Pegar no padrão, não no código: verificação HMAC com janela de 5 minutos e várias v1; tabela de eventos para idempotência; ignorar eventos mais antigos do que o último aplicado; a coluna do plano sem update para authenticated e um gatilho de segunda barreira; caducidade alguns dias depois do fim do período. Lá o direito de uso fica na aplicação (M18): o padrão serve na mesma para a escrita do plano."
+      }
+    },
+    {
+      "id": "rgpd-em-funcoes",
+      "titulo": "Exportar e apagar a conta por funções da base, testadas dos dois lados",
+      "tipo": "pratica",
+      "origem": "gdt",
+      "fontes": [],
+      "destino": "docs/RGPD.md",
+      "criterios": {
+        "independente_do_dominio": true,
+        "nasceu_de_incidente": false,
+        "guardavel_por_procedimento": true,
+        "duplica": null,
+        "custo": "medio"
+      },
+      "decisao": "adotado",
+      "razao": "Nasceu aqui (PR #53).",
+      "guarda": {
+        "tipo": "teste",
+        "caminho": "supabase/tests/90_rgpd.sql"
+      },
+      "para_alkmia": {
+        "estado_la": "por_medir",
+        "medido": "2026-10-08, ALKMIA em cb14227: existe site/app/api/user/delete e o desenho DL1 (registo de apagamento e prova de consentimento); não comparado ainda",
+        "como_aplicar": "Comparar com o DL1 antes de mexer: lá há dados de saúde (art. 9.º) e prova de consentimento, que aqui não existem. O que pode servir: o apagamento numa só função da base, com confirmação pelo email e o teste das tentativas de forjar o modo."
+      }
+    },
+    {
+      "id": "catalogo-validado",
+      "titulo": "Catálogo de práticas validado no CI, com triagem do outro projeto",
+      "tipo": "ferramenta",
+      "origem": "gdt",
+      "fontes": [],
+      "destino": "tools/conhecimento.py",
+      "criterios": {
+        "independente_do_dominio": true,
+        "nasceu_de_incidente": true,
+        "guardavel_por_procedimento": true,
+        "duplica": null,
+        "custo": "baixo"
+      },
+      "decisao": "adotado",
+      "razao": "Nasceu aqui (PR #57).",
+      "guarda": {
+        "tipo": "teste",
+        "caminho": "tests/test_conhecimento.py"
+      },
+      "para_alkmia": {
+        "estado_la": "falta",
+        "medido": "2026-10-08, ALKMIA em cb14227: docs/knowledge-graph.json é JSON inválido e parado em 2026-05-15",
+        "como_aplicar": "Substituir o knowledge-graph por um catálogo como docs/conhecimento/catalogo.json com validação no CI; a triagem passa a correr nos dois sentidos."
+      }
+    }
+  ]
+}

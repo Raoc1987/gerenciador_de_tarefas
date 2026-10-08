@@ -47,7 +47,8 @@ for teste in "$AQUI"/[0-9][0-9]_*.sql; do
     "${PSQL[@]}" -d "$base" -f "$AQUI/_ajuda.sql"
   } >/dev/null 2>"$TMP/erro" || { echo "FALHA  migrações ($nome)"; cat "$TMP/erro"; exit 1; }
 
-  if "${PSQL[@]}" -At -d "$base" -f "$teste" >"$TMP/saida" 2>&1; then
+  # SUPABASE: os testes que leem ficheiros do repositório (85_reconciliacao) usam-no.
+  if "${PSQL[@]}" -At -d "$base" -v SUPABASE="$AQUI/.." -f "$teste" >"$TMP/saida" 2>&1; then
     echo "ok     $nome ($(grep -c '^ok' "$TMP/saida" || true) verificações)"
     [ -n "${VERBOSO:-}" ] && sed "s/^/       /" "$TMP/saida"
   else

@@ -33,6 +33,9 @@ installer/Output/
 # mais configuração do Claude, acrescente outra excepção.
 .claude/*
 !.claude/skills/
+!.claude/agents/
+!.claude/hooks/
+!.claude/settings.json
 
 # Estado de trabalho em curso da skill trabalho-profundo: é de uma sessão,
 # não do projeto.

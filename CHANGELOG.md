@@ -7,6 +7,34 @@ o projeto usa [versionamento semântico](https://semver.org/lang/pt-BR/).
 
 ## [Não lançado]
 
+### Método de trabalho
+
+- **`docs/METODO.md`**: o método do ALKMIA, só a parte que serve aos dois
+  produtos.
+  - Níveis de verificação: implementado, testado, integrado, aplicado e
+    verificado em produção.
+  - O protocolo de seis passos.
+  - Doze regras, cada uma com um incidente deste repositório.
+  - O ALKMIA foi só lido; nada lá mudou.
+- **Catálogo de práticas** (`docs/conhecimento/catalogo.json`) com 67
+  entradas dos dois projetos. Todas usam os mesmos critérios: independente
+  do domínio, nasceu de incidente, dá para guardar por procedimento, duplica,
+  custo. Cada uma traz a decisão e o porquê.
+- **`tools/conhecimento.py`**:
+  - `validar` aplica as regras de decisão; por exemplo, nada que dependa do
+    domínio de um produto pode ser trazido;
+  - `relatorio` diz quanto do método está guardado por teste, CI, hook ou
+    agente, e lista as dívidas;
+  - `triagem` lista o que o outro projeto tem e ainda não foi decidido, sem
+    escrever nele.
+- **Três agentes** adaptados: `medidor`, `escrutinador-de-promessas` e
+  `avaliador-de-tecnologia`.
+- **Um hook** que corre o teste colocado depois de cada edição na web.
+- **A skill `reconciliar-esquema`**: compara a produção com as migrações,
+  por assinaturas, e é testada a cada PR.
+- **Os enums da base e as listas da web passam a ser comparados por um
+  teste**, incluindo a ordem dos papéis, que decide permissões.
+
 ### Planos e faturação
 
 - **Planos Gratuito, Equipa e Empresa**, com os limites na base: pessoas

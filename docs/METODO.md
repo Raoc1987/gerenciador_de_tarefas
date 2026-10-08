@@ -101,6 +101,9 @@ CI viu.
 regra 6). *Cicatriz:* o typecheck com stubs desta sessão dava "limpo" porque
 o `tsconfig` excluía `*.test.ts`. O instrumento estava a medir menos do que
 parecia.
+Segunda vez, no PR #59: o erro novo estava na saída, entre dezenas de erros
+conhecidos dos stubs, e passou à leitura. Com um instrumento ruidoso, compara-se
+a lista de erros com a da base, não se lê a olho.
 
 **R7. Verificar o estado não é verificar o evento** (M16, M20). Um histórico
 diz o que aconteceu; não diz o que existe. A lista de deployments, o

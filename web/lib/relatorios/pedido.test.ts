@@ -17,7 +17,7 @@ test("o filtro só aceita valores conhecidos; o resto cai para vazio", () => {
 });
 
 test("a pesquisa é cortada a 100 caracteres", () => {
-  assert.equal(filtroDoPedido({ q: "x".repeat(500) }).texto.length, 100);
+  assert.equal(filtroDoPedido({ q: "x".repeat(500) }).texto, "x".repeat(100));
 });
 
 test("o URL e o filtro vão e voltam sem perder nada, e o vazio dá query vazia", () => {

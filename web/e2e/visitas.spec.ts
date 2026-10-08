@@ -1,3 +1,4 @@
+import { readFile } from "node:fs/promises";
 import { expect, test, type Page } from "@playwright/test";
 
 // Uma visita a cada página que os outros ficheiros não ensaiam: comentários,
@@ -116,9 +117,7 @@ test("o CSV dos relatórios traz as tarefas que a pessoa vê, separado por ponto
     page.getByRole("link", { name: "Descarregar CSV" }).click(),
   ]);
   expect(descarga.suggestedFilename()).toMatch(/\.csv$/);
-  const caminho = await descarga.path();
-  const { readFile } = await import("node:fs/promises");
-  const texto = await readFile(caminho, "utf8");
+  const texto = await readFile((await descarga.path())!, "utf8");
   expect(texto).toContain(";");
   expect(texto).toContain("Rever contrato de fornecedor");
 });
@@ -130,8 +129,7 @@ test("o colaborador não vê no CSV as tarefas que a RLS lhe esconde", async ({ 
     page.waitForEvent("download"),
     page.getByRole("link", { name: "Descarregar CSV" }).click(),
   ]);
-  const { readFile } = await import("node:fs/promises");
-  const texto = await readFile(await descarga.path(), "utf8");
+  const texto = await readFile((await descarga.path())!, "utf8");
   expect(texto).toContain("Preparar proposta para cliente");
   expect(texto).not.toContain("Tarefa só da dona");
 });

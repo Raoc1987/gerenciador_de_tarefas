@@ -179,3 +179,21 @@ vistos: números com data, e o que eles não dizem.
 | Agente `avaliador-de-tecnologia` | `.claude/agents/avaliador-de-tecnologia.md` | os sete filtros antes de adotar uma dependência ou serviço |
 | Hook do teste colocado | `.claude/hooks/teste-do-ficheiro.mjs` | depois de editar `web/lib/x.ts`, corre `x.test.ts` e só fala se falhar |
 | Skill `reconciliar-esquema` | `.claude/skills/reconciliar-esquema/` | compara o esquema de produção com as migrações, por assinaturas |
+| Ensaio do publicado | `.github/workflows/ensaio-publicado.yml` | o ensaio de fumo a cada deploy pronto no Vercel e, com `PRODUCAO_URL` definida, de hora a hora na produção |
+
+## 7. O que corre a cada mudança
+
+Cada camada apanha uma classe de quebra que as outras deixam passar. Nenhuma
+se mede por "há testes": cada uma tem um mínimo que falha o CI.
+
+| Camada | Onde | O mínimo que a guarda |
+|---|---|---|
+| Regras da base | `supabase/tests/correr.sh` | cada função de `public` e `interno` corre em pelo menos um teste (o Postgres conta as chamadas); exceções em `funcoes-sem-chamada.txt`, com a razão |
+| Domínio e bibliotecas | `npm run test:cobertura` | cada módulo de `web/lib` alcançado por um teste (`arquitetura.test.ts`), e um mínimo de linhas, ramos e funções que só sobe |
+| A aplicação inteira | `web/e2e/` no CI | Supabase local com as migrações reais, o build de produção e um browser; cada página visitada por um ensaio |
+| O que está publicado | `ensaio-publicado.yml` | cada deploy pronto e a produção de hora a hora; barrado pela proteção do Vercel fica como aviso |
+| O próprio CI | `tests/test_workflows.py` | Actions fixadas por SHA, `permissions:` em cada workflow |
+
+*Cicatriz (2026-10-08):* antes destes mínimos, 3 módulos de `web/lib` não
+tinham teste nenhum e ninguém o sabia; a contagem de chamadas mostrou que as
+funções da base estavam todas exercidas, mas só porque se mediu.

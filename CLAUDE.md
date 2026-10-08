@@ -36,6 +36,21 @@ Nas sessões de agente na cloud não há acesso ao registo npm: o build e o
 typecheck reais correm no CI (`.github/workflows/tests.yml`), e esperar por ele
 verde faz parte de verificar.
 
+## Método
+
+`docs/METODO.md` é vinculativo: níveis de verificação (implementado ≠ integrado
+≠ aplicado ≠ verificado em produção), o protocolo de seis passos (medir,
+propor com o rejeitado, decidir o que é do autor, executar, provar que a prova
+falha, registar) e as regras com cicatriz. Vem do ALKMIA, só o que serve aos
+dois produtos; o que se trouxe e recusou está em
+`docs/conhecimento/catalogo.json`, validado por `python tools/conhecimento.py
+validar` e pelo `tests/test_conhecimento.py`.
+
+Agentes (`.claude/agents/`): `medidor` (números com data e fonte, só leitura,
+nunca no ALKMIA), `escrutinador-de-promessas` (o que se afirma em público vs. o
+que o código sustenta), `avaliador-de-tecnologia` (sete filtros antes de
+adotar). Hook: depois de editar `web/**/x.ts`, corre o `x.test.ts` colocado.
+
 ## Convenções
 
 - Uma regra de base de dados tem testes **dos dois lados** — o que passa e o
@@ -65,6 +80,7 @@ verde faz parte de verificar.
 | `mapa-do-codigo` | mapas do código para pessoas e agentes |
 | `clonar-dependencias` | ler o código-fonte das dependências na versão usada |
 | `verificar-factos` | verificar os factos das docs contra fontes primárias |
+| `reconciliar-esquema` | comparar o esquema de produção com as migrações, por assinaturas (só lê) |
 | `refletir` | aprender com trabalho repetido e propor a melhoria mais pequena |
 | `humanizar` | tirar o ar de IA da prosa, em português europeu |
 

@@ -3,6 +3,7 @@
     python tools/conhecimento.py validar
     python tools/conhecimento.py relatorio
     python tools/conhecimento.py triagem --alkmia /caminho/para/ALKMIA
+    python tools/conhecimento.py alkmia [--escrever]
 
 O catálogo (``docs/conhecimento/catalogo.json``) regista cada prática, regra,
 agente, skill, hook ou prompt dos dois projetos, com os mesmos critérios e a
@@ -48,6 +49,9 @@ CRITERIOS = {
 #: Guardas que são procedimento (correm sozinhas); "prosa" e "skill" dependem de alguém ler.
 PROCEDIMENTO = {"teste", "ci", "hook", "agente"}
 TRAZIDOS = {"adotado", "adaptado"}
+#: Estado no ALKMIA de uma prática nascida aqui, medido lá (só leitura).
+ESTADOS_LA = {"falta", "parcial", "existe", "nao_se_aplica", "por_medir"}
+NOTA_ALKMIA = RAIZ / "docs" / "conhecimento" / "PARA-O-ALKMIA.md"
 
 
 def carregar(caminho: Path = CATALOGO) -> dict:
@@ -99,6 +103,14 @@ def problemas(cat: dict, raiz: Path = RAIZ) -> list[str]:
                 erros.append(f"{eid}: trazido sem guarda (tipo {g.get('tipo')!r})")
             elif not _existe(g.get("caminho"), raiz):
                 erros.append(f"{eid}: a guarda {g.get('caminho')!r} não existe")
+        la = e.get("para_alkmia")
+        if la is not None:
+            if e.get("origem") == "alkmia":
+                erros.append(f"{eid}: para_alkmia só faz sentido no que nasceu aqui")
+            if la.get("estado_la") not in ESTADOS_LA:
+                erros.append(f"{eid}: estado_la {la.get('estado_la')!r} fora de {sorted(ESTADOS_LA)}")
+            if not str(la.get("medido", "")).strip() or not str(la.get("como_aplicar", "")).strip():
+                erros.append(f"{eid}: para_alkmia sem a medição ou sem como aplicar")
     return erros
 
 
@@ -153,6 +165,54 @@ def relatorio(cat: dict) -> str:
     return "\n".join(linhas)
 
 
+# ------------------------------------------------------- nota para o ALKMIA
+
+ORDEM_LA = ["falta", "parcial", "por_medir", "existe", "nao_se_aplica"]
+TITULO_LA = {
+    "falta": "Falta lá, e serve",
+    "parcial": "Existe em parte",
+    "por_medir": "Por medir antes de decidir",
+    "existe": "Já existe lá: nada a fazer",
+    "nao_se_aplica": "Não se aplica hoje: só se a situação aparecer",
+}
+
+
+def nota_alkmia(cat: dict) -> str:
+    """O que nasceu aqui e pode servir ao ALKMIA, gerado do catálogo. Não se edita à mão."""
+    com = [e for e in cat["entradas"] if e.get("para_alkmia")]
+    linhas = [
+        "# Para o ALKMIA: o que nasceu no Gerenciador de Tarefas",
+        "",
+        "<!-- Gerado por `python tools/conhecimento.py alkmia --escrever` a partir de",
+        "     docs/conhecimento/catalogo.json. Não editar à mão: o teste compara. -->",
+        "",
+        f"Catálogo de {cat['atualizado']}. Para ler no início de uma sessão no ALKMIA",
+        "(`Raoc1987/ALKMIA`). Daqui nada se escreve lá: cada ponto é uma proposta, e",
+        "entra pelo protocolo do ALKMIA (`docs/PROJETO-CRIACAO-SENIOR.md`), começando",
+        "por **medir de novo**, porque a medição abaixo tem data e o ALKMIA muda.",
+        "",
+        "Os dois produtos são diferentes. Onde uma decisão do ALKMIA contraria a",
+        "daqui (por exemplo o M18, direito de uso na aplicação), ganha a do ALKMIA.",
+    ]
+    for estado in ORDEM_LA:
+        grupo = [e for e in com if e["para_alkmia"]["estado_la"] == estado]
+        if not grupo:
+            continue
+        linhas += ["", f"## {TITULO_LA[estado]}"]
+        for e in grupo:
+            la = e["para_alkmia"]
+            linhas += [
+                "",
+                f"### {e['titulo']}",
+                "",
+                f"- **Medido:** {la['medido']}",
+                f"- **Como aplicar:** {la['como_aplicar']}",
+                f"- **Onde ver aqui:** `{e['destino']}`"
+                + (f", provado por `{e['guarda']['caminho']}`" if e.get("guarda") and e["guarda"]["caminho"] != e["destino"] else ""),
+            ]
+    return "\n".join(linhas) + "\n"
+
+
 # -------------------------------------------------------------------- triagem
 
 ROMANOS = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII"]
@@ -200,6 +260,8 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("relatorio", help="o que está guardado por procedimento, dívidas e pendentes")
     t = sub.add_parser("triagem", help="práticas do ALKMIA ainda sem decisão (só leitura)")
     t.add_argument("--alkmia", type=Path, required=True)
+    a = sub.add_parser("alkmia", help="o que nasceu aqui e serve ao ALKMIA (gera a nota)")
+    a.add_argument("--escrever", action="store_true", help=f"grava em {NOTA_ALKMIA.relative_to(RAIZ)}")
     args = ap.parse_args(argv)
 
     cat = carregar()
@@ -211,6 +273,14 @@ def main(argv: list[str] | None = None) -> int:
         return 1 if erros else 0
     if args.comando == "relatorio":
         print(relatorio(cat))
+        return 0
+    if args.comando == "alkmia":
+        texto = nota_alkmia(cat)
+        if args.escrever:
+            NOTA_ALKMIA.write_text(texto, encoding="utf-8")
+            print(f"Escrito {NOTA_ALKMIA.relative_to(RAIZ)}.")
+        else:
+            print(texto, end="")
         return 0
     falta = por_triar(cat, args.alkmia)
     print("\n".join(f"  {f}" for f in falta) if falta else "Tudo o que o ALKMIA tem já foi triado.")

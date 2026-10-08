@@ -592,6 +592,11 @@
       "guarda": {
         "tipo": "ci",
         "caminho": ".github/workflows/base-de-dados.yml"
+      },
+      "para_alkmia": {
+        "estado_la": "parcial",
+        "medido": "2026-10-08, ALKMIA em cb14227: a regra existe (CLAUDE.md §1b), mas nenhum workflow corre supabase db push; aplica-se à mão",
+        "como_aplicar": "Workflow como .github/workflows/base-de-dados.yml: testes primeiro, CLI fixada por versão e SHA-256, ambiente producao com o segredo, concorrência sem cancelar. E a lição de cá: um run verde sem o segredo não aplicou nada (METODO §1), por isso o passo sem segredo tem de falhar ou avisar de forma visível."
       }
     },
     {
@@ -1015,6 +1020,11 @@
       "guarda": {
         "tipo": "teste",
         "caminho": "supabase/tests/_ajuda.sql"
+      },
+      "para_alkmia": {
+        "estado_la": "existe",
+        "medido": "2026-10-08, ALKMIA em cb14227: site/scripts/trainer-rpc-integration.mjs verifica a mensagem (ex.: /não encontrado/.test(erroB))",
+        "como_aplicar": "Nada a fazer."
       }
     },
     {
@@ -1036,6 +1046,11 @@
       "guarda": {
         "tipo": "teste",
         "caminho": "supabase/tests/90_rgpd.sql"
+      },
+      "para_alkmia": {
+        "estado_la": "nao_se_aplica",
+        "medido": "2026-10-08, ALKMIA em cb14227: nenhum current_setting de variável própria em supabase/migrations",
+        "como_aplicar": "Só se um dia uma regra tiver de ser desligada durante uma importação ou um apagamento: usar uma tabela num esquema sem acesso pela API, com o id da transação, nunca uma variável de sessão (que qualquer sessão define)."
       }
     },
     {
@@ -1057,6 +1072,11 @@
       "guarda": {
         "tipo": "ci",
         "caminho": ".github/workflows/tests.yml"
+      },
+      "para_alkmia": {
+        "estado_la": "falta",
+        "medido": "2026-10-08, ALKMIA em cb14227: sem Playwright no CI; o test:rpc corre em pglite, que não é o Postgres do Supabase e não tem GoTrue nem PostgREST",
+        "como_aplicar": "Copiar a forma de supabase/e2e/levantar.sh: GoTrue e PostgREST fixados por versão e SHA-256, um proxy Node em /auth/v1 e /rest/v1, Postgres do runner, migrações reais, e Playwright sobre o build. GOTRUE_JWT_DEFAULT_GROUP_NAME=authenticated é obrigatório."
       }
     },
     {
@@ -1078,6 +1098,11 @@
       "guarda": {
         "tipo": "teste",
         "caminho": "tests/test_vocabulario.py"
+      },
+      "para_alkmia": {
+        "estado_la": "parcial",
+        "medido": "2026-10-08, ALKMIA em cb14227: 31 listas check (x in (...)) nas migrações; só site/lib/rotas-conhecidas.test.ts extrai uma",
+        "como_aplicar": "Um teste que extrai cada check (coluna in (...)) das migrações e o compara com a constante TypeScript correspondente, pela mesma ordem, com um mapa coluna→constante. O M5 do ALKMIA já pede isto."
       }
     },
     {
@@ -1099,6 +1124,11 @@
       "guarda": {
         "tipo": "teste",
         "caminho": "supabase/tests/25_hierarquia_dependencias.sql"
+      },
+      "para_alkmia": {
+        "estado_la": "nao_se_aplica",
+        "medido": "2026-10-08, ALKMIA em cb14227: nenhum gatilho before insert/update nas migrações",
+        "como_aplicar": "Quando houver um gatilho que recuse com uma frase sobre os dados: verificar o acesso primeiro, porque a RLS só atua depois do gatilho."
       }
     },
     {
@@ -1435,6 +1465,84 @@
       "guarda": {
         "tipo": "skill",
         "caminho": ".claude/skills/humanizar/SKILL.md"
+      }
+    },
+    {
+      "id": "faturacao-pelo-webhook",
+      "titulo": "Plano que só muda pelo webhook: assinatura verificada, eventos idempotentes e ordenados, caducidade",
+      "tipo": "pratica",
+      "origem": "gdt",
+      "fontes": [],
+      "destino": "docs/architecture/ADR-0025-planos-e-faturacao.md",
+      "criterios": {
+        "independente_do_dominio": true,
+        "nasceu_de_incidente": false,
+        "guardavel_por_procedimento": true,
+        "duplica": null,
+        "custo": "medio"
+      },
+      "decisao": "adotado",
+      "razao": "Nasceu aqui (PR #56). O ALKMIA tem Stripe e a faturação por implementar.",
+      "guarda": {
+        "tipo": "teste",
+        "caminho": "supabase/tests/95_planos.sql"
+      },
+      "para_alkmia": {
+        "estado_la": "falta",
+        "medido": "2026-10-08, ALKMIA em cb14227: BIBLIA §4d, faturação não implementada; profiles.plan escrito por um só sítio, o webhook (M18)",
+        "como_aplicar": "Pegar no padrão, não no código: verificação HMAC com janela de 5 minutos e várias v1; tabela de eventos para idempotência; ignorar eventos mais antigos do que o último aplicado; a coluna do plano sem update para authenticated e um gatilho de segunda barreira; caducidade alguns dias depois do fim do período. Lá o direito de uso fica na aplicação (M18): o padrão serve na mesma para a escrita do plano."
+      }
+    },
+    {
+      "id": "rgpd-em-funcoes",
+      "titulo": "Exportar e apagar a conta por funções da base, testadas dos dois lados",
+      "tipo": "pratica",
+      "origem": "gdt",
+      "fontes": [],
+      "destino": "docs/RGPD.md",
+      "criterios": {
+        "independente_do_dominio": true,
+        "nasceu_de_incidente": false,
+        "guardavel_por_procedimento": true,
+        "duplica": null,
+        "custo": "medio"
+      },
+      "decisao": "adotado",
+      "razao": "Nasceu aqui (PR #53).",
+      "guarda": {
+        "tipo": "teste",
+        "caminho": "supabase/tests/90_rgpd.sql"
+      },
+      "para_alkmia": {
+        "estado_la": "por_medir",
+        "medido": "2026-10-08, ALKMIA em cb14227: existe site/app/api/user/delete e o desenho DL1 (registo de apagamento e prova de consentimento); não comparado ainda",
+        "como_aplicar": "Comparar com o DL1 antes de mexer: lá há dados de saúde (art. 9.º) e prova de consentimento, que aqui não existem. O que pode servir: o apagamento numa só função da base, com confirmação pelo email e o teste das tentativas de forjar o modo."
+      }
+    },
+    {
+      "id": "catalogo-validado",
+      "titulo": "Catálogo de práticas validado no CI, com triagem do outro projeto",
+      "tipo": "ferramenta",
+      "origem": "gdt",
+      "fontes": [],
+      "destino": "tools/conhecimento.py",
+      "criterios": {
+        "independente_do_dominio": true,
+        "nasceu_de_incidente": true,
+        "guardavel_por_procedimento": true,
+        "duplica": null,
+        "custo": "baixo"
+      },
+      "decisao": "adotado",
+      "razao": "Nasceu aqui (PR #57).",
+      "guarda": {
+        "tipo": "teste",
+        "caminho": "tests/test_conhecimento.py"
+      },
+      "para_alkmia": {
+        "estado_la": "falta",
+        "medido": "2026-10-08, ALKMIA em cb14227: docs/knowledge-graph.json é JSON inválido e parado em 2026-05-15",
+        "como_aplicar": "Substituir o knowledge-graph por um catálogo como docs/conhecimento/catalogo.json com validação no CI; a triagem passa a correr nos dois sentidos."
       }
     }
   ]

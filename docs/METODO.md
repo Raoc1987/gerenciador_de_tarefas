@@ -170,6 +170,7 @@ vistos: números com data, e o que eles não dizem.
 | Catálogo de práticas | `docs/conhecimento/catalogo.json` | o que se usa nos dois projetos, com os critérios e a decisão |
 | Analisador | `python tools/conhecimento.py relatorio` | quanto do método está guardado por procedimento e quanto só em prosa; dívidas; desencontros com o repositório |
 | Triagem | `python tools/conhecimento.py triagem --alkmia <caminho>` | práticas novas do outro projeto ainda por decidir (só leitura) |
+| Nota para o ALKMIA | `docs/conhecimento/PARA-O-ALKMIA.md`, gerada por `python tools/conhecimento.py alkmia --escrever` | o que nasceu aqui e serve lá, com a medição feita lá e como aplicar; ler no início de uma sessão no ALKMIA |
 | Agente `medidor` | `.claude/agents/medidor.md` | passos 1 e 5: números com data e fonte, só leitura |
 | Agente `escrutinador-de-promessas` | `.claude/agents/escrutinador-de-promessas.md` | o que o produto afirma em público contra o que o código sustenta |
 | Agente `avaliador-de-tecnologia` | `.claude/agents/avaliador-de-tecnologia.md` | os sete filtros antes de adotar uma dependência ou serviço |

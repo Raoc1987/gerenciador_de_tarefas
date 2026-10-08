@@ -116,3 +116,24 @@ def test_o_relatorio_conta_o_que_esta_guardado_por_procedimento():
     texto = k.relatorio(k.carregar())
     assert "Guardado por procedimento" in texto
     assert json.loads((RAIZ / "docs" / "conhecimento" / "catalogo.json").read_text(encoding="utf-8"))["entradas"]
+
+
+def test_a_nota_para_o_alkmia_esta_em_dia_com_o_catalogo():
+    """Gerada do catálogo; editada à mão ou esquecida depois de mudar o catálogo, diverge."""
+    assert k.NOTA_ALKMIA.read_text(encoding="utf-8") == k.nota_alkmia(k.carregar()), (
+        "corra: python tools/conhecimento.py alkmia --escrever"
+    )
+
+
+@pytest.mark.parametrize("mudancas, motivo", [
+    ({"para_alkmia": {"estado_la": "talvez", "medido": "x", "como_aplicar": "y"}}, "estado_la"),
+    ({"para_alkmia": {"estado_la": "falta", "medido": " ", "como_aplicar": "y"}}, "sem a medição"),
+], ids=["estado-desconhecido", "sem-medicao"])
+def test_para_alkmia_exige_estado_medicao_e_como(mudancas, motivo):
+    cat = _com(origem="gdt", **mudancas)
+    assert any(motivo in e for e in k.problemas(cat))
+
+
+def test_para_alkmia_nao_vale_no_que_veio_do_alkmia():
+    cat = _com(para_alkmia={"estado_la": "falta", "medido": "x", "como_aplicar": "y"})
+    assert any("só faz sentido no que nasceu aqui" in e for e in k.problemas(cat))

@@ -34,13 +34,15 @@ export async function perguntar(empresaId: string, historicoBruto: unknown, perg
     return { erro: `Chegou ao limite de ${LIMITE_DIARIO} perguntas por dia. Volte amanhã.` };
   }
 
-  // O limite do plano é por empresa e por mês; a base recusa o registo do
-  // uso, mas aqui pergunta-se antes, para não gastar uma chamada ao modelo.
-  const { data: uso } = await supabase.rpc("uso_do_plano", { p_empresa: empresaId });
-  const mes = (uso as { copiloto_mes?: { usados: number; maximo: number | null } } | null)?.copiloto_mes;
-  if (mes && mes.maximo !== null && mes.usados >= mes.maximo) {
-    return { erro: `Esta empresa já fez as ${mes.maximo} perguntas ao Copiloto que o plano permite este mês.` };
-  }
+  // A pergunta reserva-se ANTES de chamar o modelo: o limite do plano (por
+  // empresa e por mês) recusa aqui, antes de haver custo, e a frase da base
+  // chega à pessoa. Os tokens acrescentam-se no fim (copiloto_registar_tokens).
+  const { data: reserva, error: erroReserva } = await supabase
+    .from("copiloto_uso")
+    .insert({ empresa_id: empresaId })
+    .select("id")
+    .single();
+  if (erroReserva || !reserva) return { erro: mensagemDeErro(erroReserva) };
 
   const hoje = hojeNoFuso();
   const pessoas = await pessoasDaEmpresa(empresaId);
@@ -97,9 +99,20 @@ export async function perguntar(empresaId: string, historicoBruto: unknown, perg
       },
     });
 
-    await supabase
-      .from("copiloto_uso")
-      .insert({ empresa_id: empresaId, tokens_entrada: r.uso.entrada, tokens_saida: r.uso.saida });
+    const { data: registado, error: erroTokens } = await supabase.rpc("copiloto_registar_tokens", {
+      p_uso: reserva.id,
+      p_entrada: r.uso.entrada,
+      p_saida: r.uso.saida,
+    });
+    if (erroTokens || registado !== true) {
+      // A resposta já existe e a pessoa recebe-a; o que falhou foi a conta do
+      // custo. Não se engole (METODO R3): fica nos registos da Vercel, com o que
+      // é preciso para a reconstituir.
+      console.error("[copiloto] tokens por registar", {
+        uso: reserva.id, empresa: empresaId, entrada: r.uso.entrada, saida: r.uso.saida,
+        erro: erroTokens?.message ?? "a reserva não aceitou os tokens",
+      });
+    }
 
     // Cada proposta é validada contra a tarefa como está agora na base.
     const lidas = new Map((await tarefas()).map((t) => [t.id, t]));

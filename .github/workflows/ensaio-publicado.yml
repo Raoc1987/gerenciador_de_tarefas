@@ -1,0 +1,55 @@
+name: Ensaio do publicado
+
+# O CI prova o código; este workflow prova o que está publicado. Corre o
+# ensaio de fumo (web/scripts/ensaio-fumo.ts) contra:
+#   - cada deploy que o Vercel dá como pronto (evento deployment_status), seja
+#     pré-visualização ou produção;
+#   - a produção, de hora a hora, se a variável do repositório PRODUCAO_URL
+#     estiver definida. Sem ela, o agendamento não faz nada (METODO §1: verde
+#     sem ensaio não é "verificado em produção").
+# Só lê: faz pedidos HTTP ao deploy e não precisa de dependências npm.
+
+on:
+  deployment_status:
+  schedule:
+    - cron: "17 * * * *"
+  workflow_dispatch:
+    inputs:
+      url:
+        description: "URL do deploy a ensaiar"
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  ensaio:
+    name: Ensaio de fumo
+    runs-on: ubuntu-latest
+    if: >-
+      (github.event_name == 'deployment_status' && github.event.deployment_status.state == 'success')
+      || (github.event_name == 'schedule' && vars.PRODUCAO_URL != '')
+      || github.event_name == 'workflow_dispatch'
+    timeout-minutes: 5
+    env:
+      ALVO: ${{ inputs.url || github.event.deployment_status.environment_url || github.event.deployment_status.target_url || vars.PRODUCAO_URL }}
+      VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: "22"
+      - name: Ensaiar
+        working-directory: web
+        # Sai com 1 se uma verificação falhar (vermelho) e com 2 se não chegou à
+        # aplicação: uma pré-visualização protegida sem o segredo de bypass não
+        # é uma falha do produto, fica como aviso.
+        run: |
+          set +e
+          node scripts/ensaio-fumo.ts "$ALVO"
+          codigo=$?
+          if [ "$codigo" = 2 ]; then
+            echo "::warning::O ensaio não chegou a $ALVO (protegido ou inacessível). Defina o segredo VERCEL_AUTOMATION_BYPASS_SECRET."
+            exit 0
+          fi
+          exit "$codigo"

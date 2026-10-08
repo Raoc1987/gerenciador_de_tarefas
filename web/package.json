@@ -12,6 +12,7 @@
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "test": "node --test \"lib/**/*.test.ts\"",
+    "test:cobertura": "node --test --experimental-test-coverage --test-coverage-exclude=\"**/*.test.ts\" --test-coverage-lines=98 --test-coverage-branches=86 --test-coverage-functions=97 \"lib/**/*.test.ts\"",
     "test:bd": "../supabase/tests/correr.sh",
     "ensaio:fumo": "node scripts/ensaio-fumo.ts",
     "test:e2e": "playwright test"

@@ -127,3 +127,45 @@ test("nenhum valor exportado em lib/ está morto: nem usado noutro ficheiro, nem
   }
   assert.deepEqual(mortos, []);
 });
+
+/**
+ * Módulos que nenhum teste unitário consegue importar, porque precisam do Next
+ * ou de um Supabase a responder. Cada um tem a razão e quem o prova; os ensaios
+ * de ponta a ponta (web/e2e) passam por todos. Acrescentar aqui é uma decisão,
+ * não uma saída: o teste abaixo falha com qualquer outro módulo sem teste.
+ */
+const SO_PONTA_A_PONTA: Record<string, string> = {
+  "lib/contexto.ts": "cookies e redirect do Next; todas as páginas da app passam por aqui nos ensaios",
+  "lib/supabase/servidor.ts": "cliente com os cookies do pedido; ensaios de ponta a ponta",
+  "lib/supabase/browser.ts": "cliente do browser; ensaios de ponta a ponta",
+  "lib/supabase/servico.ts": "chave de serviço; só as rotas de cron e o webhook (testes de arquitetura acima)",
+};
+
+function resolver(de: string, alvo: string): string | null {
+  let caminho: string;
+  if (alvo.startsWith("@/")) caminho = alvo.slice(2);
+  else if (alvo.startsWith(".")) caminho = join(de, "..", alvo).split(sep).join("/");
+  else return null;
+  for (const c of [caminho, `${caminho}.ts`, `${caminho}.tsx`, `${caminho}/index.ts`]) {
+    const limpo = c.replace(/\.tsx?\.tsx?$/, (m) => m.slice(m.lastIndexOf(".")));
+    if (codigo.some((f) => f.caminho === limpo)) return limpo;
+  }
+  return null;
+}
+
+test("cada módulo de lib/ é alcançado por um teste, ou está na lista dos que só o browser prova", () => {
+  const porCaminho = new Map(codigo.map((f) => [f.caminho, f]));
+  const alcancados = new Set<string>();
+  const fila = testes.flatMap((t) => [...t.fonte.matchAll(/from\s+["']([^"']+)["']/g)].map((m) => resolver(t.caminho, m[1])));
+  while (fila.length) {
+    const c = fila.pop();
+    if (!c || alcancados.has(c)) continue;
+    alcancados.add(c);
+    for (const m of porCaminho.get(c)?.fonte.matchAll(/from\s+["']([^"']+)["']/g) ?? []) fila.push(resolver(c, m[1]));
+  }
+  const sem = codigo
+    .filter((f) => f.caminho.startsWith("lib/") && !alcancados.has(f.caminho) && !(f.caminho in SO_PONTA_A_PONTA))
+    .map((f) => f.caminho);
+  assert.deepEqual(sem, [], "módulos sem nenhum teste a chegar-lhes: escreva o teste colocado");
+  for (const c of Object.keys(SO_PONTA_A_PONTA)) assert.ok(porCaminho.has(c), `${c} saiu: tire-o da lista`);
+});

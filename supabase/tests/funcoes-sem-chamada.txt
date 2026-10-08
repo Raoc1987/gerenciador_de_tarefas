@@ -1,0 +1,5 @@
+# Funções das migrações que nenhum teste precisa de chamar, uma por linha, com a
+# razão depois do nome. O correr.sh falha com qualquer outra função que nenhum
+# teste chame, e com uma linha aqui para uma função que já não existe.
+#
+# Hoje está vazio: as 44 funções do produto correm todas nos testes.

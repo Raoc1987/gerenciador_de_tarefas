@@ -7,6 +7,25 @@ o projeto usa [versionamento semântico](https://semver.org/lang/pt-BR/).
 
 ## [Não lançado]
 
+### Testes a cada mudança
+
+- **Cada função da base corre em pelo menos um teste.** O `correr.sh` liga a
+  contagem de chamadas do Postgres e falha com uma função que nenhum teste
+  chama (hoje: 44 de 44), ou com uma exceção para uma função que já não existe.
+- **Cada módulo de `web/lib` é alcançado por um teste.** Novos testes para os
+  pedidos de relatório, a configuração do email e a do Supabase. O CI corre os
+  testes do domínio com mínimo de cobertura: 98% das linhas, 86% dos ramos,
+  97% das funções.
+- **Ensaios de ponta a ponta das páginas que faltavam**: comentários, editar e
+  apagar uma tarefa (e vê-lo na auditoria), convites, definições,
+  notificações, o CSV dos relatórios (com a RLS a esconder o que deve), o
+  Copiloto sem chave e sair.
+- **Ensaio do publicado**: um workflow corre o ensaio de fumo a cada deploy
+  que o Vercel dá como pronto e, com a variável `PRODUCAO_URL` definida, de
+  hora a hora na produção.
+- **A regra das Actions fixadas por SHA passa a ter teste**, e cada workflow
+  tem de declarar as permissões.
+
 ### Copiloto e verificações do código
 
 - **O Copiloto reserva a pergunta antes de chamar o modelo.** Quando a

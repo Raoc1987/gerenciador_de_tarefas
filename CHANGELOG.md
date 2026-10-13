@@ -243,6 +243,10 @@ funcionalidades.
   onde um utilizador a iria procurar. Ambos passam a dizê-lo, com o que está
   verificado ao lado do que não está.
 - O README em inglês passa a ligar ao guia de contribuições.
+- Os READMEs dão o nome real do instalador publicado
+  (`GerenciadorDeTarefas-Setup-<versão>.exe`, e não `GerenciadorDeTarefas-Setup.exe`),
+  ligam à última versão e avisam que, sem assinatura, o Windows pode pedir
+  confirmação antes de o executar.
 
 ## [1.1.0] - 2026-09-20
 

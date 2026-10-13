@@ -39,3 +39,8 @@ updates:
     groups:
       web-menores:
         update-types: [minor, patch]
+    # Os tipos do Node seguem o Node que corre (engines e CI: 22). Uma versão
+    # maior dos tipos descreve APIs que lá não existem e o typecheck não o vê.
+    ignore:
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]

@@ -29,8 +29,12 @@ Só usa a biblioteca padrão do Python — sem dependências externas em execuç
 
 ## 📦 Instalação (utilizador)
 
-1. Descarregue `GerenciadorDeTarefas-Setup.exe` da
-   [página de releases](https://github.com/Raoc1987/gerenciador_de_tarefas/releases).
+1. Descarregue `GerenciadorDeTarefas-Setup-<versão>.exe` (por exemplo,
+   `GerenciadorDeTarefas-Setup-1.1.0.exe`) da
+   [última versão](https://github.com/Raoc1987/gerenciador_de_tarefas/releases/latest).
+   Só para Windows. Como o instalador não está assinado, o Windows pode
+   avisar "O Windows protegeu o computador": escolha "Mais informações" e
+   "Executar mesmo assim".
 2. Execute o instalador. Por omissão instala só para o seu utilizador e **não
    pede permissões de administrador**; no primeiro ecrã pode escolher instalar
    para todos os utilizadores.

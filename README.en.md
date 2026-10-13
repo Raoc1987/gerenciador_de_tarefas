@@ -37,8 +37,11 @@ Runtime uses the Python standard library only: no external dependencies.
 
 ## 📦 Install (end user)
 
-1. Download `GerenciadorDeTarefas-Setup.exe` from the
-   [releases page](https://github.com/Raoc1987/gerenciador_de_tarefas/releases).
+1. Download `GerenciadorDeTarefas-Setup-<version>.exe` (for example,
+   `GerenciadorDeTarefas-Setup-1.1.0.exe`) from the
+   [latest release](https://github.com/Raoc1987/gerenciador_de_tarefas/releases/latest).
+   Windows only. The installer is not code-signed, so Windows may show
+   "Windows protected your PC": choose "More info" and then "Run anyway".
 2. Run it. By default it installs for the current user and **does not require
    administrator rights**; the first page lets you install for all users.
 3. Launch it from the Start menu.

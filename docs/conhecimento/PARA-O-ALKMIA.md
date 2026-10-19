@@ -31,6 +31,24 @@ daqui (por exemplo o M18, direito de uso na aplicação), ganha a do ALKMIA.
 - **Como aplicar:** Substituir o knowledge-graph por um catálogo como docs/conhecimento/catalogo.json com validação no CI; a triagem passa a correr nos dois sentidos.
 - **Onde ver aqui:** `tools/conhecimento.py`, provado por `tests/test_conhecimento.py`
 
+### Cada função da base corre em pelo menos um teste (track_functions)
+
+- **Medido:** 2026-10-08, ALKMIA em cb14227: sem supabase/tests; as RPC testam-se em pglite (site/scripts/trainer-rpc-integration.mjs), sem contagem de chamadas por função
+- **Como aplicar:** Num Postgres real: -c track_functions=all, pg_stat_reset() depois das migrações, e no fim comparar pg_proc (sem as funções de extensões, pg_depend deptype 'e') com pg_stat_user_functions. Exceções num ficheiro com a razão, e falhar também quando uma exceção já não existe.
+- **Onde ver aqui:** `supabase/tests/correr.sh`, provado por `supabase/tests/funcoes-sem-chamada.txt`
+
+### Cada módulo de lib/ é alcançado por um teste, e a cobertura tem mínimo
+
+- **Medido:** 2026-10-08, ALKMIA em cb14227: site/package.json corre vitest run sem limiar de cobertura; .github/workflows/ci.yml não mede cobertura
+- **Como aplicar:** vitest --coverage com thresholds (lines, branches, functions) no valor medido hoje, a subir quando a cobertura sobe; e um teste que percorre os imports dos testes e lista os módulos de lib/ que nenhum alcança, com exceções nomeadas e a razão.
+- **Onde ver aqui:** `web/lib/arquitetura.test.ts`
+
+### Ensaio de fumo automático a cada deploy e de hora a hora na produção
+
+- **Medido:** 2026-10-08, ALKMIA em cb14227: .github/workflows/ci.yml diz que não há deployment no CI; nenhum workflow corre em deployment_status nem ensaia o site publicado
+- **Como aplicar:** Workflow em deployment_status (state success) e em schedule contra uma variável do repositório com o URL de produção; correr um ensaio que só lê (páginas públicas, cabeçalhos, rota protegida a pedir login) e tratar 'barrado pela proteção do Vercel' como aviso, não como falha.
+- **Onde ver aqui:** `.github/workflows/ensaio-publicado.yml`
+
 ## Existe em parte
 
 ### Migrações por supabase db push, nunca pelo editor SQL
@@ -44,6 +62,12 @@ daqui (por exemplo o M18, direito de uso na aplicação), ganha a do ALKMIA.
 - **Medido:** 2026-10-08, ALKMIA em cb14227: 31 listas check (x in (...)) nas migrações; só site/lib/rotas-conhecidas.test.ts extrai uma
 - **Como aplicar:** Um teste que extrai cada check (coluna in (...)) das migrações e o compara com a constante TypeScript correspondente, pela mesma ordem, com um mapa coluna→constante. O M5 do ALKMIA já pede isto.
 - **Onde ver aqui:** `tests/test_vocabulario.py`
+
+### Actions fixadas por SHA, com teste
+
+- **Medido:** 2026-10-08, ALKMIA em cb14227: todas as Actions de ci.yml e backup.yml estão fixadas por SHA, mas nenhum teste o guarda
+- **Como aplicar:** Copiar tests/test_workflows.py (ou o equivalente em vitest): procurar cada uses: e exigir @<40 hex> # vX, e permissions: em cada workflow.
+- **Onde ver aqui:** `tests/test_workflows.py`
 
 ## Por medir antes de decidir
 

@@ -27,10 +27,15 @@ para funcionalidades (ADR-0017), e a **plataforma web** multiempresa (Next.js
 ```bash
 supabase/tests/correr.sh              # migrações reais + RLS + postura, num Postgres efémero
 cd web && npm test                    # domínio, arquitetura, ensaio (node:test)
+cd web && npm run test:cobertura      # o mesmo, com o mínimo de cobertura do CI
 cd web && npm run typecheck && npm run build
 python -m pytest                      # desktop
 cd web && npm run ensaio:fumo -- <url>   # um deploy publicado
 ```
+
+O que corre em cada camada, e o mínimo que a guarda, está em `docs/METODO.md`
+§7. O workflow `ensaio-publicado.yml` ensaia cada deploy pronto e, com a
+variável `PRODUCAO_URL` definida no repositório, a produção de hora a hora.
 
 Nas sessões de agente na cloud não há acesso ao registo npm: o build e o
 typecheck reais correm no CI (`.github/workflows/tests.yml`), e esperar por ele

@@ -1544,6 +1544,110 @@
         "medido": "2026-10-08, ALKMIA em cb14227: docs/knowledge-graph.json é JSON inválido e parado em 2026-05-15",
         "como_aplicar": "Substituir o knowledge-graph por um catálogo como docs/conhecimento/catalogo.json com validação no CI; a triagem passa a correr nos dois sentidos."
       }
+    },
+    {
+      "id": "funcoes-chamadas-pelos-testes",
+      "titulo": "Cada função da base corre em pelo menos um teste (track_functions)",
+      "tipo": "pratica",
+      "origem": "gdt",
+      "fontes": [],
+      "destino": "supabase/tests/correr.sh",
+      "criterios": {
+        "independente_do_dominio": true,
+        "nasceu_de_incidente": true,
+        "guardavel_por_procedimento": true,
+        "duplica": null,
+        "custo": "baixo"
+      },
+      "decisao": "adotado",
+      "razao": "Ter o nome da função num teste não prova que correu: gatilhos e funções de apoio correm por arrasto. O Postgres conta as chamadas; o que nunca correu falha o CI, salvo exceção com razão escrita.",
+      "guarda": {
+        "tipo": "ci",
+        "caminho": "supabase/tests/funcoes-sem-chamada.txt"
+      },
+      "para_alkmia": {
+        "estado_la": "falta",
+        "medido": "2026-10-08, ALKMIA em cb14227: sem supabase/tests; as RPC testam-se em pglite (site/scripts/trainer-rpc-integration.mjs), sem contagem de chamadas por função",
+        "como_aplicar": "Num Postgres real: -c track_functions=all, pg_stat_reset() depois das migrações, e no fim comparar pg_proc (sem as funções de extensões, pg_depend deptype 'e') com pg_stat_user_functions. Exceções num ficheiro com a razão, e falhar também quando uma exceção já não existe."
+      }
+    },
+    {
+      "id": "modulo-alcancado-por-teste",
+      "titulo": "Cada módulo de lib/ é alcançado por um teste, e a cobertura tem mínimo",
+      "tipo": "pratica",
+      "origem": "gdt",
+      "fontes": [],
+      "destino": "web/lib/arquitetura.test.ts",
+      "criterios": {
+        "independente_do_dominio": true,
+        "nasceu_de_incidente": true,
+        "guardavel_por_procedimento": true,
+        "duplica": null,
+        "custo": "baixo"
+      },
+      "decisao": "adotado",
+      "razao": "Um ficheiro novo sem teste passava sem ninguém dar por isso. O teste de arquitetura segue os imports dos testes e falha com um módulo que nenhum alcança; o CI corre com mínimo de linhas, ramos e funções, que só sobe.",
+      "guarda": {
+        "tipo": "teste",
+        "caminho": "web/lib/arquitetura.test.ts"
+      },
+      "para_alkmia": {
+        "estado_la": "falta",
+        "medido": "2026-10-08, ALKMIA em cb14227: site/package.json corre vitest run sem limiar de cobertura; .github/workflows/ci.yml não mede cobertura",
+        "como_aplicar": "vitest --coverage com thresholds (lines, branches, functions) no valor medido hoje, a subir quando a cobertura sobe; e um teste que percorre os imports dos testes e lista os módulos de lib/ que nenhum alcança, com exceções nomeadas e a razão."
+      }
+    },
+    {
+      "id": "ensaio-do-publicado",
+      "titulo": "Ensaio de fumo automático a cada deploy e de hora a hora na produção",
+      "tipo": "pratica",
+      "origem": "gdt",
+      "fontes": [],
+      "destino": ".github/workflows/ensaio-publicado.yml",
+      "criterios": {
+        "independente_do_dominio": true,
+        "nasceu_de_incidente": true,
+        "guardavel_por_procedimento": true,
+        "duplica": null,
+        "custo": "baixo"
+      },
+      "decisao": "adotado",
+      "razao": "As pré-visualizações diziam Ready e respondiam 500 a tudo (METODO §1). O CI prova o código, não o publicado; o workflow ensaia cada deploy que o Vercel dá como pronto e a produção de hora a hora.",
+      "guarda": {
+        "tipo": "ci",
+        "caminho": ".github/workflows/ensaio-publicado.yml"
+      },
+      "para_alkmia": {
+        "estado_la": "falta",
+        "medido": "2026-10-08, ALKMIA em cb14227: .github/workflows/ci.yml diz que não há deployment no CI; nenhum workflow corre em deployment_status nem ensaia o site publicado",
+        "como_aplicar": "Workflow em deployment_status (state success) e em schedule contra uma variável do repositório com o URL de produção; correr um ensaio que só lê (páginas públicas, cabeçalhos, rota protegida a pedir login) e tratar 'barrado pela proteção do Vercel' como aviso, não como falha."
+      }
+    },
+    {
+      "id": "actions-por-sha-testado",
+      "titulo": "Actions fixadas por SHA, com teste",
+      "tipo": "regra",
+      "origem": "gdt",
+      "fontes": [],
+      "destino": "tests/test_workflows.py",
+      "criterios": {
+        "independente_do_dominio": true,
+        "nasceu_de_incidente": true,
+        "guardavel_por_procedimento": true,
+        "duplica": null,
+        "custo": "baixo"
+      },
+      "decisao": "adotado",
+      "razao": "A regra estava no CLAUDE.md sem teste; um workflow novo podia entrar com @v4. O teste falha com uma etiqueta, com um SHA sem a versão em comentário e com um workflow sem permissions.",
+      "guarda": {
+        "tipo": "teste",
+        "caminho": "tests/test_workflows.py"
+      },
+      "para_alkmia": {
+        "estado_la": "parcial",
+        "medido": "2026-10-08, ALKMIA em cb14227: todas as Actions de ci.yml e backup.yml estão fixadas por SHA, mas nenhum teste o guarda",
+        "como_aplicar": "Copiar tests/test_workflows.py (ou o equivalente em vitest): procurar cada uses: e exigir @<40 hex> # vX, e permissions: em cada workflow."
+      }
     }
   ]
 }

@@ -144,8 +144,10 @@ jobs:
       # `npm ci` quando houver package-lock.json; até lá, `npm install`.
       - name: Instalar dependências
         run: if [ -f package-lock.json ]; then npm ci; else npm install --no-audit --no-fund; fi
-      - name: Testes do domínio
-        run: npm test
+      # Os mesmos testes do `npm test`, com um mínimo de cobertura que só sobe:
+      # baixar de 98% das linhas, 86% dos ramos ou 97% das funções falha o PR.
+      - name: Testes do domínio, com mínimo de cobertura
+        run: npm run test:cobertura
       - name: Build (inclui a verificação de tipos)
         run: npm run build
       - name: Verificação de tipos

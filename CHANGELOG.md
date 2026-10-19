@@ -7,6 +7,18 @@ o projeto usa [versionamento semântico](https://semver.org/lang/pt-BR/).
 
 ## [Não lançado]
 
+### Copiloto e verificações do código
+
+- **O Copiloto reserva a pergunta antes de chamar o modelo.** Quando a
+  empresa já gastou as perguntas do mês, a recusa vem da base antes de haver
+  custo, com a frase do limite. Antes, o registo do uso vinha depois da
+  resposta e o erro era ignorado. Os tokens registam-se a seguir, numa função
+  que só aceita a própria reserva, uma vez e enquanto é recente. Se esse
+  registo falhar, a falha fica nos registos da Vercel.
+- **O teste de arquitetura procura usos no código, não palavras em
+  comentários**, e passa a falhar com um valor exportado em `web/lib` que
+  ninguém usa. O primeiro que apanhou (`ESTADOS_E_PRIORIDADES`) saiu.
+
 ### Método de trabalho
 
 - **`docs/METODO.md`**: o método do ALKMIA, só a parte que serve aos dois

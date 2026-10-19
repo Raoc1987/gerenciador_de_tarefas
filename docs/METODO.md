@@ -75,9 +75,11 @@ alguém pensou. *Cicatriz:* o resumo desta sessão dava a pré-visualização co
 
 **R3. Erro engolido paga-se em horas** (M3). Nenhum ramo troca um erro real
 por uma mensagem genérica sem o registar. Na Vercel ninguém lê `console.error`
-de uma rota que respondeu 200. *Cicatriz:* a ação do Copiloto ignora o erro do
-`insert` em `copiloto_uso`; desde os planos, esse insert pode ser recusado pelo
-limite, e a recusa não fica em lado nenhum. Dívida registada no catálogo.
+de uma rota que respondeu 200. *Cicatriz:* a ação do Copiloto ignorava o erro
+do `insert` em `copiloto_uso`; desde os planos, esse insert podia ser recusado
+pelo limite, tarde (com os tokens já gastos) e sem rasto. Corrigido: a pergunta
+reserva-se antes de chamar o modelo, e a falha a registar os tokens vai para os
+registos com o que é preciso para a reconstituir.
 
 **R4. Há três mortes, e cada uma pede um instrumento** (M2, M14, M21).
 - escrito e nunca lido: a coluna existe, ninguém a usa;
@@ -86,7 +88,8 @@ limite, e a recusa não fica em lado nenhum. Dívida registada no catálogo.
 - exportado e nunca importado: o código parece vivo.
 
 Procurar leitores não prova escrita, e vice-versa: verifica-se nos dois
-sentidos.
+sentidos. A terceira tem detetor: o teste de arquitetura falha com um valor
+exportado em `web/lib` que ninguém usa (apanhou `ESTADOS_E_PRIORIDADES`).
 
 **R5. Mudar a forma obriga a enumerar quem a lê** (M13). Antes de mudar um
 tipo, um enum ou um formato, lista-se cada leitor e diz-se o que lhe acontece.

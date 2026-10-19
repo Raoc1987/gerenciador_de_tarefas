@@ -66,12 +66,11 @@
         "custo": "baixo"
       },
       "decisao": "adaptado",
-      "razao": "Rotas na Vercel: um console.error numa resposta 200 não chega a ninguém.",
+      "razao": "Rotas na Vercel: um console.error numa resposta 200 não chega a ninguém. A dívida que havia (o insert do Copiloto ignorado) fechou-se: a pergunta reserva-se antes do modelo e a falha dos tokens fica nos registos.",
       "guarda": {
         "tipo": "prosa",
         "caminho": "docs/METODO.md"
-      },
-      "divida": "web/app/app/[empresa]/copiloto/acoes.ts ignora o erro do insert em copiloto_uso, que desde os planos pode ser recusado pelo limite."
+      }
     },
     {
       "id": "tres-mortes",
@@ -92,12 +91,11 @@
         "custo": "baixo"
       },
       "decisao": "adaptado",
-      "razao": "Três instrumentos diferentes; procurar leitores não prova escrita.",
+      "razao": "Três instrumentos diferentes; procurar leitores não prova escrita. A terceira morte tem detetor: um valor exportado em web/lib sem uso nenhum faz falhar o teste de arquitetura.",
       "guarda": {
-        "tipo": "prosa",
-        "caminho": "docs/METODO.md"
-      },
-      "divida": "Não há detetor de exports sem importadores em web/lib (a terceira morte)."
+        "tipo": "teste",
+        "caminho": "web/lib/arquitetura.test.ts"
+      }
     },
     {
       "id": "diagnostico-antes-de-correcao",
@@ -281,7 +279,7 @@
       "fontes": [
         "alkmia:docs/BIBLIA.md#M17"
       ],
-      "destino": null,
+      "destino": "web/lib/arquitetura.test.ts",
       "criterios": {
         "independente_do_dominio": true,
         "nasceu_de_incidente": false,
@@ -289,10 +287,12 @@
         "duplica": null,
         "custo": "baixo"
       },
-      "decisao": "por_decidir",
-      "razao": "Aplica-se aqui: web/lib/arquitetura.test.ts procura o texto SERVICE_ROLE em todos os ficheiros, incluindo comentários.",
-      "guarda": null,
-      "proximo_passo": "Rever o teste de arquitetura para procurar usos (process.env.X, imports) e não palavras soltas."
+      "decisao": "adotado",
+      "razao": "O teste de arquitetura procurava o texto SERVICE_ROLE também nos comentários; passou a procurar no código sem comentários, com um leitor que respeita strings.",
+      "guarda": {
+        "tipo": "teste",
+        "caminho": "web/lib/arquitetura.test.ts"
+      }
     },
     {
       "id": "rls-propriedade-app-direito",

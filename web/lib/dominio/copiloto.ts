@@ -6,7 +6,7 @@
 // um clique. Uma proposta que não valide aqui nem chega a aparecer.
 
 import {
-  ESTADOS, PRIORIDADES, validarTarefa,
+  validarTarefa,
   type DadosTarefa, type Estado, type Prioridade, type Tarefa,
 } from "./tarefas.ts";
 
@@ -128,4 +128,3 @@ export function limparHistorico(bruto: unknown): Turno[] {
     .map((t) => ({ papel: t.papel, texto: t.texto.slice(0, 4000) }));
 }
 
-export const ESTADOS_E_PRIORIDADES = { ESTADOS, PRIORIDADES };

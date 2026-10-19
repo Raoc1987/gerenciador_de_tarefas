@@ -3,7 +3,9 @@ name: Ensaio do publicado
 # O CI prova o código; este workflow prova o que está publicado. Corre o
 # ensaio de fumo (web/scripts/ensaio-fumo.ts) contra:
 #   - cada deploy que o Vercel dá como pronto (evento deployment_status), seja
-#     pré-visualização ou produção;
+#     pré-visualização ou produção. Só os do vercel[bot]: o base-de-dados.yml
+#     também cria deployments (ambiente producao), e o URL desses é a execução
+#     no GitHub, não a aplicação;
 #   - a produção, de hora a hora, se a variável do repositório PRODUCAO_URL
 #     estiver definida. Sem ela, o agendamento não faz nada (METODO §1: verde
 #     sem ensaio não é "verificado em produção").
@@ -27,16 +29,19 @@ jobs:
     name: Ensaio de fumo
     runs-on: ubuntu-latest
     if: >-
-      (github.event_name == 'deployment_status' && github.event.deployment_status.state == 'success')
+      (github.event_name == 'deployment_status' && github.event.deployment_status.state == 'success'
+        && github.event.deployment_status.creator.login == 'vercel[bot]'
+        && github.event.deployment_status.environment_url != '')
       || (github.event_name == 'schedule' && vars.PRODUCAO_URL != '')
       || github.event_name == 'workflow_dispatch'
     timeout-minutes: 5
     env:
-      ALVO: ${{ inputs.url || github.event.deployment_status.environment_url || github.event.deployment_status.target_url || vars.PRODUCAO_URL }}
+      ALVO: ${{ inputs.url || github.event.deployment_status.environment_url || vars.PRODUCAO_URL }}
+      PRODUCAO_URL: ${{ vars.PRODUCAO_URL }}
       VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: "22"
       - name: Ensaiar
@@ -44,8 +49,18 @@ jobs:
         # Sai com 1 se uma verificação falhar (vermelho) e com 2 se não chegou à
         # aplicação: uma pré-visualização protegida sem o segredo de bypass não
         # é uma falha do produto, fica como aviso.
+        #
+        # O segredo de bypass só vai para hosts deste projeto no Vercel ou para o
+        # da produção: um URL vindo de um evento ou de um input não o recebe.
         run: |
           set +e
+          host=$(node -e 'console.log(new URL(process.argv[1]).hostname)' "$ALVO")
+          producao=""
+          [ -n "$PRODUCAO_URL" ] && producao=$(node -e 'console.log(new URL(process.argv[1]).hostname)' "$PRODUCAO_URL")
+          case "$host" in
+            gerenciador-de-tarefas.vercel.app|gerenciador-de-tarefas-*-goethita.vercel.app) ;;
+            *) [ -n "$producao" ] && [ "$host" = "$producao" ] || unset VERCEL_AUTOMATION_BYPASS_SECRET ;;
+          esac
           node scripts/ensaio-fumo.ts "$ALVO"
           codigo=$?
           if [ "$codigo" = 2 ]; then

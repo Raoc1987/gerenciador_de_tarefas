@@ -3,7 +3,7 @@
 <!-- Gerado por `python tools/conhecimento.py alkmia --escrever` a partir de
      docs/conhecimento/catalogo.json. Não editar à mão: o teste compara. -->
 
-Catálogo de 2026-10-08. Para ler no início de uma sessão no ALKMIA
+Catálogo de 2026-10-20. Para ler no início de uma sessão no ALKMIA
 (`Raoc1987/ALKMIA`). Daqui nada se escreve lá: cada ponto é uma proposta, e
 entra pelo protocolo do ALKMIA (`docs/PROJETO-CRIACAO-SENIOR.md`), começando
 por **medir de novo**, porque a medição abaixo tem data e o ALKMIA muda.

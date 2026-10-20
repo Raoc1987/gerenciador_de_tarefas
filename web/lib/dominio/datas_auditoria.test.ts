@@ -27,5 +27,6 @@ test("auditoria: só os campos que mudaram, sem o ruído", () => {
   });
   assert.deepEqual(m, [{ campo: "prioridade", antes: "media", depois: "alta" }]);
   assert.equal(descreverAcao({ acao: "update", entidade: "tarefas" }), "alterou tarefa");
+  assert.equal(descreverAcao({ acao: "insert", entidade: "funcionalidades_empresa" }), "criou interruptor de funcionalidade");
   assert.equal(tituloDaLinha({ antes: null, depois: { titulo: "Relatório" } }), "Relatório");
 });

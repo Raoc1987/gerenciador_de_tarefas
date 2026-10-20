@@ -21,11 +21,13 @@ interface Mensagem extends Turno {
 type EstadoProposta = "pendente" | "aplicada" | "ignorada" | { erro: string };
 
 export function Conversa({
-  empresaId, podeAplicar, configurado, nomes,
+  empresaId, podeAplicar, configurado, disponivel, nomes,
 }: {
   empresaId: string;
   podeAplicar: boolean;
   configurado: boolean;
+  /** O interruptor da empresa (funcionalidade_ligada). A base recusa na mesma. */
+  disponivel: boolean;
   nomes: Record<string, string>;
 }) {
   const [mensagens, setMensagens] = useState<Mensagem[]>([]);
@@ -68,6 +70,15 @@ export function Conversa({
           Quem gere o alojamento tem de definir a variável <code>ANTHROPIC_API_KEY</code> no servidor (nunca no browser).
           Ver <code>web/README.md</code>.
         </p>
+      </Cartao>
+    );
+  }
+
+  if (!disponivel) {
+    return (
+      <Cartao className="max-w-2xl p-6 text-sm">
+        <p className="font-medium">O Copiloto não está disponível para esta empresa.</p>
+        <p className="mt-2 text-texto-2">Se precisa dele, fale com quem gere o serviço.</p>
       </Cartao>
     );
   }

@@ -31,6 +31,11 @@ o projeto usa [versionamento semântico](https://semver.org/lang/pt-BR/).
 
 ### Copiloto e verificações do código
 
+- **Uma pergunta ao Copiloto que o modelo não chega a responder deixa de
+  contar** para o limite do dia e do plano. A reserva leva uma chave que só o
+  servidor conhece, e a base só a liberta com ela, enquanto não houver tokens
+  registados e durante 15 minutos. Assim quem pergunta não consegue libertar
+  uma pergunta já respondida para fugir ao limite.
 - **O Copiloto reserva a pergunta antes de chamar o modelo.** Quando a
   empresa já gastou as perguntas do mês, a recusa vem da base antes de haver
   custo, com a frase do limite. Antes, o registo do uso vinha depois da
@@ -268,16 +273,12 @@ funcionalidades.
   95 verificações contra um Postgres real (`supabase/tests/correr.sh`), cada
   recusa com o motivo verificado. A aplicação não usa a chave de serviço.
 
-
 ### Adicionado
 
 - **Guia de contribuições** (`CONTRIBUTING.md`): o que classificar antes de
   escrever código (ADR-0004), as regras que falham um teste quando são
   violadas, como sai uma versão, e o que uma boa issue traz. O README
   prometia um guia em inglês que nunca existiu no repositório.
-
-### Adicionado
-
 - **A release pode ser ensaiada** sem publicar nada: o `release.yml` ganha
   `workflow_dispatch` e corre tudo — verificação da versão, testes, executável,
   instalador e os dois ensaios que protegem quem já instalou — parando antes

@@ -4,6 +4,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { revalidatePath } from "next/cache";
 import { contextoDaEmpresa, exigirSessao, pessoasDaEmpresa } from "@/lib/contexto";
 import { correrCopiloto } from "@/lib/copiloto/motor";
+import { novaChaveDeReserva } from "@/lib/copiloto/reserva";
 import {
   LIMITE_DIARIO, MAX_PERGUNTA, limparHistorico, resumirParaModelo, validarProposta, type Proposta,
 } from "@/lib/dominio/copiloto";
@@ -37,9 +38,12 @@ export async function perguntar(empresaId: string, historicoBruto: unknown, perg
   // A pergunta reserva-se ANTES de chamar o modelo: o limite do plano (por
   // empresa e por mês) recusa aqui, antes de haver custo, e a frase da base
   // chega à pessoa. Os tokens acrescentam-se no fim (copiloto_registar_tokens).
+  // A chave fica aqui no servidor: só com ela a reserva se devolve, se o modelo
+  // não responder (copiloto_libertar_reserva).
+  const chave = novaChaveDeReserva();
   const { data: reserva, error: erroReserva } = await supabase
     .from("copiloto_uso")
-    .insert({ empresa_id: empresaId })
+    .insert({ empresa_id: empresaId, chave_hash: chave.hash })
     .select("id")
     .single();
   if (erroReserva || !reserva) return { erro: mensagemDeErro(erroReserva) };
@@ -60,6 +64,7 @@ export async function perguntar(empresaId: string, historicoBruto: unknown, perg
     return cacheTarefas;
   };
 
+  let respondeu = false;
   try {
     const r = await correrCopiloto({
       cliente: new Anthropic(),
@@ -98,6 +103,7 @@ export async function perguntar(empresaId: string, historicoBruto: unknown, perg
         },
       },
     });
+    respondeu = true;
 
     const { data: registado, error: erroTokens } = await supabase.rpc("copiloto_registar_tokens", {
       p_uso: reserva.id,
@@ -125,6 +131,20 @@ export async function perguntar(empresaId: string, historicoBruto: unknown, perg
 
     return { resposta: r.resposta, propostas, restantes: LIMITE_DIARIO - (feitas ?? 0) - 1 };
   } catch (e) {
+    // Sem resposta do modelo, a pergunta não conta: devolve-se ao dia e ao
+    // plano. Se o modelo respondeu e o que veio depois falhou, houve custo e
+    // a pergunta conta. Uma devolução que falhe fica nos registos (METODO R3).
+    if (!respondeu) {
+      const { data: libertada, error: erroLibertar } = await supabase.rpc("copiloto_libertar_reserva", {
+        p_uso: reserva.id,
+        p_chave: chave.chave,
+      });
+      if (erroLibertar || libertada !== true) {
+        console.error("[copiloto] reserva por libertar", {
+          uso: reserva.id, empresa: empresaId, erro: erroLibertar?.message ?? "a reserva não se libertou",
+        });
+      }
+    }
     if (e instanceof Anthropic.RateLimitError) return { erro: "O Copiloto está muito ocupado. Tente daqui a um minuto." };
     if (e instanceof Anthropic.APIConnectionError) return { erro: "Não foi possível falar com o Copiloto. Verifique a ligação." };
     if (e instanceof Anthropic.APIError) return { erro: "O Copiloto não conseguiu responder. Tente outra vez." };

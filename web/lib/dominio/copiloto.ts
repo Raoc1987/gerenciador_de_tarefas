@@ -127,4 +127,3 @@ export function limparHistorico(bruto: unknown): Turno[] {
     .slice(-MAX_HISTORICO)
     .map((t) => ({ papel: t.papel, texto: t.texto.slice(0, 4000) }));
 }
-

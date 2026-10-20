@@ -193,6 +193,8 @@ o projeto usa [versionamento semântico](https://semver.org/lang/pt-BR/).
 - **As migrações chegam à produção pelo GitHub Actions**
   (`base-de-dados.yml`): os testes correm primeiro, depois `supabase db push`,
   com a CLI fixada por versão e SHA-256 e o segredo no ambiente `producao`.
+  A CLI é extraída fora do checkout: na raiz, a pasta `supabase/` impedia o
+  `tar` de escrever o binário com o mesmo nome, e a primeira aplicação caiu aí.
 - **Ensaio de fumo de um deploy** (`npm run ensaio:fumo -- <url>`): prova que
   o site está de pé, que `/app` pede login, que os crons recusam sem segredo e
   que os cabeçalhos de segurança vão em todas as respostas — e distingue uma

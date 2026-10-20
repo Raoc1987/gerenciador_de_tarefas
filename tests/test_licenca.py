@@ -16,7 +16,8 @@ AGPL_SHA256 = "d8a6cc31abc16b6748c7a21f21611f5a1ec33f67d22ca23d7da1c19b95496bee"
 
 def test_a_plataforma_web_e_agpl_com_o_texto_oficial():
     for caminho in (RAIZ / "web" / "LICENSE", RAIZ / "supabase" / "LICENSE"):
-        dados = caminho.read_bytes()
+        # No Windows o git pode escrever o ficheiro com CRLF: o que se compara é o texto.
+        dados = caminho.read_bytes().replace(b"\r\n", b"\n")
         assert dados.startswith(b"GNU AFFERO GENERAL PUBLIC LICENSE\nVersion 3"), caminho
         assert hashlib.sha256(dados).hexdigest() == AGPL_SHA256, f"{caminho} não é o texto oficial"
 

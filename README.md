@@ -1143,7 +1143,9 @@ tem de acompanhar cada mudança.
 
 ## 📝 Licença
 
-Este projeto está licenciado sob a licença MIT. Veja o arquivo [LICENSE](LICENSE).
+A aplicação de secretária está sob a licença MIT ([LICENSE](LICENSE)). A
+plataforma web (`web/`, `supabase/`) está sob a AGPL-3.0 desde 2026-10-20. A
+divisão está em [LICENSING.md](LICENSING.md) e a decisão no ADR-0027.
 
 ## 🙋‍♂️ Autor
 

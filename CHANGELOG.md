@@ -18,6 +18,13 @@ o projeto usa [versionamento semântico](https://semver.org/lang/pt-BR/).
   base recusa a pergunta antes de haver custo, e a página explica que não está
   disponível.
 
+### Licença
+
+- **A plataforma web (`web/`, `supabase/`) passa a AGPL-3.0-only**, e o resto
+  continua MIT (ADR-0027, `LICENSING.md`). Quem alojar uma versão modificada
+  como serviço tem de oferecer o código-fonte a quem a usa. O código publicado
+  até hoje continua MIT para quem já o tem.
+
 ### Testes a cada mudança
 
 - **Cada função da base corre em pelo menos um teste.** O `correr.sh` liga a

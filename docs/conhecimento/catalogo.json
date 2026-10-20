@@ -1,6 +1,6 @@
 {
   "versao": 1,
-  "atualizado": "2026-10-08",
+  "atualizado": "2026-10-20",
   "descricao": "Práticas dos dois projetos (Gerenciador de Tarefas e ALKMIA), com os critérios e a decisão de cada uma. Validado por tools/conhecimento.py e pelo teste tests/test_conhecimento.py.",
   "entradas": [
     {
@@ -412,7 +412,7 @@
       "fontes": [
         "alkmia:docs/BIBLIA.md#V"
       ],
-      "destino": null,
+      "destino": "supabase/migrations/20261020010000_interruptores.sql",
       "criterios": {
         "independente_do_dominio": true,
         "nasceu_de_incidente": false,
@@ -420,10 +420,12 @@
         "duplica": null,
         "custo": "medio"
       },
-      "decisao": "por_decidir",
-      "razao": "Serve a um SaaS com clientes pagantes; hoje não há como ligar uma funcionalidade só a algumas empresas.",
-      "guarda": null,
-      "proximo_passo": "Antes do primeiro cliente pago: um interruptor por empresa na base, testado dos dois lados."
+      "decisao": "adaptado",
+      "razao": "Interruptores por empresa na base (ADR-0026): só o operador escreve, cada membro lê só a sua empresa, e a base recusa. Decidido pelo autor a 2026-10-20.",
+      "guarda": {
+        "tipo": "teste",
+        "caminho": "supabase/tests/53_interruptores.sql"
+      }
     },
     {
       "id": "divida-com-matematica",

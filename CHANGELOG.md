@@ -7,6 +7,17 @@ o projeto usa [versionamento semântico](https://semver.org/lang/pt-BR/).
 
 ## [Não lançado]
 
+### Interruptores por empresa
+
+- **Uma funcionalidade pode ligar-se ou desligar-se só para algumas empresas**
+  (ADR-0026). Quem decide é o operador do serviço, e cada mudança fica na
+  auditoria da empresa. Cada empresa só vê os seus interruptores. Perguntar
+  pelos de outra responde sempre "desligada", sem se saber se essa empresa
+  existe.
+- O primeiro é o **Copiloto**, ligado para todas. Desligado numa empresa, a
+  base recusa a pergunta antes de haver custo, e a página explica que não está
+  disponível.
+
 ### Testes a cada mudança
 
 - **Cada função da base corre em pelo menos um teste.** O `correr.sh` liga a

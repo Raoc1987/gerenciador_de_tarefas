@@ -222,5 +222,15 @@ Uma *issue* útil traz, além do que aconteceu e do que era esperado:
 
 ## Licença
 
-Ao contribuir, aceita que o seu contributo seja distribuído sob a licença
-[MIT](LICENSE) do projeto.
+As licenças estão em [LICENSING.md](LICENSING.md) (ADR-0027):
+
+- um contributo para o desktop, as ferramentas ou a documentação é distribuído
+  sob a licença [MIT](LICENSE);
+- um contributo para `web/` ou `supabase/` é distribuído sob a
+  [AGPL-3.0-only](web/LICENSE). Ao contribuir, concede também ao autor do
+  projeto uma licença perpétua, mundial, gratuita e irrevogável para usar,
+  modificar e relicenciar esse contributo, incluindo em termos comerciais,
+  e declara que tem o direito de o fazer.
+
+(Esta concessão deve ser revista por um jurista antes de se aceitar o primeiro
+contributo externo para a plataforma web; ver ADR-0027.)

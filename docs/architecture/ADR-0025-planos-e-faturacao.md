@@ -44,7 +44,9 @@ confirmação de um pagamento, que vem do fornecedor sem a sessão de ninguém.
 
 ## Consequências
 
-- Os valores e os preços em `planos` são uma proposta por decidir. Mudam por
+- Os valores e os preços em `planos` (Gratuito 0 €, Equipa 49 €, Empresa
+  199 € por mês) foram aceites pelo autor a 2026-10-20, com uma condição: o
+  produto tem de entregar o que o preço vale, e nunca menos. Mudam por
   migração, e o preço cobrado é o do Stripe: a tabela só o mostra.
 - Baixar de plano não apaga nada. Uma empresa acima do limite continua a ver
   e a concluir tudo, mas não acrescenta até voltar a caber.

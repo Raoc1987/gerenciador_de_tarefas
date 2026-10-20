@@ -319,7 +319,8 @@ code, the rules that fail a test when broken, and how a release goes out.
 
 ## 📄 License
 
-MIT — see [LICENSE](LICENSE).
+The desktop app is MIT ([LICENSE](LICENSE)). The web platform (`web/`,
+`supabase/`) is AGPL-3.0 since 2026-10-20. See [LICENSING.md](LICENSING.md).
 
 ## 🧠 Author
 

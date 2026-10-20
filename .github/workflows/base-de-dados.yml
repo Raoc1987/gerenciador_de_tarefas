@@ -45,19 +45,22 @@ jobs:
         run: echo "::warning::Defina o segredo SUPABASE_DB_URL no ambiente producao para aplicar as migrações."
 
       # O binário é fixado por versão e por SHA-256, como as Actions por SHA.
+      # Fica fora do checkout: na raiz já há a pasta supabase/, e o tar não
+      # consegue escrever um ficheiro com o mesmo nome (falhou assim a
+      # 2026-10-20, na primeira aplicação à produção).
       - name: CLI do Supabase
         if: env.SUPABASE_DB_URL != ''
         run: |
           f="supabase_${CLI_VERSAO}_linux_amd64.tar.gz"
-          curl -sSLf -o "$f" "https://github.com/supabase/cli/releases/download/v${CLI_VERSAO}/$f"
-          echo "$CLI_SHA256  $f" | sha256sum -c
-          tar xzf "$f" supabase
-          ./supabase --version
+          mkdir -p "$RUNNER_TEMP/cli"
+          curl -sSLf -o "$RUNNER_TEMP/cli/$f" "https://github.com/supabase/cli/releases/download/v${CLI_VERSAO}/$f"
+          (cd "$RUNNER_TEMP/cli" && echo "$CLI_SHA256  $f" | sha256sum -c && tar xzf "$f" supabase)
+          "$RUNNER_TEMP/cli/supabase" --version
 
       - name: O que vai ser aplicado
         if: env.SUPABASE_DB_URL != ''
-        run: ./supabase db push --db-url "$SUPABASE_DB_URL" --dry-run
+        run: '"$RUNNER_TEMP/cli/supabase" db push --db-url "$SUPABASE_DB_URL" --dry-run'
 
       - name: Aplicar
         if: env.SUPABASE_DB_URL != ''
-        run: ./supabase db push --db-url "$SUPABASE_DB_URL" --yes
+        run: '"$RUNNER_TEMP/cli/supabase" db push --db-url "$SUPABASE_DB_URL" --yes'

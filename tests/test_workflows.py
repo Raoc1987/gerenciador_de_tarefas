@@ -75,3 +75,18 @@ def test_o_segredo_de_bypass_so_vai_para_hosts_do_projeto():
     texto = ENSAIO.read_text(encoding="utf-8")
     assert "unset VERCEL_AUTOMATION_BYPASS_SECRET" in texto
     assert "gerenciador-de-tarefas-*-goethita.vercel.app" in texto
+
+
+BASE_DE_DADOS = RAIZ / ".github" / "workflows" / "base-de-dados.yml"
+
+
+def test_a_cli_do_supabase_fica_fora_do_checkout():
+    """Na raiz do repositório há a pasta supabase/: extrair ali o binário com o
+    mesmo nome falha ("tar: supabase: Cannot open: File exists"), e foi assim
+    que a primeira aplicação à produção caiu a 2026-10-20."""
+    texto = BASE_DE_DADOS.read_text(encoding="utf-8")
+    assert (RAIZ / "supabase").is_dir()
+    assert "./supabase" not in texto
+    assert re.search(r"tar xzf \S+ supabase", texto)
+    assert 'cd "$RUNNER_TEMP/cli"' in texto
+    assert texto.count('"$RUNNER_TEMP/cli/supabase" db push') == 2

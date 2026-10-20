@@ -56,3 +56,22 @@ def test_a_regra_aceita_sha_com_versao_e_actions_locais():
         "  - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1\n"
         "  - uses: ./.github/actions/local\n"
     ) == []
+
+
+ENSAIO = RAIZ / ".github" / "workflows" / "ensaio-publicado.yml"
+
+
+def test_o_ensaio_do_publicado_so_corre_em_deploys_do_vercel():
+    """O base-de-dados.yml também cria deployments (ambiente producao) e o URL
+    desses é a execução no GitHub: em 2026-10-19 o ensaio correu contra ela e
+    deu 7 de 8 vermelhos. Só os deployments do vercel[bot] são a aplicação."""
+    texto = ENSAIO.read_text(encoding="utf-8")
+    assert "deployment_status.creator.login == 'vercel[bot]'" in texto
+    assert "target_url" not in texto
+
+
+def test_o_segredo_de_bypass_so_vai_para_hosts_do_projeto():
+    """Um URL vindo de um evento ou de um input não recebe o segredo."""
+    texto = ENSAIO.read_text(encoding="utf-8")
+    assert "unset VERCEL_AUTOMATION_BYPASS_SECRET" in texto
+    assert "gerenciador-de-tarefas-*-goethita.vercel.app" in texto

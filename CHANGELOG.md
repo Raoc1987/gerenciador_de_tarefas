@@ -23,6 +23,9 @@ o projeto usa [versionamento semântico](https://semver.org/lang/pt-BR/).
 - **Ensaio do publicado**: um workflow corre o ensaio de fumo a cada deploy
   que o Vercel dá como pronto e, com a variável `PRODUCAO_URL` definida, de
   hora a hora na produção.
+  Só ensaia deploys criados pelo Vercel (o `base-de-dados.yml` também cria
+  deployments, e o URL desses é a execução no GitHub), e o segredo de bypass
+  só segue para hosts deste projeto.
 - **A regra das Actions fixadas por SHA passa a ter teste**, e cada workflow
   tem de declarar as permissões.
 

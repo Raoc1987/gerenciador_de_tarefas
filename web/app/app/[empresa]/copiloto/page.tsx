@@ -10,8 +10,10 @@ export const maxDuration = 120;
 
 export default async function Copiloto({ params }: { params: Promise<{ empresa: string }> }) {
   const { empresa: id } = await params;
-  const { papel } = await contextoDaEmpresa(id);
+  const { supabase, papel } = await contextoDaEmpresa(id);
   const pessoas = await pessoasDaEmpresa(id);
+  // O interruptor só esconde; quem recusa a pergunta é a base (ADR-0026).
+  const { data: disponivel } = await supabase.rpc("funcionalidade_ligada", { p_empresa: id, p_codigo: "copiloto" });
 
   return (
     <>
@@ -23,6 +25,7 @@ export default async function Copiloto({ params }: { params: Promise<{ empresa: 
         empresaId={id}
         podeAplicar={pode(papel, "tarefas.criar")}
         configurado={!!process.env.ANTHROPIC_API_KEY}
+        disponivel={disponivel === true}
         nomes={Object.fromEntries(pessoas.map((p) => [p.id, p.nome || p.email]))}
       />
     </>

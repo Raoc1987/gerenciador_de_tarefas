@@ -18,6 +18,7 @@ const ENTIDADE: Record<string, string> = {
   membros: "membro",
   convites: "convite",
   empresas: "empresa",
+  funcionalidades_empresa: "interruptor de funcionalidade",
 };
 
 const ACAO: Record<string, string> = { insert: "criou", update: "alterou", delete: "apagou" };

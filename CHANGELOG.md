@@ -7,6 +7,17 @@ o projeto usa [versionamento semântico](https://semver.org/lang/pt-BR/).
 
 ## [Não lançado]
 
+### Interruptores por empresa
+
+- **Uma funcionalidade pode ligar-se ou desligar-se só para algumas empresas**
+  (ADR-0026). Quem decide é o operador do serviço, e cada mudança fica na
+  auditoria da empresa. Cada empresa só vê os seus interruptores. Perguntar
+  pelos de outra responde sempre "desligada", sem se saber se essa empresa
+  existe.
+- O primeiro é o **Copiloto**, ligado para todas. Desligado numa empresa, a
+  base recusa a pergunta antes de haver custo, e a página explica que não está
+  disponível.
+
 ### Licença
 
 - **A plataforma web (`web/`, `supabase/`) passa a AGPL-3.0-only**, e o resto
@@ -38,6 +49,11 @@ o projeto usa [versionamento semântico](https://semver.org/lang/pt-BR/).
 
 ### Copiloto e verificações do código
 
+- **Uma pergunta ao Copiloto que o modelo não chega a responder deixa de
+  contar** para o limite do dia e do plano. A reserva leva uma chave que só o
+  servidor conhece, e a base só a liberta com ela, enquanto não houver tokens
+  registados e durante 15 minutos. Assim quem pergunta não consegue libertar
+  uma pergunta já respondida para fugir ao limite.
 - **O Copiloto reserva a pergunta antes de chamar o modelo.** Quando a
   empresa já gastou as perguntas do mês, a recusa vem da base antes de haver
   custo, com a frase do limite. Antes, o registo do uso vinha depois da
@@ -275,16 +291,12 @@ funcionalidades.
   95 verificações contra um Postgres real (`supabase/tests/correr.sh`), cada
   recusa com o motivo verificado. A aplicação não usa a chave de serviço.
 
-
 ### Adicionado
 
 - **Guia de contribuições** (`CONTRIBUTING.md`): o que classificar antes de
   escrever código (ADR-0004), as regras que falham um teste quando são
   violadas, como sai uma versão, e o que uma boa issue traz. O README
   prometia um guia em inglês que nunca existiu no repositório.
-
-### Adicionado
-
 - **A release pode ser ensaiada** sem publicar nada: o `release.yml` ganha
   `workflow_dispatch` e corre tudo — verificação da versão, testes, executável,
   instalador e os dois ensaios que protegem quem já instalou — parando antes
